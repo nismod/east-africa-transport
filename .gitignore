@@ -1,0 +1,6 @@
+# Data 
+*.osm.pbf
+*.gpkg
+
+# Editor config
+.vscode

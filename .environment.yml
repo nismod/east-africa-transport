@@ -1,0 +1,15 @@
+# Conda environment specification
+# To import/create a copy of the environment:
+#    conda env create -f .environment.yml
+name: east-africa-transport
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - fiona
+  - geopandas
+  - tqdm
+  - pip:
+    - snkit
