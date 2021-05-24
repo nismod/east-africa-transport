@@ -47,7 +47,7 @@ ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
 -- Emali - delete 1337
 -- Voi - delete 1305
 
---delete from kenya_osm_nodes where oid in (1343, 92, 1, 1347, 1345, 1337, 1305)
+-- delete from kenya_osm_nodes where oid in (1343, 92, 1, 1347, 1345, 1337, 1305)
 
 -- update nodes values
 
@@ -165,8 +165,6 @@ DO $$ DECLARE
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
 nodes INT ARRAY DEFAULT ARRAY [437, 1304, 1350, 700,  1349, 1348, 699,  164, 217,  336 ];
 edges INT ARRAY DEFAULT ARRAY [1097, 2071, 1543, 2044, 1477, 1452, 2028, 291, 2419, 939 ];
---nodes INT ARRAY DEFAULT ARRAY [437];
---edges INT ARRAY DEFAULT ARRAY [1097];
 node INT;
 edge INT;
 idx INT;
@@ -229,11 +227,11 @@ with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).ge
 	
 	-- delete original station node
 	-- don't think will do that, will just select the station nodes that intersect the required routes.
-	--delete 
-	--from
-	--kenya_osm_nodes 
-	--where
-	--oid = node;
+	-- delete 
+	-- from
+	-- kenya_osm_nodes 
+	-- where
+	-- oid = node;
 	
 
 END LOOP;
@@ -541,7 +539,7 @@ set line = 'Voi-Taveta',
 gauge = 'metre'
 where oid in (select edge from tmp);			
 
---SGR lines
+-- SGR lines
 -- from Mombasa-Nairobi SGR
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
@@ -673,7 +671,7 @@ and railway in ('station', 'halt', 'stop');
 		kenya_osm_nodes as b on b.oid = X.node
 		ORDER BY seq;
 			
-	--functions		
+	-- functions		
 	-- from: https://gis.stackexchange.com/a/370562
 	-- a SQL function to compute the segment index of the LineString segment closest to a given point
 	-- Example:
