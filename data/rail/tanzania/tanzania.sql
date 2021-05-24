@@ -36,6 +36,22 @@ UPDATE tanzania_osm_nodes set oid = reverse(split_part(reverse(id), '_', 1))::in
 ALTER TABLE tanzania_osm_nodes DROP CONSTRAINT tanzania_osm_nodes_pkey;
 ALTER TABLE tanzania_osm_nodes ADD PRIMARY KEY (oid);
 
+-- add gauge column to nodes
+alter table tanzania_osm_nodes
+add COLUMN gauge text;
+
+-- metre-gauge lines into Dar es Salaam currently stop before central station.
+-- This is presumably temporary due to construction work on SGR viaduct?
+-- connect lines 3193 and 1738 to node 2786 (at beginning of line)
+UPDATE tanzania_osm_edges
+	SET geom = ST_AddPoint(geom, (select geom from tanzania_osm_nodes where oid = 2786), 0),
+	source = 2786
+   WHERE oid IN (3193, 1738);
+-- update line length
+UPDATE tanzania_osm_edges
+	SET length = round(st_length(st_transform(geom, 32736 ))::numeric,2)
+	WHERE oid IN (3193, 1738);
+
 -- delete duplicate station nodes(on same gauge)
 -- may just select those coincident with defined routes for export?
 
@@ -56,12 +72,13 @@ set name = ''
 where oid = ;
 
 
--- Update status - copy over from railway key if not 'rail' or 'narrow_gauge' or 'level_crossing' or 'platform' or 'station' or 'turntable'
+-- Update status - copy over from railway key if 'abandoned', 'construction', 'dismantled', 'disused', 'preserved'
 
 UPDATE tanzania_osm_edges
  SET status =
- CASE WHEN railway not in ('rail', 'narrow_gauge', 'level_crossing', 'platform', 'station', 'turntable') THEN railway
- else 'open'
+ CASE WHEN railway in ('abandoned', 'construction', 'dismantled', 'disused', 'preserved') THEN railway
+ WHEN railway in ('rail', 'narrow_gauge') THEN 'open'
+ else 'unknown'
  end;
  
  -- Update structure
@@ -73,15 +90,10 @@ UPDATE tanzania_osm_edges
  WHEN railway in ('level_crossing', 'platform', 'station', 'turntable') THEN railway
  end;
  
+ 
 -- populate gauge column
--- where railway = 'rail' gauge is standard as per OSM coding
-update tanzania_osm_edges
-set gauge = 'standard'
-where railway = 'rail';
+-- incorrectly coded rail and narrow_gauge in OSM data. This will need to be set per route.
 
-update tanzania_osm_edges
-set gauge = 'metre'
-where railway = 'narrow_gauge';
 
 -- remove unused columns from edges
 alter table tanzania_osm_edges
@@ -118,13 +130,16 @@ where name is null and railway in ('station', 'stop', 'halt');
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
 
-
+-- Tabora station node 326 to 2583
+-- Manyoni station node 478 to 1871
 
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
-nodes INT ARRAY DEFAULT ARRAY [];
-edges INT ARRAY DEFAULT ARRAY [];
+-- nodes INT ARRAY DEFAULT ARRAY [326, 478];
+-- edges INT ARRAY DEFAULT ARRAY [2583, 1871];
+nodes INT ARRAY DEFAULT ARRAY [478];
+edges INT ARRAY DEFAULT ARRAY [1871];
 node INT;
 edge INT;
 idx INT;
@@ -200,11 +215,23 @@ END $$;
 
 -- psql code to fix routing issue. Splits edge at node.
 
+-- allow routing into Mpanda station
+-- split 2850 at 2601
 
+-- allow routing from Manyoni to Singida
+-- split 137 at 2901
+
+-- allow routing out of Kilosa to Msolwa
+-- split 3518 at 3287
+
+-- allow routing out of Ruvu to the Link Line to Mruazi
+-- split 850 at 2585
 
 DO $$ DECLARE
-edges INT ARRAY DEFAULT ARRAY [];
-nodes INT ARRAY DEFAULT ARRAY [];
+-- edges INT ARRAY DEFAULT ARRAY [2850, 137,  3518, 850];
+-- nodes INT ARRAY DEFAULT ARRAY [2601, 2901, 3287, 2585];
+edges INT ARRAY DEFAULT ARRAY [850];
+nodes INT ARRAY DEFAULT ARRAY [2585];
 edge INT;
 node INT;
 BEGIN
@@ -237,9 +264,138 @@ END $$;
 
 -- routes
 
--- update station gauge
-alter table tanzania_osm_nodes
-add COLUMN gauge text;
+-- Central Line to Kigoma passenger station
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2785,
+		2315,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Central',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- Central Line Kigoma port
+
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2041,
+		3413,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Central',
+gauge = '1000',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Mpanda Line - Kaliua-Mpanda
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                48,
+		462,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Mpanda',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- Mwanza Line Tabora-Mwanza
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                10326,
+		205,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Mwanza',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- Mwanza to Lake Ferries Terminal (disused)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                205,
+		1069,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Mwanza-Lake Ferries Terminal',
+gauge = '1000',
+status = 'disused'
+where oid in (select edge from tmp);
+
+-- Singida Line Manyoni-Singida
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2901,
+		317,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Singida',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- need to prevent routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge.
+-- remove edge 
+delete from tanzania_osm_edges
+where oid = 3388
+
+-- make an existing node Kilosa station for metre gauge - ensuring break in gauge
+update tanzania_osm_nodes
+set name = 'Msolwa Station',
+gauge = '1000'
+where oid = 3212
+
+-- Kilosa-Msolwa (disused)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2901,
+		3212,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Kilosa-Msolwa',
+gauge = '1000',
+status = 'disused'
+where oid in (select edge from tmp);
+
+-- Link Line Ruvu to Tanga line
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2585,
+		1915,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Link Line',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
 
 update tanzania_osm_nodes
 set gauge = 'metre'
@@ -255,8 +411,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                3731,
-		880,
+                2585,
+		1915,
 		false
 		) AS X inner join
 		tanzania_osm_edges as a on a.oid = X.edge left join

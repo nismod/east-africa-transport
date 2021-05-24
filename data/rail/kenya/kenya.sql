@@ -13,8 +13,8 @@ ALTER TABLE kenya_osm_edges
 		ADD COLUMN mode text, -- passenger, freight or mixed.
 		ADD COLUMN structure text; -- bridges etc
 		
--- calculate edge lengths (need to transform to projected - use EPSG:21036)
-UPDATE kenya_osm_edges set length = round(st_length(st_transform(geom, 21036))::numeric,2);
+-- calculate edge lengths (need to transform to projected - use EPSG:32736)
+UPDATE kenya_osm_edges set length = round(st_length(st_transform(geom, 32736))::numeric,2);
 
 -- assume mixed mode unless amended
 UPDATE kenya_osm_edges set mode = 'mixed';
@@ -201,7 +201,7 @@ insert into kenya_osm_edges
 with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).geom as geom2 from kenya_osm_edges a where oid = edge ),
 	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
 	a.geom,
-	round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ) as length,
+	round( st_length ( st_transform ( a.geom, 32736 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
 	c.oid as target,
 	a.oid,
@@ -286,7 +286,7 @@ BEGIN
 	insert into kenya_osm_edges with tmp as (select a.*, (st_dump(st_split(a.geom, b.geom))).geom as geom2 from kenya_osm_edges a, kenya_osm_nodes b where a.oid = edge and b.oid = node),
 	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
 	a.geom,
-	round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ) as length,
+	round( st_length ( st_transform ( a.geom, 32736 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
 	c.oid as target,
 	a.oid,
@@ -316,7 +316,7 @@ UPDATE kenya_osm_edges
    WHERE oid = 2532;
 -- update
 UPDATE kenya_osm_edges
-	SET length = round(st_length(st_transform(geom, 21036))::numeric,2)
+	SET length = round(st_length(st_transform(geom, 32736))::numeric,2)
 	WHERE oid = 2532;
 
 -- gap in edge on Magadi line. Extend line 1106 to node 2801
