@@ -9,7 +9,7 @@ ALTER TABLE kenya_osm_edges
 		ADD COLUMN oid integer,
 		ADD COLUMN line text,
 		ADD COLUMN gauge text,
-		ADD COLUMN status text,
+		ADD COLUMN status text, -- open, abandoned, disused, rehabilitation, construction, proposed
 		ADD COLUMN mode text, -- passenger, freight or mixed.
 		ADD COLUMN structure text; -- bridges etc
 		
@@ -98,11 +98,11 @@ UPDATE kenya_osm_edges
 -- populate gauge column
 -- where railway = 'rail' gauge is standard as per OSM coding
 update kenya_osm_edges
-set gauge = 'standard'
+set gauge = '1435'
 where railway = 'rail';
 
 update kenya_osm_edges
-set gauge = 'metre'
+set gauge = '1000'
 where railway = 'narrow_gauge';
 
 -- remove unused columns from edges
@@ -311,7 +311,7 @@ END $$;
 UPDATE kenya_osm_edges
 	SET geom = ST_AddPoint(geom, (select geom from kenya_osm_nodes where oid = 290), 0),
 	source = 290,
-	gauge = 'metre',
+	gauge = '1000',
 	line = 'NICD - Longonot Railway Link'
    WHERE oid = 2532;
 -- update
@@ -399,7 +399,8 @@ set line = 'Nakuru-Malaba'
 where oid in (select edge from tmp);
 
 UPDATE kenya_osm_edges
-	SET gauge = 'metre'
+	SET gauge = '1000',
+	status = 'rehabilitation'
 	WHERE line = 'Nakuru-Malaba';
 
 
@@ -443,7 +444,7 @@ set line = 'Rongai-Solai'
 where oid in (select edge from tmp);
 
 UPDATE kenya_osm_edges
-	SET gauge = 'metre'
+	SET gauge = '1000'
 	WHERE line = 'Rongai-Solai';
 
 
@@ -461,7 +462,7 @@ set line = 'Gilgil-Nyahururu'
 where oid in (select edge from tmp);
 
 UPDATE kenya_osm_edges
-	SET gauge = 'metre'
+	SET gauge = '1000'
 	WHERE line = 'Gilgil-Nyahururu';
 		
 -- Eldoret to Kitale
@@ -478,7 +479,7 @@ set line = 'Eldoret-Kitale'
 where oid in (select edge from tmp);
 
 UPDATE kenya_osm_edges
-	SET gauge = 'metre'
+	SET gauge = '1000'
 	WHERE line = 'Eldoret-Kitale';
 	
 -- branch to Chemelil town
@@ -495,7 +496,7 @@ set line = 'Chemelil branch'
 where oid in (select edge from tmp);		
 
 UPDATE kenya_osm_edges
-	SET gauge = 'metre'
+	SET gauge = '1000'
 	WHERE line = 'Chemelil branch';
 	
 -- from Nairobi to Nakuru
@@ -536,7 +537,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Voi-Taveta',
-gauge = 'metre'
+gauge = '1000'
 where oid in (select edge from tmp);			
 
 -- SGR lines
@@ -551,7 +552,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Mombasa-Nairobi SGR',
-gauge = 'standard'
+gauge = '1435'
 where oid in (select edge from tmp);		
 
 -- 	Mombasa-Nairobi SGR freight only
@@ -565,7 +566,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Mombasa-Nairobi SGR',
-gauge = 'standard',
+gauge = '1435',
 mode = 'freight'
 where oid in (select edge from tmp);		
 
@@ -582,7 +583,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Nairobi-Naivasha SGR',
-gauge = 'standard'
+gauge = '1435'
 where oid in (select edge from tmp);		
 
 -- Naivasha (Suswa) - Kisumu SGR
@@ -596,7 +597,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Naivasha-Kisumu SGR',
-gauge = 'standard'
+gauge = '1435'
 where oid in (select edge from tmp);		
 
 -- Nairobi Terminus to Inland Port - freight only
@@ -610,7 +611,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Nairobi Terminus-Inland Container Port SGR',
-gauge = 'standard',
+gauge = '1435',
 mode = 'freight'
 where oid in (select edge from tmp);		
 
@@ -625,7 +626,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Embakasi Village',
-gauge = 'metre',
+gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
@@ -641,7 +642,7 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Syokimau',
-gauge = 'metre',
+gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
@@ -650,12 +651,12 @@ alter table kenya_osm_nodes
 add COLUMN gauge text;
 
 update kenya_osm_nodes
-set gauge = 'metre'
+set gauge = '1000'
 where st_intersects(geom, (select st_collect(geom) from kenya_osm_edges where gauge = 'metre'))
 and railway in ('station', 'halt', 'stop');
 
 update kenya_osm_nodes
-set gauge = 'standard'
+set gauge = '1435'
 where st_intersects(geom, (select st_collect(geom) from kenya_osm_edges where gauge = 'standard'))
 and railway in ('station', 'halt', 'stop');
 
