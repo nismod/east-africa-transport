@@ -90,6 +90,18 @@ set name = 'Dar es Salaam',
 railway = 'station'
 where oid = 2785;
 
+update tanzania_osm_nodes
+set railway = 'station',
+name = 'International Container Terminal',
+gauge = 1000
+where oid = 2188;
+
+update tanzania_osm_nodes
+set railway = 'station',
+name = 'International Container Terminal',
+gauge = 1067
+where oid = 1591;
+
 
 -- incorrect name
 -- Kamata station node incorrectly on SGR line
