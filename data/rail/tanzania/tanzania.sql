@@ -72,11 +72,23 @@ where oid = 1971;
 -- SGR stations
 update tanzania_osm_nodes
 set name = 'Morogoro SGR'
-where oid = 1959
+where oid = 1959;
 
 update tanzania_osm_nodes
-set name = 'Pugu SGR'
-where oid = 1960
+set name = 'Pugu SGR',
+railway = 'station'
+where oid = 1960;
+
+update tanzania_osm_nodes
+set name = 'Dar es Salaam SGR',
+railway = 'station'
+where oid = 3888;
+
+--other stations 
+update tanzania_osm_nodes
+set name = 'Dar es Salaam',
+railway = 'station'
+where oid = 2785;
 
 
 -- incorrect name
@@ -149,14 +161,19 @@ where name is null and railway in ('station', 'stop', 'halt');
 -- Manyoni station node 478 to 1871
 -- Kamata station node is incorrectly on the new SGR node 29 to 3193
 -- Puga SGR node 1960 to 3156
-
+-- Ndui station 392 to 1912
+-- Mwanza South 333 to 1226
+-- Fella 712 to 1285
+-- Bukene 721 to 246
+-- Makutopora 797 to 3280
+-- Morogoro 312 - 830
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
--- nodes INT ARRAY DEFAULT ARRAY [326,  478,  29,   1960];
--- edges INT ARRAY DEFAULT ARRAY [2583, 1871, 3193, 3156];
-nodes INT ARRAY DEFAULT ARRAY [1960];
-edges INT ARRAY DEFAULT ARRAY [3156];
+-- nodes INT ARRAY DEFAULT ARRAY [326,  478,  29,   1960,  392,  333,  712, 721,  797, 312];
+-- edges INT ARRAY DEFAULT ARRAY [2583, 1871, 3193, 3156, 1912, 1226, 1285, 246, 3280, 830];
+nodes INT ARRAY DEFAULT ARRAY [392,  333,  712, 721,  797, 312];
+edges INT ARRAY DEFAULT ARRAY [1912, 1226, 1285, 246, 3280, 830];
 node INT;
 edge INT;
 idx INT;
@@ -429,17 +446,32 @@ gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
--- Tanga Line Tanga to Arusha via Moshi
+-- Tanga Line to Moshi
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
                 1954,
+		116,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Tanga Line (to Moshi)',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- Tanga Line Moshi to Arusha
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2709,
 		112,
 		false
 		) AS X
 		ORDER BY seq)
 update tanzania_osm_edges
-set line = 'Tanga Line',
+set line = 'Tanga Line (Moshi-Arusha)',
 gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
@@ -630,8 +662,8 @@ where oid = 888000006;
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                888000007,
-		888000006,
+                472,
+		522,
 		false
 		) AS X left join
 		tanzania_osm_edges as a on a.oid = X.edge left join
