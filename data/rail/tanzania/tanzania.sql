@@ -477,8 +477,8 @@ where oid = 3212
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2901,
-		3212,
+                3212,
+		3287,
 		false
 		) AS X
 		ORDER BY seq)
@@ -550,11 +550,11 @@ mode = 'freight'
 where oid in (select edge from tmp);
 
 -- Kahe - Taveta
--- 2700 - 2705 == 1979 (kenya_osm_nodes)
+-- 2018 - 2705 == 1979 (kenya_osm_nodes)
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2700,
+                2018,
 		2705,
 		false
 		) AS X
