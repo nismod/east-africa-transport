@@ -47,9 +47,9 @@ ADD COLUMN facility text; -- dry port, cargo terminus, gauge interchange
 
 -- set additional node for stations
 update zambia_osm_nodes
-set name = '',
-railway = ''
-where oid = ;
+set name = 'Kataba',
+railway = 'station'
+where oid = 796;
 
 
 -- facilities
@@ -216,30 +216,12 @@ END $$;
 
 -- psql code to fix routing issue. Splits edge at node.
 
--- allow routing into Mpanda station
--- split 2850 at 2601
-
--- allow routing from Manyoni to Singida
--- split 137 at 2901
-
--- allow routing out of Kilosa to Msolwa
--- split 3518 at 3287
-
--- allow routing out of Ruvu to the Link Line to Mruazi
--- split 850 at 2585
-
--- allow routing from Moshi to Arusha
--- split 2291 at 2709
-
--- allow routing into Arusha station
--- split 652 at 3612
-
--- allow routing onto disused Kahe - Taveta (Kenya)
--- split 935 at 2018
+-- allow routing onto the Mulobezi Railway
+-- split 1808 at 1112
 
 DO $$ DECLARE
- edges INT ARRAY DEFAULT ARRAY [];
- nodes INT ARRAY DEFAULT ARRAY [];
+ edges INT ARRAY DEFAULT ARRAY [1808];
+ nodes INT ARRAY DEFAULT ARRAY [1112];
 -- edges INT ARRAY DEFAULT ARRAY [];
 -- nodes INT ARRAY DEFAULT ARRAY [];
 edge INT;
@@ -276,7 +258,135 @@ END LOOP;
 END $$;
 
 -- routes
+-- TAZARA (Zambia)
+-- from node 1236 (== 2271 in Tanzania network) to New Kapiri Mposhi (84)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1236,
+		84,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'TAZARA (Zambia)',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
 
+-- TAZARA - Kapiri Mposhi Junction
+-- Freight only
+-- See: https://constructionreviewonline.com/news/zambia-signs-us-825m-railway-lines-upgrade-contract/
+-- North
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                84,
+		1256,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'TAZARA - Kapiri Mposhi Junction',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+--South
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                84,
+		1239,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'TAZARA - Kapiri Mposhi Junction',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Zambian Railways
+-- from Victoria Falls Bridge (Zimbabwe Border) - Ndola (DRC border)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1111,
+		1227,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Livingstone - Ndola',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Mulobezi Railway
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1112,
+		486,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Mulobezi Railway',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Mulobezi - Kataba (abandoned)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                2430,
+		796,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Mulobezi - Kataba',
+gauge = '1067',
+status = 'abandoned',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- simplify network - add line to link Choma with Maamba Colliery Railway (Choma - Masuku)
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from zambia_osm_nodes a, zambia_osm_nodes b where a.oid = 130 and b.oid = 418
+)
+insert into zambia_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+130,
+418,
+999910000
+from tmp as a;
+
+-- Choma - Masuka (Maamba Colliery Railway)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                130,
+		214,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Choma - Masuka (Maamba Colliery Railway)',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
 
 -- station nodes
 update zambia_osm_nodes
@@ -308,8 +418,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
-                472,
-		522,
+                1111,
+		214,
 		false
 		) AS X left join
 		zambia_osm_edges as a on a.oid = X.edge left join

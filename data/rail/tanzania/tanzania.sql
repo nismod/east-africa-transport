@@ -465,13 +465,13 @@ where oid in (select edge from tmp);
 -- need to prevent routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge.
 -- remove edge 
 delete from tanzania_osm_edges
-where oid = 3388
+where oid = 3388;
 
 -- make an existing node Kilosa station for metre gauge - ensuring break in gauge
 update tanzania_osm_nodes
 set name = 'Msolwa Station',
 gauge = '1000'
-where oid = 3212
+where oid = 3212;
 
 -- Kidatu Line Kilosa-Msolwa (disused)
 with tmp as(
@@ -727,7 +727,7 @@ set
 	status = 'proposed',
 	line = 'Mtwara',
 	gauge = 1435,
-	comment = 'As of October 2020 feasibility studies and architectural designs have been completed'
+	comment = 'As of October 2020 feasibility studies and architectural designs have been completed (not funded)'
 from tmp b
 WHERE a.oid = b.oid;
 
