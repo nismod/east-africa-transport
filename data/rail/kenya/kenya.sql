@@ -11,7 +11,10 @@ ALTER TABLE kenya_osm_edges
 		ADD COLUMN gauge text,
 		ADD COLUMN status text, -- open, abandoned, disused, rehabilitation, construction, proposed
 		ADD COLUMN mode text, -- passenger, freight or mixed.
-		ADD COLUMN structure text; -- bridges etc
+		ADD COLUMN structure text, -- bridges etc
+		ADD COLUMN speed_freight integer,
+		ADD COLUMN speed_passenger integer,
+		ADD COLUMN comment text;
 		
 -- calculate edge lengths (need to transform to projected - use EPSG:32736)
 UPDATE kenya_osm_edges set length = round(st_length(st_transform(geom, 32736))::numeric,2);
@@ -48,6 +51,10 @@ ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
 -- Voi - delete 1305
 
 -- delete from kenya_osm_nodes where oid in (1343, 92, 1, 1347, 1345, 1337, 1305)
+
+alter table kenya_osm_nodes
+add COLUMN gauge text,
+add COLUMN facility text; -- dry port, gauge interchange
 
 -- update nodes values
 
@@ -199,7 +206,7 @@ WHERE oid = node;
  
 insert into kenya_osm_edges 
 with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).geom as geom2 from kenya_osm_edges a where oid = edge ),
-	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
+	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 32736 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
@@ -208,7 +215,11 @@ with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).ge
 	line,
 	gauge,
 	status,
-	mode 
+	mode,
+	structure,
+	speed_freight,
+	speed_passenger,
+	comment
 	from
 		tmp2 a JOIN kenya_osm_nodes b ON st_dwithin( b.geom, a.st_startpoint, .000000001 )
 		-- need st_dwithin rather than st_intersects 
@@ -284,7 +295,7 @@ BEGIN
 		LOOP
 		raise notice'counter: %', edge || ' ' || node;
 	insert into kenya_osm_edges with tmp as (select a.*, (st_dump(st_split(a.geom, b.geom))).geom as geom2 from kenya_osm_edges a, kenya_osm_nodes b where a.oid = edge and b.oid = node),
-	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
+	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 32736 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
@@ -294,7 +305,10 @@ BEGIN
 	a.gauge,
 	a.status,
 	a.mode,
-	a.structure 
+	a.structure,
+	a.speed_freight,
+	a.speed_passenger,
+	a.comment 
 	from
 		tmp2
 		a JOIN kenya_osm_nodes b ON st_intersects ( b.geom, a.st_startpoint )
@@ -647,17 +661,15 @@ status = 'open'
 where oid in (select edge from tmp);
 
 -- update station gauge
-alter table kenya_osm_nodes
-add COLUMN gauge text;
 
 update kenya_osm_nodes
 set gauge = '1000'
-where st_intersects(geom, (select st_collect(geom) from kenya_osm_edges where gauge = 'metre'))
+where st_intersects(geom, (select st_collect(geom) from kenya_osm_edges where gauge = '1000'))
 and railway in ('station', 'halt', 'stop');
 
 update kenya_osm_nodes
 set gauge = '1435'
-where st_intersects(geom, (select st_collect(geom) from kenya_osm_edges where gauge = 'standard'))
+where st_intersects(geom, (select st_collect(geom) from kenya_osm_edges where gauge = '1435'))
 and railway in ('station', 'halt', 'stop');
 
 		

@@ -39,11 +39,12 @@ UPDATE tanzania_osm_nodes set oid = reverse(split_part(reverse(id), '_', 1))::in
 ALTER TABLE tanzania_osm_nodes DROP CONSTRAINT tanzania_osm_nodes_pkey;
 ALTER TABLE tanzania_osm_nodes ADD PRIMARY KEY (oid);
 
--- add gauge column to nodes
+-- add columns to nodes
 alter table tanzania_osm_nodes
-add COLUMN gauge text;
+ADD COLUMN gauge text,
+ADD COLUMN facility text; -- dry port, cargo terminus, gauge interchange
 
--- metre-gauge lines into Dar es Salaam currently stop before central station.
+-- metre-gauge lines into Dar es Salaam currently stops before central station.
 -- This is presumably temporary due to construction work on SGR viaduct?
 -- see: https://www.thecitizen.co.tz/tanzania/news/trc-shifts-main-station-to-kamata-temporarily--2653910
 -- connect lines 3193 and 1738 to node 2786 (at beginning of line)
@@ -56,20 +57,12 @@ UPDATE tanzania_osm_edges
 	SET length = round(st_length(st_transform(geom, 32736 ))::numeric,2)
 	WHERE oid IN (3193, 1738);
 
--- delete duplicate station nodes(on same gauge)
--- may just select those coincident with defined routes for export?
-
--- delete from tanzania_osm_nodes where oid in (1343, 92, 1, 1347, 1345, 1337, 1305)
-
--- update nodes values
-
 -- set additional node for stations
 update tanzania_osm_nodes
 set name = 'Dar es Salaam',
 railway = 'station'
 where oid = 1971;
 
--- SGR stations
 update tanzania_osm_nodes
 set name = 'Morogoro SGR'
 where oid = 1959;
@@ -82,7 +75,7 @@ where oid = 1960;
 update tanzania_osm_nodes
 set name = 'Dar es Salaam SGR',
 railway = 'station'
-where oid = 3888;
+where oid = 1958;
 
 --other stations 
 update tanzania_osm_nodes
@@ -102,14 +95,52 @@ name = 'International Container Terminal',
 gauge = 1067
 where oid = 1591;
 
+update tanzania_osm_nodes
+set railway = 'station',
+name = 'Kidete',
+gauge = 1067
+where oid = 485;
+
+update tanzania_osm_nodes
+set railway = 'station',
+name = 'Mzaganza',
+gauge = 1067
+where oid = 241;
 
 -- incorrect name
--- Kamata station node incorrectly on SGR line
+-- Kamata station node incorrectly on SGR line (29)
+-- Duplicate station with no name is Shinyanga (1945)
 update tanzania_osm_nodes
 set name = NULL,
 railway = NULL
-where oid = 29;
+where oid IN (29, 1945);
 
+-- facilities
+
+-- dry port
+-- Isaka 496
+update tanzania_osm_nodes
+set facility = 'dry port'
+where oid in (496);
+
+-- gauge interchange
+-- Kidatu 3212 and 740 (actually at Msolwa Station) Disused?
+update tanzania_osm_nodes
+set facility = 'gauge freight interchange'
+where oid in (3212, 740);
+
+-- cargo terminus
+-- Makambako (165), Dar es Salaam (Tazara - 1591 and 1000mm - 2188)
+update tanzania_osm_nodes
+set facility = 'cargo terminus'
+where oid in (165, 1591, 2188);
+
+-- duplicate stations
+-- Kisaki (Tazara) 1949
+-- Mbalizi (Tazara) 1944
+-- Matambwe (Tazara) 1948
+delete from tanzania_osm_nodes
+where oid IN (1949, 1944, 1948)
 
 -- Update status - copy over from railway key if 'abandoned', 'construction', 'dismantled', 'disused', 'preserved'
 
@@ -133,7 +164,6 @@ UPDATE tanzania_osm_edges
 -- populate gauge column
 -- incorrectly coded rail and narrow_gauge in OSM data. This will need to be set per route.
 
-
 -- remove unused columns from edges
 alter table tanzania_osm_edges
 drop column id,
@@ -154,13 +184,19 @@ drop column osm_id,
 drop column is_current;
 
 -- update where name null and station/halt/stop
-
 -- otherwise unnamed
 
 update tanzania_osm_nodes
 set name = 
-(case when oid =  then ''
-when oid =  then ''
+(case when oid = 1182 then 'Lugufu'
+when oid = 458 then 'Muheza'
+when oid = 482 then 'Pugu'
+when oid = 42 then 'Soga'
+when oid = 26 then 'Munase'
+when oid = 1298 then 'Mpanga'
+when oid = 750 then 'Kitete'
+when oid = 472 then 'Uchindile'
+when oid = 522 then 'Kiyowela'
 else 'unnamed'
 end)
 where name is null and railway in ('station', 'stop', 'halt');
@@ -169,6 +205,7 @@ where name is null and railway in ('station', 'stop', 'halt');
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
 
+-- Dar es Salaam SGR station 1958 to 3417
 -- Tabora station node 326 to 2583
 -- Manyoni station node 478 to 1871
 -- Kamata station node is incorrectly on the new SGR node 29 to 3193
@@ -179,13 +216,17 @@ where name is null and railway in ('station', 'stop', 'halt');
 -- Bukene 721 to 246
 -- Makutopora 797 to 3280
 -- Morogoro 312 - 830
+-- Kitete 750 - 1698
+-- Ifakara 148 - 2813
+-- Fuga 405 - 1553
+
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
--- nodes INT ARRAY DEFAULT ARRAY [326,  478,  29,   1960,  392,  333,  712, 721,  797, 312];
--- edges INT ARRAY DEFAULT ARRAY [2583, 1871, 3193, 3156, 1912, 1226, 1285, 246, 3280, 830];
-nodes INT ARRAY DEFAULT ARRAY [392,  333,  712, 721,  797, 312];
-edges INT ARRAY DEFAULT ARRAY [1912, 1226, 1285, 246, 3280, 830];
+ nodes INT ARRAY DEFAULT ARRAY [1958, 326,  478,  29,   1960,  392,  333,  712, 721,  797, 312, 750,   148,  405];
+ edges INT ARRAY DEFAULT ARRAY [3417, 2583, 1871, 3193, 3156, 1912, 1226, 1285, 246, 3280, 830, 1698, 2813, 1553];
+-- nodes INT ARRAY DEFAULT ARRAY [1958];
+-- edges INT ARRAY DEFAULT ARRAY [3417];
 node INT;
 edge INT;
 idx INT;
@@ -283,11 +324,14 @@ END $$;
 -- allow routing into Arusha station
 -- split 652 at 3612
 
+-- allow routing onto disused Kahe - Taveta (Kenya)
+-- split 935 at 2018
+
 DO $$ DECLARE
--- edges INT ARRAY DEFAULT ARRAY [2850, 137,  3518, 850,  2291, 652,];
--- nodes INT ARRAY DEFAULT ARRAY [2601, 2901, 3287, 2585, 2709, 3612];
-edges INT ARRAY DEFAULT ARRAY [652];
-nodes INT ARRAY DEFAULT ARRAY [3612];
+ edges INT ARRAY DEFAULT ARRAY [2850, 137,  3518, 850,  2291, 652,   935];
+ nodes INT ARRAY DEFAULT ARRAY [2601, 2901, 3287, 2585, 2709, 3612, 2018];
+-- edges INT ARRAY DEFAULT ARRAY [935];
+-- nodes INT ARRAY DEFAULT ARRAY [2018];
 edge INT;
 node INT;
 BEGIN
@@ -295,7 +339,7 @@ BEGIN
 		LOOP
 		raise notice'counter: %', edge || ' ' || node;
 	insert into tanzania_osm_edges with tmp as (select a.*, (st_dump(st_split(a.geom, b.geom))).geom as geom2 from tanzania_osm_edges a, tanzania_osm_nodes b where a.oid = edge and b.oid = node),
-	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
+	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
@@ -307,7 +351,8 @@ BEGIN
 	a.mode,
 	a.structure,
 	a.speed_freight,
-	a.speed_passenger 
+	a.speed_passenger,
+	comment 
 	from
 		tmp2
 		a JOIN tanzania_osm_nodes b ON st_intersects ( b.geom, a.st_startpoint )
@@ -488,6 +533,40 @@ gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
+-- Tanga Line branch frieght - Tanga Cement PLC
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2225,
+		2226,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Tanga Line (Tanga Cement)',
+gauge = '1000',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Kahe - Taveta
+-- 2700 - 2705 == 1979 (kenya_osm_nodes)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2700,
+		2705,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Kahe - Taveta',
+gauge = '1000',
+status = 'disused',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+
 -- disused commuter rail branch to Ubungo Maziwa
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
@@ -530,9 +609,23 @@ round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
 425,
 2124,
 999910000
-from tmp as a
+from tmp as a;
 
--- 1067 mm gauge (Tazara) to Kurasini / Conatiner Terminal 
+-- 1067 mm gauge (Tazara) to Kurasini / Container Terminal 
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                425,
+		1591,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Yombo - Kurasini / Container Terminal (Tazara)',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
 
 
 -- TAZARA Line (to Tazmanian border with Zambia)
@@ -555,7 +648,7 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                3888,
+                1958,
 		1959,
 		false
 		) AS X
@@ -588,17 +681,6 @@ comment = 'Phase 2 - due for completion February 2022',
 speed_freight = 120,
 speed_passenger = 160
 where oid in (select edge from tmp);
-
-
-update tanzania_osm_nodes
-set gauge = 'metre'
-where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = 'metre'))
-and railway in ('station', 'halt', 'stop');
-
-update tanzania_osm_nodes
-set gauge = 'standard'
-where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = 'standard'))
-and railway in ('station', 'halt', 'stop');
 
 
 -- Mtwara - Mbamba Bay etc
@@ -669,6 +751,26 @@ update tanzania_osm_nodes
 set railway = 'station',
 name = 'Mchuchuma mine'
 where oid = 888000006;
+
+
+-- update station gauge on stations
+
+update tanzania_osm_nodes
+set gauge = '1000'
+where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = '1000'))
+and railway in ('station', 'halt', 'stop');
+
+update tanzania_osm_nodes
+set gauge = '1435'
+where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = '1435'))
+and railway in ('station', 'halt', 'stop');
+
+update tanzania_osm_nodes
+set gauge = '1067'
+where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = '1067'))
+and railway in ('station', 'halt', 'stop');
+
+
 
 		
 -- test routing		
