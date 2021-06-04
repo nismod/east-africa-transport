@@ -51,7 +51,6 @@ set name = 'Kataba',
 railway = 'station'
 where oid = 796;
 
-
 -- facilities
 
 -- dry port
@@ -119,24 +118,64 @@ drop column is_current;
 
 update zambia_osm_nodes
 set name = 
-(case when oid =  then ''
-when oid =  then ''
+(case when oid = 25 then 'Luanshya'
+when oid = 423 then 'Simonga'
+when oid = 490 then 'Makunka'
+when oid = 93 then 'Lunsemfwa'
+when oid = 83 then 'Mkushi River'
+when oid = 78 then 'Finkuli'
+when oid = 309 then 'Luslwasi'
+when oid = 511 then 'Kanona'
+when oid = 510 then 'Chakalamo'
+when oid = 74 then 'Chilonga'
+when oid = 512 then 'Kapoko'
+when oid = 352 then 'Kungu'
 else 'unnamed'
 end)
 where name is null and railway in ('station', 'stop', 'halt');
+
+update zambia_osm_nodes
+set name = 'Ndola Lime Company',
+railway = 'stop',
+facility = 'quarry'
+where oid = 1118;
+
+update zambia_osm_nodes
+set name = 'KCM Nkana Refinery',
+railway = 'stop',
+facility = 'Copper Refinery'
+where oid = 1417;
+
+update zambia_osm_nodes
+set name = 'KCM Nchanga Copper Mine',
+railway = 'stop',
+facility = 'mine'
+where oid = 1740;
+
+update zambia_osm_nodes
+set name = 'KCM Konkola Copper Mine',
+railway = 'stop',
+facility = 'mine'
+where oid = 1730;
+
 
 -- create new station nodes
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
 
+-- Chipata 300 to 554
+-- Kapiri Mposhi (ZR) 561 to 1825
+-- Chikonkomene Siding 627 - 445
+-- Kasavasa Siding 628 - 473
+-- Chambeshi 317 to 135
 
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
- nodes INT ARRAY DEFAULT ARRAY [];
- edges INT ARRAY DEFAULT ARRAY [];
--- nodes INT ARRAY DEFAULT ARRAY [];
--- edges INT ARRAY DEFAULT ARRAY [];
+-- nodes INT ARRAY DEFAULT ARRAY [300,  561, 627, 628, 317];
+-- edges INT ARRAY DEFAULT ARRAY [554, 1825, 445, 473, 135];
+ nodes INT ARRAY DEFAULT ARRAY [317];
+ edges INT ARRAY DEFAULT ARRAY [135];
 node INT;
 edge INT;
 idx INT;
@@ -218,12 +257,22 @@ END $$;
 
 -- allow routing onto the Mulobezi Railway
 -- split 1808 at 1112
-
+-- allow routing onto Mufulira branch
+-- split 852 at 1218
+-- allow routing to Ndola Lime Quary
+-- split 1391 at 1117
+-- split 1377 at 1444
+-- allow routing to KCM Nkana refinery
+-- split 1815 at 1380
+-- split 816 at 1382
+-- 814 at 1416
+-- allow routing Konkola Mine
+-- 1543 at 1725
 DO $$ DECLARE
- edges INT ARRAY DEFAULT ARRAY [1808];
- nodes INT ARRAY DEFAULT ARRAY [1112];
--- edges INT ARRAY DEFAULT ARRAY [];
--- nodes INT ARRAY DEFAULT ARRAY [];
+-- edges INT ARRAY DEFAULT ARRAY [1808,  852, 1391, 1377, 1815,  816,  814, 1543];
+-- nodes INT ARRAY DEFAULT ARRAY [1112, 1218, 1117, 1444, 1380, 1382, 1416, 1725];
+ edges INT ARRAY DEFAULT ARRAY [1377];
+ nodes INT ARRAY DEFAULT ARRAY [1444];
 edge INT;
 node INT;
 BEGIN
@@ -311,17 +360,33 @@ mode = 'freight'
 where oid in (select edge from tmp);
 
 -- Zambian Railways
--- from Victoria Falls Bridge (Zimbabwe Border) - Ndola (DRC border)
+-- from Victoria Falls Bridge (Zimbabwe Border) - Ndola
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
                 1111,
-		1227,
+		1829,
 		false
 		) AS X
 		ORDER BY seq)
 update zambia_osm_edges
 set line = 'Livingstone - Ndola',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Ndola - DRC border
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                10,
+		1227,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Ndola - DRC border',
 gauge = '1067',
 status = 'open',
 mode = 'mixed'
@@ -388,11 +453,230 @@ status = 'open',
 mode = 'mixed'
 where oid in (select edge from tmp);
 
--- station nodes
-update zambia_osm_nodes
-set railway = 'station',
-name = ''
-where oid = ;
+
+-- Chipata - Malawi Border (to Mchingi)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                10300,
+		168,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Chipata - Malawi (to Mchingi)',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Ndola - Chingola
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1829,
+		365,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Ndola - Chingola',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Mufulira branch
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1218,
+		506,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Mufulira branch line',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Chililabombwe branch
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1429,
+		504,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Chililabombwe branch line',
+gauge = '1067',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Ndola - Luanshya (abandoned)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                ,
+		25,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Ndola - Luanshya',
+gauge = '1067',
+status = 'abandoned',
+mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- Nodola - Ndola Lime Company
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1444,
+		1118,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Ndola - Ndola Lime Quarry',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Nkana Copper Refinery
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1375,
+		1417,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Nkana Copper Refinery',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Nchanga Copper Mine
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                365,
+		1740,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Nchanga Copper Mine',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Konkola Copper Mine
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                504,
+		1730,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Konkola Copper Mine',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- Ndola to Luanshya
+-- this is abandoned (needs recosntruction) and has a few missing edges
+-- complete lines for routing purposes
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from zambia_osm_nodes a, zambia_osm_nodes b where a.oid = 2437 and b.oid = 1444
+)
+insert into zambia_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+2437,
+1444,
+999910001
+from tmp as a; 
+
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from zambia_osm_nodes a, zambia_osm_nodes b where a.oid = 2438 and b.oid = 2439
+)
+insert into zambia_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+2438,
+2439,
+999910002
+from tmp as a; 
+
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from zambia_osm_nodes a, zambia_osm_nodes b where a.oid = 2440 and b.oid = 1436
+)
+insert into zambia_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+2440,
+1436,
+999910003
+from tmp as a; 
+
+-- Ndola to Luanshya (abandoned)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
+                1444,
+		25,
+		false
+		) AS X
+		ORDER BY seq)
+update zambia_osm_edges
+set line = 'Ndola - Luanshya',
+gauge = '1067',
+status = 'abandoned',
+mode = 'mixed',
+comment = 'Complete reconstruction needed'
+where oid in (select edge from tmp);
+
+-- Proposed Chipata - TAZARA link (approved and funded)
+
+INSERT INTO zambia_osm_edges ("geom", "oid" ) VALUES ('0102000020E610000019000000476E7F8E1D524040D7540AA6C8572BC03E868231B35040404A6E3202CC6B2BC03543E55AD74340405BE160194A8D2BC04A285CF6AE364040813906CC9FA12BC055B729257124404094D24C0F91B32BC04C8798E4CE0F4040B8DEC16900E72BC0A5FFD43AE90E4040B220498DC0342CC01BA02503B70D4040D878EE3F16492CC04444FB0DF3024040242939A5C1712CC09DA691796AE13F40AE88E8DCF3722CC09FDFB53B17CA3F40D4E08D8F49872CC0B74981F181863F40E89FECFEAD892CC0A7FC6A0677553F401044C209EA7E2CC0477AB59B2D323F4013B60A8E43502CC05DAB5C8FEB053F407B5575C3ECFE2BC0ACF307A563F03E405E4900697DCB2BC0E86948B53DE03E402432FC46C3B42BC0D5D001724CCE3E4075A0BF88AE8F2BC0EAC884A35DB93E403DAFD39267692BC07661589D3CA33E402B3CA57BE9472BC02878E975E4913E40A79A6E20F7F82AC03D706CA7F57C3E400CC890D146D62AC03E9684D3686D3E405C103CE7BEC02AC0537BFB6E40603E405E5C6C3FA5A12AC0C1E84DA0E34C3E403119D8744E692AC0', 777000001);
+
+with tmp as(
+select a.oid, b.oid as source, c.oid as target
+from zambia_osm_edges a
+join zambia_osm_nodes b on st_intersects(b.geom, st_startpoint(a.geom))
+join zambia_osm_nodes c on st_intersects(c.geom, st_endpoint(a.geom))
+where a.oid > 777000000 and a.oid < 888000000
+)
+update zambia_osm_edges a
+set 
+	source = b.source,
+	target = b.target,
+	length = round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ),
+	mode = 'mixed',
+	status = 'proposed',
+	line = 'Chipata-TAZARA',
+	gauge = 1067,
+	comment = 'Approved and funded'
+from tmp b
+WHERE a.oid = b.oid;
 
 
 -- update station gauge on stations
@@ -418,8 +702,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
-                1111,
-		214,
+                1444,
+		25,
 		false
 		) AS X left join
 		zambia_osm_edges as a on a.oid = X.edge left join
