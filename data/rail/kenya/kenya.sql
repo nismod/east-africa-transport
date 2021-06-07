@@ -152,6 +152,32 @@ else 'unnamed'
 end)
 where name is null and railway in ('station', 'stop', 'halt');
 
+-- facilities
+update kenya_osm_nodes
+set facility = 'Inland Container Port Nairobi',
+railway = 'stop'
+where oid = 3126;
+
+update kenya_osm_nodes
+set facility = 'Inland Container Depot Kisumu',
+railway = 'stop'
+where oid = 1835;
+
+update kenya_osm_nodes
+set facility = 'Inland Container Depot Naivasha',
+railway = 'stop'
+where oid = 1259;
+
+update kenya_osm_nodes
+set facility = 'Mombasa Port',
+railway = 'stop'
+where oid = 3191;
+
+update kenya_osm_nodes
+set facility = 'Mombasa Port',
+railway = 'stop'
+where oid = 2489;
+
 -- create new station nodes
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
@@ -283,11 +309,17 @@ END $$;
 -- split 1586 at 2819
 -- routing out/in Imara and old Mombasa line
 -- split 2000 at 2757
+-- allow routing into Kisumu Inland Container Depot
+-- split 1661 at 1834
+-- allow routing into Naivasha Inland Container Depot
+-- split 2283 at 2887
 
 
 DO $$ DECLARE
-edges INT ARRAY DEFAULT ARRAY [2553, 2554, 1525, 141,  236,  1781, 495, 149,  1166, 179,  2374, 2551, 519,  1289, 1587, 1586, 2000 ];
-nodes INT ARRAY DEFAULT ARRAY [3084, 2756, 3139, 1517, 2497, 2488, 3013, 2215, 1826, 1691, 2820, 3109, 2159, 1978, 2296, 2819, 2757 ];
+-- edges INT ARRAY DEFAULT ARRAY [2553, 2554, 1525, 141,  236,  1781, 495, 149,  1166, 179,  2374, 2551, 519,  1289, 1587, 1586, 2000, 1661, 2283 ];
+-- nodes INT ARRAY DEFAULT ARRAY [3084, 2756, 3139, 1517, 2497, 2488, 3013, 2215, 1826, 1691, 2820, 3109, 2159, 1978, 2296, 2819, 2757, 1834, 2887 ];
+edges INT ARRAY DEFAULT ARRAY [2283 ];
+nodes INT ARRAY DEFAULT ARRAY [2887 ];
 edge INT;
 node INT;
 BEGIN
@@ -399,12 +431,12 @@ line = 'Changamwe-Kilindini'
 where oid in (select edge from tmp);
 
 
--- Nanyuki to Malaba
+-- Nanyuki to Malaba (border with Uganda oid 1632 joins to 915) 
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
                 1520,
-		283,
+		1632,
 		false
 		) AS X
 		ORDER BY seq)
@@ -414,7 +446,8 @@ where oid in (select edge from tmp);
 
 UPDATE kenya_osm_edges
 	SET gauge = '1000',
-	status = 'rehabilitation'
+	status = 'rehabilitation',
+	comment = 'Currently out of use, rehabilitation due to be completed September 2021'
 	WHERE line = 'Nakuru-Malaba';
 
 
@@ -624,10 +657,42 @@ SELECT X.* FROM pgr_dijkstra(
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Nairobi Terminus-Inland Container Port SGR',
+set line = 'Nairobi Terminus-Inland Container Port Nairobi SGR',
 gauge = '1435',
 mode = 'freight'
 where oid in (select edge from tmp);		
+
+-- Kibos - Kisumu Inland Container Port
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
+                1834,
+		1835,
+		false
+		) AS X
+		ORDER BY seq)
+update kenya_osm_edges
+set line = 'Kibos - Kisumu Inland Container Port',
+gauge = '1000',
+mode = 'freight',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- Naivasha Inland Container Depot
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
+                2887,
+		1259,
+		false
+		) AS X
+		ORDER BY seq)
+update kenya_osm_edges
+set line = 'Naivasha Inland Container Port',
+gauge = '1435',
+mode = 'freight',
+status = 'open'
+where oid in (select edge from tmp);
 
 -- Embakasi Village - Nairobi
 with tmp as(

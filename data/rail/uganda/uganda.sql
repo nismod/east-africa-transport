@@ -47,9 +47,9 @@ ADD COLUMN facility text; -- dry port, cargo terminus, gauge interchange
 
 -- set additional node for stations
 update uganda_osm_nodes
-set name = '',
+set name = 'Kampala',
 railway = 'station'
-where oid = ;
+where oid = 1152;
 
 -- facilities
 
@@ -77,7 +77,7 @@ where oid IN ()
 UPDATE uganda_osm_edges
  SET status =
  CASE WHEN railway in ('abandoned', 'disused') THEN railway
- WHEN railway in ('rail') THEN 'open'
+ WHEN railway in ('rail', 'narrow_gauge') THEN 'open'
  else 'unknown'
  end;
  
@@ -87,7 +87,7 @@ UPDATE uganda_osm_edges
  set structure = 
  CASE WHEN bridge = 'yes' then 'bridge'
  WHEN bridge = 'viaduct' then 'viaduct'
- WHEN railway in ('level_crossing', 'platform', 'station', 'traverser', 'turntable') THEN railway
+ WHEN railway in ('platform', 'station') THEN railway
  end;
  
  
@@ -220,11 +220,15 @@ END $$;
 
 -- psql code to fix routing issue. Splits edge at node.
 
+-- allow routing through Jinja
+-- split 480 at 924
+-- split 249 at 992
+
 DO $$ DECLARE
--- edges INT ARRAY DEFAULT ARRAY [];
--- nodes INT ARRAY DEFAULT ARRAY [];
- edges INT ARRAY DEFAULT ARRAY [];
- nodes INT ARRAY DEFAULT ARRAY [];
+-- edges INT ARRAY DEFAULT ARRAY [480, 249];
+-- nodes INT ARRAY DEFAULT ARRAY [924, 992];
+ edges INT ARRAY DEFAULT ARRAY [480, 249];
+ nodes INT ARRAY DEFAULT ARRAY [924, 992];
 edge INT;
 node INT;
 BEGIN
@@ -259,24 +263,38 @@ END LOOP;
 END $$;
 
 -- routes
--- TAZARA (uganda)
--- from node 1236 (== 2271 in Tanzania network) to New Kapiri Mposhi (84)
+
+-- Kamapala - Jinja
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
-                ,
-		,
+                1152,
+		51,
 		false
 		) AS X
 		ORDER BY seq)
 update uganda_osm_edges
-set line = '',
-gauge = '',
+set line = 'Kampala - Malaba',
+gauge = '1000',
 status = 'open',
 mode = 'mixed'
 where oid in (select edge from tmp);
 
-
+-- Jinja - Malaba
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                51,
+		915,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Kampala - Malaba',
+gauge = '1000',
+status = 'open',
+mode = 'mixed'
+where oid in (select edge from tmp);
 
 -- update station gauge on stations
 
@@ -290,8 +308,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
-                1444,
-		25,
+                51,
+915,
 		false
 		) AS X left join
 		uganda_osm_edges as a on a.oid = X.edge left join
