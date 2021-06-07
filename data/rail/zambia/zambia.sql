@@ -172,10 +172,10 @@ where oid = 1730;
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
--- nodes INT ARRAY DEFAULT ARRAY [300,  561, 627, 628, 317];
--- edges INT ARRAY DEFAULT ARRAY [554, 1825, 445, 473, 135];
- nodes INT ARRAY DEFAULT ARRAY [317];
- edges INT ARRAY DEFAULT ARRAY [135];
+nodes INT ARRAY DEFAULT ARRAY [300,  561, 627, 628, 317];
+edges INT ARRAY DEFAULT ARRAY [554, 1825, 445, 473, 135];
+-- nodes INT ARRAY DEFAULT ARRAY [317];
+-- edges INT ARRAY DEFAULT ARRAY [135];
 node INT;
 edge INT;
 idx INT;
@@ -269,10 +269,10 @@ END $$;
 -- allow routing Konkola Mine
 -- 1543 at 1725
 DO $$ DECLARE
--- edges INT ARRAY DEFAULT ARRAY [1808,  852, 1391, 1377, 1815,  816,  814, 1543];
--- nodes INT ARRAY DEFAULT ARRAY [1112, 1218, 1117, 1444, 1380, 1382, 1416, 1725];
- edges INT ARRAY DEFAULT ARRAY [1377];
- nodes INT ARRAY DEFAULT ARRAY [1444];
+ edges INT ARRAY DEFAULT ARRAY [1808,  852, 1391, 1377, 1815,  816,  814, 1543];
+ nodes INT ARRAY DEFAULT ARRAY [1112, 1218, 1117, 1444, 1380, 1382, 1416, 1725];
+-- edges INT ARRAY DEFAULT ARRAY [1377];
+-- nodes INT ARRAY DEFAULT ARRAY [1444];
 edge INT;
 node INT;
 BEGIN
@@ -680,16 +680,6 @@ WHERE a.oid = b.oid;
 
 
 -- update station gauge on stations
-
-update zambia_osm_nodes
-set gauge = '1000'
-where st_intersects(geom, (select st_collect(geom) from zambia_osm_edges where gauge = '1000'))
-and railway in ('station', 'halt', 'stop');
-
-update zambia_osm_nodes
-set gauge = '1435'
-where st_intersects(geom, (select st_collect(geom) from zambia_osm_edges where gauge = '1435'))
-and railway in ('station', 'halt', 'stop');
 
 update zambia_osm_nodes
 set gauge = '1067'
