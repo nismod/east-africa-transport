@@ -23,9 +23,10 @@ UPDATE tanzania_osm_edges set length = round(st_length(st_transform(geom, 21036)
 UPDATE tanzania_osm_edges set mode = 'mixed';
 		
 -- copy integer ids component
-UPDATE tanzania_osm_edges set source = reverse(split_part(reverse(from_id), '_', 1))::int4;
-UPDATE tanzania_osm_edges set target = reverse(split_part(reverse(to_id), '_', 1))::int4;
-UPDATE tanzania_osm_edges set oid = reverse(split_part(reverse(id), '_', 1))::int4;
+-- tanzania ids start 2220000
+UPDATE tanzania_osm_edges set source = 2220000 + reverse(split_part(reverse(from_id), '_', 1))::int4;
+UPDATE tanzania_osm_edges set target = 2220000 + reverse(split_part(reverse(to_id), '_', 1))::int4;
+UPDATE tanzania_osm_edges set oid = 2220000 + reverse(split_part(reverse(id), '_', 1))::int4;
 
 -- make primary key
 ALTER TABLE tanzania_osm_edges DROP CONSTRAINT tanzania_osm_edges_pkey;
@@ -33,7 +34,7 @@ ALTER TABLE tanzania_osm_edges ADD PRIMARY KEY (oid);
 
 -- add oid column to nodes
 ALTER TABLE tanzania_osm_nodes ADD COLUMN oid int4;
-UPDATE tanzania_osm_nodes set oid = reverse(split_part(reverse(id), '_', 1))::int4;
+UPDATE tanzania_osm_nodes set oid = 2220000 + reverse(split_part(reverse(id), '_', 1))::int4;
 
 -- make primary key
 ALTER TABLE tanzania_osm_nodes DROP CONSTRAINT tanzania_osm_nodes_pkey;
@@ -42,105 +43,115 @@ ALTER TABLE tanzania_osm_nodes ADD PRIMARY KEY (oid);
 -- add columns to nodes
 alter table tanzania_osm_nodes
 ADD COLUMN gauge text,
-ADD COLUMN facility text; -- dry port, cargo terminus, gauge interchange
+ADD COLUMN facility text; -- dry_port, gauge_interchange etc
 
 -- metre-gauge lines into Dar es Salaam currently stops before central station.
 -- This is presumably temporary due to construction work on SGR viaduct?
 -- see: https://www.thecitizen.co.tz/tanzania/news/trc-shifts-main-station-to-kamata-temporarily--2653910
--- connect lines 3193 and 1738 to node 2786 (at beginning of line)
+-- connect lines 2223193 and 2221738 to node 2222786 (at beginning of line)
 UPDATE tanzania_osm_edges
-	SET geom = ST_AddPoint(geom, (select geom from tanzania_osm_nodes where oid = 2786), 0),
-	source = 2786
-   WHERE oid IN (3193, 1738);
+	SET geom = ST_AddPoint(geom, (select geom from tanzania_osm_nodes where oid = 2222786), 0),
+	source = 2222786
+   WHERE oid IN (2223193, 2221738);
 -- update line length
 UPDATE tanzania_osm_edges
 	SET length = round(st_length(st_transform(geom, 32736 ))::numeric,2)
-	WHERE oid IN (3193, 1738);
+	WHERE oid IN (2223193, 2221738);
 
 -- set additional node for stations
 update tanzania_osm_nodes
 set name = 'Dar es Salaam',
 railway = 'station'
-where oid = 1971;
+where oid = 2221971;
 
 update tanzania_osm_nodes
 set name = 'Morogoro SGR'
-where oid = 1959;
+where oid = 2221959;
 
 update tanzania_osm_nodes
 set name = 'Pugu SGR',
 railway = 'station'
-where oid = 1960;
+where oid = 2221960;
 
 update tanzania_osm_nodes
 set name = 'Dar es Salaam SGR',
 railway = 'station'
-where oid = 1958;
+where oid = 2221958;
 
 --other stations 
 update tanzania_osm_nodes
 set name = 'Dar es Salaam',
 railway = 'station'
-where oid = 2785;
-
-update tanzania_osm_nodes
-set railway = 'station',
-name = 'International Container Terminal',
-gauge = 1000
-where oid = 2188;
-
-update tanzania_osm_nodes
-set railway = 'station',
-name = 'International Container Terminal',
-gauge = 1067
-where oid = 1591;
+where oid = 2222785;
 
 update tanzania_osm_nodes
 set railway = 'station',
 name = 'Kidete',
 gauge = 1067
-where oid = 485;
+where oid = 2220485;
 
 update tanzania_osm_nodes
 set railway = 'station',
 name = 'Mzaganza',
 gauge = 1067
-where oid = 241;
+where oid = 2220241;
 
 -- incorrect name
--- Kamata station node incorrectly on SGR line (29)
 -- Duplicate station with no name is Shinyanga (1945)
 update tanzania_osm_nodes
 set name = NULL,
 railway = NULL
-where oid IN (29, 1945);
+where oid IN (2221945);
+
 
 -- facilities
 
--- dry port
--- Isaka 496
+-- ports
 update tanzania_osm_nodes
-set facility = 'dry port'
-where oid in (496);
+set railway = 'stop',
+name = 'International Container Terminal',
+facility = 'container_port',
+gauge = 1000
+where oid = 2222188;
+
+update tanzania_osm_nodes
+set railway = 'stop',
+name = 'International Container Terminal',
+facility = 'container_port',
+gauge = 1067
+where oid = 2221591;
+
+-- dry port
+-- Isaka station 2220496
+update tanzania_osm_nodes
+set facility = 'dry_port'
+where oid in (2220496);
+
+-- Malawi Cargo Centre
+update tanzania_osm_nodes
+set facility = 'dry_port',
+name = 'Malawi Cargo Centre',
+railway = 'stop'
+where oid = 2223261;
 
 -- gauge interchange
--- Kidatu 3212 and 740 (actually at Msolwa Station) Disused?
+-- Kidatu 2223212 and 2220740 (actually at Msolwa Station) Disused?
 update tanzania_osm_nodes
-set facility = 'gauge freight interchange'
-where oid in (3212, 740);
+set facility = 'gauge_interchange'
+where oid in (2223212, 2220740);
 
 -- cargo terminus
--- Makambako (165), Dar es Salaam (Tazara - 1591 and 1000mm - 2188)
+-- Makambako (2220165)
 update tanzania_osm_nodes
-set facility = 'cargo terminus'
-where oid in (165, 1591, 2188);
+set facility = 'cargo_terminal'
+where oid in (2220165);
 
 -- duplicate stations
--- Kisaki (Tazara) 1949
--- Mbalizi (Tazara) 1944
--- Matambwe (Tazara) 1948
+-- Kisaki (Tazara) 2221949
+-- Mbalizi (Tazara) 2221944
+-- Matambwe (Tazara) 2221948
 delete from tanzania_osm_nodes
-where oid IN (1949, 1944, 1948)
+where oid IN (2221949, 2221944, 2221948)
 
 -- Update status - copy over from railway key if 'abandoned', 'construction', 'dismantled', 'disused', 'preserved'
 
@@ -188,15 +199,15 @@ drop column is_current;
 
 update tanzania_osm_nodes
 set name = 
-(case when oid = 1182 then 'Lugufu'
-when oid = 458 then 'Muheza'
-when oid = 482 then 'Pugu'
-when oid = 42 then 'Soga'
-when oid = 26 then 'Munase'
-when oid = 1298 then 'Mpanga'
-when oid = 750 then 'Kitete'
-when oid = 472 then 'Uchindile'
-when oid = 522 then 'Kiyowela'
+(case when oid = 2221182 then 'Lugufu'
+when oid = 2220458 then 'Muheza'
+when oid = 2220482 then 'Pugu'
+when oid = 2220042 then 'Soga'
+when oid = 2220026 then 'Munase'
+when oid = 2221298 then 'Mpanga'
+when oid = 2220750 then 'Kitete'
+when oid = 2220472 then 'Uchindile'
+when oid = 2220522 then 'Kiyowela'
 else 'unnamed'
 end)
 where name is null and railway in ('station', 'stop', 'halt');
@@ -205,28 +216,28 @@ where name is null and railway in ('station', 'stop', 'halt');
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
 
--- Dar es Salaam SGR station 1958 to 3417
--- Tabora station node 326 to 2583
--- Manyoni station node 478 to 1871
--- Kamata station node is incorrectly on the new SGR node 29 to 3193
--- Puga SGR node 1960 to 3156
--- Ndui station 392 to 1912
--- Mwanza South 333 to 1226
--- Fella 712 to 1285
--- Bukene 721 to 246
--- Makutopora 797 to 3280
--- Morogoro 312 - 830
--- Kitete 750 - 1698
--- Ifakara 148 - 2813
--- Fuga 405 - 1553
+-- Dar es Salaam SGR station 2221958 to 2223417
+-- Tabora station node 2220326 to 2222583
+-- Manyoni station node 2220478 to 2221871
+-- Kamata station node is incorrectly on the new SGR line 2220029 to 2223193
+-- Puga SGR node 2221960 to 2223156
+-- Ndui station 2220392 to 2221912
+-- Mwanza South 2220333 to 2221226
+-- Fella 2220712 to 2221285
+-- Bukene 2220721 to 2220246
+-- Makutopora 2220797 to 2223280
+-- Morogoro 2220312 - 2220830
+-- Kitete 2220750 - 2221698
+-- Ifakara 2220148 - 2222813
+-- Fuga 2220405 - 2221553
 
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
- nodes INT ARRAY DEFAULT ARRAY [1958, 326,  478,  29,   1960,  392,  333,  712, 721,  797, 312, 750,   148,  405];
- edges INT ARRAY DEFAULT ARRAY [3417, 2583, 1871, 3193, 3156, 1912, 1226, 1285, 246, 3280, 830, 1698, 2813, 1553];
--- nodes INT ARRAY DEFAULT ARRAY [1958];
--- edges INT ARRAY DEFAULT ARRAY [3417];
+ nodes INT ARRAY DEFAULT ARRAY [2221958, 2220326, 2220478, 2220029, 2221960, 2220392, 2220333, 2220712, 2220721, 2220797, 2220312, 2220750, 2220148, 2220405];
+ edges INT ARRAY DEFAULT ARRAY [2223417, 2222583, 2221871, 2223193, 2223156, 2221912, 2221226, 2221285, 2220246, 2223280, 2220830, 2221698, 2222813, 2221553];
+-- nodes INT ARRAY DEFAULT ARRAY [];
+-- edges INT ARRAY DEFAULT ARRAY [];
 node INT;
 edge INT;
 idx INT;
@@ -261,7 +272,7 @@ WHERE oid = node;
  
 insert into tanzania_osm_edges 
 with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).geom as geom2 from tanzania_osm_edges a where oid = edge ),
-	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
+	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
@@ -303,35 +314,34 @@ with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).ge
 END LOOP;
 END $$;
 
-
 -- psql code to fix routing issue. Splits edge at node.
 
 -- allow routing into Mpanda station
--- split 2850 at 2601
+-- split 2222850 at 2222601
 
 -- allow routing from Manyoni to Singida
--- split 137 at 2901
+-- split 2220137 at 2222901
 
 -- allow routing out of Kilosa to Msolwa
--- split 3518 at 3287
+-- split 2223518 at 2223287
 
 -- allow routing out of Ruvu to the Link Line to Mruazi
--- split 850 at 2585
+-- split 2220850 at 2222585
 
 -- allow routing from Moshi to Arusha
--- split 2291 at 2709
+-- split 2222291 at 2222709
 
 -- allow routing into Arusha station
--- split 652 at 3612
+-- split 2220652 at 2223612
 
 -- allow routing onto disused Kahe - Taveta (Kenya)
--- split 935 at 2018
+-- split 2220935 at 2222018
 
 DO $$ DECLARE
- edges INT ARRAY DEFAULT ARRAY [2850, 137,  3518, 850,  2291, 652,   935];
- nodes INT ARRAY DEFAULT ARRAY [2601, 2901, 3287, 2585, 2709, 3612, 2018];
--- edges INT ARRAY DEFAULT ARRAY [935];
--- nodes INT ARRAY DEFAULT ARRAY [2018];
+ edges INT ARRAY DEFAULT ARRAY [2222850, 2220137, 2223518, 2220850, 2222291, 2220652, 2220935];
+ nodes INT ARRAY DEFAULT ARRAY [2222601, 2222901, 2223287, 2222585, 2222709, 2223612, 2222018];
+-- edges INT ARRAY DEFAULT ARRAY [];
+-- nodes INT ARRAY DEFAULT ARRAY [];
 edge INT;
 node INT;
 BEGIN
@@ -339,7 +349,7 @@ BEGIN
 		LOOP
 		raise notice'counter: %', edge || ' ' || node;
 	insert into tanzania_osm_edges with tmp as (select a.*, (st_dump(st_split(a.geom, b.geom))).geom as geom2 from tanzania_osm_edges a, tanzania_osm_nodes b where a.oid = edge and b.oid = node),
-	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
+	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
@@ -371,8 +381,8 @@ END $$;
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2785,
-		2315,
+                2222785,
+		2222315,
 		false
 		) AS X
 		ORDER BY seq)
@@ -388,8 +398,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2041,
-		3413,
+                2222041,
+		2223413,
 		false
 		) AS X
 		ORDER BY seq)
@@ -406,8 +416,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                48,
-		462,
+                2220048,
+		2220462,
 		false
 		) AS X
 		ORDER BY seq)
@@ -421,8 +431,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                10326,
-		205,
+                2230326,
+		2220205,
 		false
 		) AS X
 		ORDER BY seq)
@@ -436,8 +446,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                205,
-		1069,
+                2220205,
+		2221069,
 		false
 		) AS X
 		ORDER BY seq)
@@ -451,8 +461,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2901,
-		317,
+                2222901,
+		2220317,
 		false
 		) AS X
 		ORDER BY seq)
@@ -465,20 +475,20 @@ where oid in (select edge from tmp);
 -- need to prevent routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge.
 -- remove edge 
 delete from tanzania_osm_edges
-where oid = 3388;
+where oid = 2223388;
 
 -- make an existing node Kilosa station for metre gauge - ensuring break in gauge
 update tanzania_osm_nodes
 set name = 'Msolwa Station',
 gauge = '1000'
-where oid = 3212;
+where oid = 2223212;
 
 -- Kidatu Line Kilosa-Msolwa (disused)
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                3212,
-		3287,
+                2223212,
+		2223287,
 		false
 		) AS X
 		ORDER BY seq)
@@ -492,8 +502,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2585,
-		1915,
+                2222585,
+		2221915,
 		false
 		) AS X
 		ORDER BY seq)
@@ -507,8 +517,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                1954,
-		116,
+                2221954,
+		2220116,
 		false
 		) AS X
 		ORDER BY seq)
@@ -522,8 +532,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2709,
-		112,
+                2222709,
+		2220112,
 		false
 		) AS X
 		ORDER BY seq)
@@ -537,8 +547,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2225,
-		2226,
+                2222225,
+		2222226,
 		false
 		) AS X
 		ORDER BY seq)
@@ -550,12 +560,12 @@ mode = 'freight'
 where oid in (select edge from tmp);
 
 -- Kahe - Taveta
--- 2018 - 2705 == 1979 (kenya_osm_nodes)
+-- 2222018 - 2222705 (Kenya Border)
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2018,
-		2705,
+                2222018,
+		2222705,
 		false
 		) AS X
 		ORDER BY seq)
@@ -571,8 +581,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                1982,
-		3660,
+                2221982,
+		2223660,
 		false
 		) AS X
 		ORDER BY seq)
@@ -586,8 +596,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2785,
-		2188,
+                2222785,
+		2222188,
 		false
 		) AS X
 		ORDER BY seq)
@@ -601,22 +611,22 @@ where oid in (select edge from tmp);
 -- simplify network - add line to link Yombo to Kurasini (Commuter rail and freight to container terminal)
 with tmp as
 (
-select st_makeline(a.geom, b.geom) as line from tanzania_osm_nodes a, tanzania_osm_nodes b where a.oid = 425 and b.oid = 2124
+select st_makeline(a.geom, b.geom) as line from tanzania_osm_nodes a, tanzania_osm_nodes b where a.oid = 2220425 and b.oid = 2222124
 )
 insert into tanzania_osm_edges select 
 a.line,
 round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
-425,
-2124,
-999910000
+2220425,
+2222124,
+2240000
 from tmp as a;
 
 -- 1067 mm gauge (Tazara) to Kurasini / Container Terminal 
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                425,
-		1591,
+                2220425,
+		2221591,
 		false
 		) AS X
 		ORDER BY seq)
@@ -627,13 +637,41 @@ status = 'open',
 mode = 'mixed'
 where oid in (select edge from tmp);
 
+-- Malawi Cargo Centre (dry port)
+-- Add link to simplify routing
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from tanzania_osm_nodes a, tanzania_osm_nodes b where a.oid = 2223262 and b.oid = 2220831
+)
+insert into tanzania_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+2223262,
+2220831,
+2240001
+from tmp as a;
+
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
+                2223261,
+		2220831,
+		false
+		) AS X
+		ORDER BY seq)
+update tanzania_osm_edges
+set line = 'Malawi Cargo Centre',
+gauge = '1067',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
 
 -- TAZARA Line (to Tazmanian border with Zambia)
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                1971,
-		2271,
+                2221971,
+		2222271,
 		false
 		) AS X
 		ORDER BY seq)
@@ -648,8 +686,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                1958,
-		1959,
+                2231958,
+		2221959,
 		false
 		) AS X
 		ORDER BY seq)
@@ -667,8 +705,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                1959,
-		3857,
+                2221959,
+		2223857,
 		false
 		) AS X
 		ORDER BY seq)
@@ -686,27 +724,27 @@ where oid in (select edge from tmp);
 -- Mtwara - Mbamba Bay etc
 -- proposed line
 -- digitised in QGIS
--- oids start with 888######
+-- oids start with 224----
 -- edges
-INSERT INTO tanzania_osm_edges ("geom", "oid") VALUES ('0102000020E61000001000000010A79810AF1A4440C049B295668E24C0250D5D845A1A44405840ECA8749024C0F84BC4469C1A44406CE86B59AF9324C09EC992CB1F1B44402BF8D93A3C9824C0FB40D49C031B4440C3EE134E4A9A24C012023758CB0E444074C1B02E29B824C06A24C50E4FF743400192FA85959224C02DBEAFD7B1E54340A09C2D684F6824C0EF579AA014D443406AEE71C7667624C08E7DB253DCCB434050E149D5563924C02C88E53596A143406287C7A3DBBC24C02C88E53596A143406287C7A3DBBC24C0350A752A2F7D43406B5A060B9EFE24C0350A752A2F7D43406B5A060B9EFE24C0EF06EB2DEB6D434062F35BE7124525C0127BBD4386644340B2AE3F7A0B7425C0', 888000001),
-('0102000020E610000009000000127BBD4386644340B2AE3F7A0B7425C06100D734634F4340A947955680BA25C0C2BFD9B08D3543401C774BFF13E025C0C2BFD9B08D3543401C774BFF13E025C09693AD043E1F4340625FF02A4ACD25C000F024460F0343402EB1348A61DB25C0359EE0E6F7F44240E7C88F5E2BEE25C0F71CE6DE4CC142402EB1348A61DB25C03E058B0A83AE42405AF84507BF1326C0', 888000002),
-('0102000020E6100000100000003E058B0A83AE42405AF84507BF1326C073B346AB6BA04240D68EA6D3DDF225C0093CEA988C9A4240DEF550F768AC25C0CBD5D461EF8842405A8CB1C3878B25C0C21D7BCB3A69424024DEF5229F9925C07B1AF1CEF659424013A40C98519E25C07B1AF1CEF659424013A40C98519E25C04FEEC422A74342405A8CB1C3878B25C072629738423A424050B9725CC54925C072629738423A424050B9725CC54925C03E99F6C64B264240DE89BCB3312425C008D0555555124240247261DF671125C0461B86BBE4014240BA15EA9D962D25C01152E549EEED4140A9DB0013493225C01152E549EEED4140A9DB0013493225C0E525B99D9ED74140F896E4A5416125C0', 888000003),
-('0102000020E610000008000000E525B99D9ED74140F896E4A5416125C034ABD28E7BC24140C4E82805596F25C03D2D6283149E41408E3A6D64707D25C08DB27B74F1884140DEF550F768AC25C08DB27B74F1884140DEF550F768AC25C0D39A20A027764140BBED1225053E26C058E9DA02FB744140D6FA3A17157B26C0753CC2D9D0664140CE869E83709026C0', 888000004),
-('0102000020E610000005000000E525B99D9ED74140F896E4A5416125C0A7BFA36601C6414001FE8EC9CC1A25C046E5BB19C9BD4140DE1D2870FA9B24C046E5BB19C9BD4140DE1D2870FA9B24C0E50AD4CC90B54140B2D616F39C6324C0', 888000005),
-('0102000020E610000003000000E50AD4CC90B54140B2D616F39C6324C09E074AD04CA641400AF9A4A9204C24C05804C0D3089741403EA7604A093E24C0', 888000006),
-('0102000020E6100000050000005804C0D3089741403EA7604A093E24C0233B1F6212834140487A9FB1CB7F24C072C03853EF6D4140DE1D2870FA9B24C0B00B69B97E5D4140CCE33EE5ACA024C0E5B9245A674F4140DE1D2870FA9B24C0', 888000007),
-('0102000020E6100000020000005804C0D3089741403EA7604A093E24C088E9013EBE7C4140669649CEFBD423C0', 888000008);
+INSERT INTO tanzania_osm_edges ("geom", "oid") VALUES ('0102000020E61000001000000010A79810AF1A4440C049B295668E24C0250D5D845A1A44405840ECA8749024C0F84BC4469C1A44406CE86B59AF9324C09EC992CB1F1B44402BF8D93A3C9824C0FB40D49C031B4440C3EE134E4A9A24C012023758CB0E444074C1B02E29B824C06A24C50E4FF743400192FA85959224C02DBEAFD7B1E54340A09C2D684F6824C0EF579AA014D443406AEE71C7667624C08E7DB253DCCB434050E149D5563924C02C88E53596A143406287C7A3DBBC24C02C88E53596A143406287C7A3DBBC24C0350A752A2F7D43406B5A060B9EFE24C0350A752A2F7D43406B5A060B9EFE24C0EF06EB2DEB6D434062F35BE7124525C0127BBD4386644340B2AE3F7A0B7425C0', 2240002),
+('0102000020E610000009000000127BBD4386644340B2AE3F7A0B7425C06100D734634F4340A947955680BA25C0C2BFD9B08D3543401C774BFF13E025C0C2BFD9B08D3543401C774BFF13E025C09693AD043E1F4340625FF02A4ACD25C000F024460F0343402EB1348A61DB25C0359EE0E6F7F44240E7C88F5E2BEE25C0F71CE6DE4CC142402EB1348A61DB25C03E058B0A83AE42405AF84507BF1326C0', 2240003),
+('0102000020E6100000100000003E058B0A83AE42405AF84507BF1326C073B346AB6BA04240D68EA6D3DDF225C0093CEA988C9A4240DEF550F768AC25C0CBD5D461EF8842405A8CB1C3878B25C0C21D7BCB3A69424024DEF5229F9925C07B1AF1CEF659424013A40C98519E25C07B1AF1CEF659424013A40C98519E25C04FEEC422A74342405A8CB1C3878B25C072629738423A424050B9725CC54925C072629738423A424050B9725CC54925C03E99F6C64B264240DE89BCB3312425C008D0555555124240247261DF671125C0461B86BBE4014240BA15EA9D962D25C01152E549EEED4140A9DB0013493225C01152E549EEED4140A9DB0013493225C0E525B99D9ED74140F896E4A5416125C0', 2240004),
+('0102000020E610000008000000E525B99D9ED74140F896E4A5416125C034ABD28E7BC24140C4E82805596F25C03D2D6283149E41408E3A6D64707D25C08DB27B74F1884140DEF550F768AC25C08DB27B74F1884140DEF550F768AC25C0D39A20A027764140BBED1225053E26C058E9DA02FB744140D6FA3A17157B26C0753CC2D9D0664140CE869E83709026C0', 2240005),
+('0102000020E610000005000000E525B99D9ED74140F896E4A5416125C0A7BFA36601C6414001FE8EC9CC1A25C046E5BB19C9BD4140DE1D2870FA9B24C046E5BB19C9BD4140DE1D2870FA9B24C0E50AD4CC90B54140B2D616F39C6324C0', 2240006),
+('0102000020E610000003000000E50AD4CC90B54140B2D616F39C6324C09E074AD04CA641400AF9A4A9204C24C05804C0D3089741403EA7604A093E24C0', 2240007),
+('0102000020E6100000050000005804C0D3089741403EA7604A093E24C0233B1F6212834140487A9FB1CB7F24C072C03853EF6D4140DE1D2870FA9B24C0B00B69B97E5D4140CCE33EE5ACA024C0E5B9245A674F4140DE1D2870FA9B24C0', 2240008),
+('0102000020E6100000020000005804C0D3089741403EA7604A093E24C088E9013EBE7C4140669649CEFBD423C0', 2240009);
 
 -- nodes
-INSERT INTO tanzania_osm_nodes ("geom" , "oid") VALUES ('0101000020E61000003E058B0A83AE42405AF84507BF1326C0', 888000001),
-('0101000020E6100000E525B99D9ED74140F896E4A5416125C0', 888000002),
-('0101000020E6100000753CC2D9D0664140CE869E83709026C0', 888000003),
-('0101000020E6100000E50AD4CC90B54140B2D616F39C6324C0', 888000004),
-('0101000020E61000005804C0D3089741403EA7604A093E24C0', 888000005),
-('0101000020E6100000E5B9245A674F4140DE1D2870FA9B24C0', 888000006),
-('0101000020E610000010A79810AF1A4440C049B295668E24C0', 888000007),
-('0101000020E610000088E9013EBE7C4140669649CEFBD423C0', 888000008),
-('0101000020E6100000127BBD4386644340B2AE3F7A0B7425C0', 888000009);
+INSERT INTO tanzania_osm_nodes ("geom" , "oid") VALUES ('0101000020E61000003E058B0A83AE42405AF84507BF1326C0', 2240000),
+('0101000020E6100000E525B99D9ED74140F896E4A5416125C0', 2240001),
+('0101000020E6100000753CC2D9D0664140CE869E83709026C0', 2240002),
+('0101000020E6100000E50AD4CC90B54140B2D616F39C6324C0', 2240003),
+('0101000020E61000005804C0D3089741403EA7604A093E24C0', 2240004),
+('0101000020E6100000E5B9245A674F4140DE1D2870FA9B24C0', 2240005),
+('0101000020E610000010A79810AF1A4440C049B295668E24C0', 2240006),
+('0101000020E610000088E9013EBE7C4140669649CEFBD423C0', 2240007),
+('0101000020E6100000127BBD4386644340B2AE3F7A0B7425C0', 2240008);
 
 -- need to populate source, target and length
 -- get nodes coincident with start and end of line
@@ -716,7 +754,7 @@ select a.oid, b.oid as source, c.oid as target
 from tanzania_osm_edges a
 join tanzania_osm_nodes b on st_intersects(b.geom, st_startpoint(a.geom))
 join tanzania_osm_nodes c on st_intersects(c.geom, st_endpoint(a.geom))
-where a.oid > 888000000 and a.oid < 999000000
+where a.oid >= 2240002 and a.oid <= 2240009
 )
 update tanzania_osm_edges a
 set 
@@ -735,22 +773,22 @@ WHERE a.oid = b.oid;
 update tanzania_osm_nodes
 set railway = 'station',
 name = 'Mtwara'
-where oid = 888000007;
+where oid = 2240006;
 
 update tanzania_osm_nodes
 set railway = 'station',
 name = 'Mbamba Bay'
-where oid = 888000003;
+where oid = 2240002;
 
 update tanzania_osm_nodes
 set railway = 'station',
 name = 'Liganga mine'
-where oid = 888000008;
+where oid = 2240007;
 
 update tanzania_osm_nodes
 set railway = 'station',
 name = 'Mchuchuma mine'
-where oid = 888000006;
+where oid = 2240005;
 
 
 -- update station gauge on stations
@@ -776,8 +814,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                472,
-		522,
+                2220472,
+		2220522,
 		false
 		) AS X left join
 		tanzania_osm_edges as a on a.oid = X.edge left join

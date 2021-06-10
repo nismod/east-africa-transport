@@ -23,9 +23,10 @@ UPDATE kenya_osm_edges set length = round(st_length(st_transform(geom, 32736))::
 UPDATE kenya_osm_edges set mode = 'mixed';
 		
 -- copy integer ids component
-UPDATE kenya_osm_edges set source = reverse(split_part(reverse(from_id), '_', 1))::int4;
-UPDATE kenya_osm_edges set target = reverse(split_part(reverse(to_id), '_', 1))::int4;
-UPDATE kenya_osm_edges set oid = reverse(split_part(reverse(id), '_', 1))::int4;
+-- kenya ids start 1110000
+UPDATE kenya_osm_edges set source = 1110000 + reverse(split_part(reverse(from_id), '_', 1))::int4;
+UPDATE kenya_osm_edges set target = 1110000 + reverse(split_part(reverse(to_id), '_', 1))::int4;
+UPDATE kenya_osm_edges set oid = 1110000 + reverse(split_part(reverse(id), '_', 1))::int4;
 
 -- make primary key
 ALTER TABLE kenya_osm_edges DROP CONSTRAINT kenya_osm_edges_pkey;
@@ -33,11 +34,13 @@ ALTER TABLE kenya_osm_edges ADD PRIMARY KEY (oid);
 
 -- add oid column to nodes
 ALTER TABLE kenya_osm_nodes ADD COLUMN oid int4;
-UPDATE kenya_osm_nodes set oid = reverse(split_part(reverse(id), '_', 1))::int4;
+UPDATE kenya_osm_nodes set oid = 1110000 + reverse(split_part(reverse(id), '_', 1))::int4;
 
 -- make primary key
 ALTER TABLE kenya_osm_nodes DROP CONSTRAINT kenya_osm_nodes_pkey;
 ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
+
+
 
 -- delete duplicate station nodes(on same gauge)
 -- may just select those coincident with defined routes for export?
@@ -54,7 +57,7 @@ ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
 
 alter table kenya_osm_nodes
 add COLUMN gauge text,
-add COLUMN facility text; -- dry port, gauge interchange
+add COLUMN facility text; -- dry_port, gauge_interchange etc
 
 -- update nodes values
 
@@ -62,28 +65,28 @@ add COLUMN facility text; -- dry port, gauge interchange
 update kenya_osm_nodes
 set name = 'Nairobi Central Station',
 railway = 'station'
-where oid = 1699;
+where oid = 1111699;
 
 -- incorrect name
 -- Jomo Kenyatta International Airport is Embakasi Village (bus available to JKIA from here)
 -- different from the proposed airport rail link via Syokimau
 update kenya_osm_nodes
 set name = 'Embakasi Village'
-where oid = 94;
+where oid = 1110094;
 
 -- amend Mombasa station node
 UPDATE kenya_osm_nodes
 SET name = 'Mombasa Terminus',
 railway = 'station'
-where oid = 956;
+where oid = 1110956;
 
 UPDATE kenya_osm_nodes
 SET name = 'Old Mombasa Station',
 railway = 'station'
-where oid = 1512;
+where oid = 1111512;
 
 -- remove bad station node in middle of nowhere
-delete from kenya_osm_nodes where oid = 730;
+delete from kenya_osm_nodes where oid = 1110730;
 
 -- Update status - copy over from railway key if not 'rail' or 'narrow_gauge' or 'level_crossing' or 'platform' or 'station' or 'turntable'
 
@@ -132,72 +135,77 @@ drop column osm_id,
 drop column is_current;
 
 -- update where name null and station/halt/stop
--- oid 1339 -> Taveta
--- oid 1341 -> Nanyuki
--- oid 205 -> Kiganjo
--- oid 286 -> Equator
--- oid 340 -> Moi's Bridge
--- oid 476 -> Webuye
+-- oid 1111339 -> Taveta
+-- oid 1111341 -> Nanyuki
+-- oid 1110205 -> Kiganjo
+-- oid 1110286 -> Equator
+-- oid 1110340 -> Moi's Bridge
+-- oid 1110476 -> Webuye
 -- otherwise unnamed
 
 update kenya_osm_nodes
 set name = 
-(case when oid = 1339 then 'Taveta'
-when oid = 1341 then 'Nanyuki'
-when oid = 205 then 'Kiganjo'
-when oid = 286 then 'Equator'
-when oid = 340 then 'Moi''s Bridge'
-when oid = 476 then 'Webuye'
+(case when oid = 1111339 then 'Taveta'
+when oid = 1111341 then 'Nanyuki'
+when oid = 1110205 then 'Kiganjo'
+when oid = 1110286 then 'Equator'
+when oid = 1110340 then 'Moi''s Bridge'
+when oid = 1110476 then 'Webuye'
 else 'unnamed'
 end)
 where name is null and railway in ('station', 'stop', 'halt');
 
 -- facilities
 update kenya_osm_nodes
-set facility = 'Inland Container Port Nairobi',
+set name = 'Nairobi Inland Container Port',
+facility = 'dry_port',
 railway = 'stop'
-where oid = 3126;
+where oid = 1113126;
 
 update kenya_osm_nodes
-set facility = 'Inland Container Depot Kisumu',
+set name = 'Kisumu Inland Container Depot',
+facility = 'dry_port',
 railway = 'stop'
-where oid = 1835;
+where oid = 1111835;
 
 update kenya_osm_nodes
-set facility = 'Inland Container Depot Naivasha',
+set name = 'Naivasha Inland Container Depot',
+facility = 'dry_port',
 railway = 'stop'
-where oid = 1259;
+where oid = 1111259;
 
 update kenya_osm_nodes
-set facility = 'Mombasa Port',
+set name = 'Mombasa Port',
+facility = 'container_port',
 railway = 'stop'
-where oid = 3191;
+where oid = 1113191;
 
 update kenya_osm_nodes
-set facility = 'Mombasa Port',
+set name = 'Mombasa Port',
+facility = 'container_port',
 railway = 'stop'
-where oid = 2489;
+where oid = 1112489;
 
 -- create new station nodes
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
 
--- Kajiado Railway Station 437 -> 1097
--- Kima 1304 -> 2071
--- Kibwezi Station 1350 -> 1543
--- Tsavo 700 -> 2044
--- Voi Station 1349 -> 1477
--- Miasenyi Station 1348 -> 1452
--- Mgalani 699 -> 2028
--- Malaba 164 -> 291
--- Eldoret 217 -> 2419
--- Kipkarren 336 -> 939
+-- Kajiado Railway Station 1110437 -> 1111097
+-- Kima 1111304 -> 1112071
+-- Kibwezi Station 1111350 -> 1111543
+-- Tsavo 1110700 -> 1112044
+-- Voi Station 1111349 -> 1111477
+-- Miasenyi Station 1111348 -> 1111452
+-- Mgalani 1110699 -> 1112028
+-- Malaba 1110164 -> 1110291
+-- Eldoret 1110217 -> 1112419
+-- Kipkarren 1110336 -> 1110939
 
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
-nodes INT ARRAY DEFAULT ARRAY [437, 1304, 1350, 700,  1349, 1348, 699,  164, 217,  336 ];
-edges INT ARRAY DEFAULT ARRAY [1097, 2071, 1543, 2044, 1477, 1452, 2028, 291, 2419, 939 ];
+nodes INT ARRAY DEFAULT ARRAY [1110437, 1111304, 1111350, 1110700, 1111349, 1111348, 1110699, 1110164, 1110217, 1110336 ];
+edges INT ARRAY DEFAULT ARRAY [1111097, 1112071, 1111543, 1112044, 1111477, 1111452, 1112028, 1110291, 1112419, 1110939 ];
 node INT;
 edge INT;
 idx INT;
@@ -232,20 +240,20 @@ WHERE oid = node;
  
 insert into kenya_osm_edges 
 with tmp as ( select a.*, ( st_dump ( st_split ( newline, closest_point ) ) ).geom as geom2 from kenya_osm_edges a where oid = edge ),
-	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
+	tmp2 as ( select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 32736 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
 	c.oid as target,
 	a.oid,
-	line,
-	gauge,
-	status,
-	mode,
-	structure,
-	speed_freight,
-	speed_passenger,
-	comment
+	a.line,
+	a.gauge,
+	a.status,
+	a.mode,
+	a.structure,
+	a.speed_freight,
+	a.speed_passenger,
+	a.comment
 	from
 		tmp2 a JOIN kenya_osm_nodes b ON st_dwithin( b.geom, a.st_startpoint, .000000001 )
 		-- need st_dwithin rather than st_intersects 
@@ -278,48 +286,48 @@ END $$;
 -- psql code to fix routing issue. Splits edge at node.
 -- narrow-gauge
 -- allow routing between Nairobi terminal and Nairobi in metre gauge line
--- split 2553 at 3084
--- split 2554 at 2756
+-- split 1112553 at 1113084
+-- split 1112554 at 1112756
 -- allow routing from Nairobi Terminus to Naivasha
--- split 1525 at 3139
+-- split 1111525 at 1113139
 -- allow routing to old Mombasa Station via Tudor Creek
--- split 141 at 1517
+-- split 1110141 at 1111517
 -- allow routing of Changamwe-Kilindini freight
--- split 236 at 2497
--- split 1781 at 2488
+-- split 1110236 at 1112497
+-- split 1111781 at 1112488
 -- allow routing between Eldoret and Malaba
--- split 495 at 3013
+-- split 1110495 at 1113013
 -- allow routing between Kisumu and Butere
--- split 149 at 2215
+-- split 1110149 at 1112215
 -- allow routing between Gilgil and Nyahururu
--- split 1166 at 1826
+-- split 1111166 at 1111826
 -- allow routing between Rongai and Solai
--- split  179 at 1691
+-- split  1110179 at 1111691
 -- allow routing between Eldoret and Kitale
--- split 2374 at 2820
+-- split 1112374 at 1112820
 -- allow routing between Makadara and Nanyuki
--- split 2551 at 3109
+-- split 1112551 at 1113109
 -- allow routing from Nakuru-Kisumu to Chemelil town
--- split 519 at 2159
+-- split 1110519 at 1112159
 -- allow routing from Voi to Taveta
--- split 1289 at 1978
+-- split 1111289 at 1111978
 -- SGR
 -- allow routing out of Mombasa Terminus
--- split 1587 at 2296
--- split 1586 at 2819
+-- split 1111587 at 1112296
+-- split 1111586 at 1112819
 -- routing out/in Imara and old Mombasa line
--- split 2000 at 2757
+-- split 1112000 at 1112757
 -- allow routing into Kisumu Inland Container Depot
--- split 1661 at 1834
+-- split 1111661 at 1111834
 -- allow routing into Naivasha Inland Container Depot
--- split 2283 at 2887
+-- split 1112283 at 1112887
 
 
 DO $$ DECLARE
--- edges INT ARRAY DEFAULT ARRAY [2553, 2554, 1525, 141,  236,  1781, 495, 149,  1166, 179,  2374, 2551, 519,  1289, 1587, 1586, 2000, 1661, 2283 ];
--- nodes INT ARRAY DEFAULT ARRAY [3084, 2756, 3139, 1517, 2497, 2488, 3013, 2215, 1826, 1691, 2820, 3109, 2159, 1978, 2296, 2819, 2757, 1834, 2887 ];
-edges INT ARRAY DEFAULT ARRAY [2283 ];
-nodes INT ARRAY DEFAULT ARRAY [2887 ];
+ edges INT ARRAY DEFAULT ARRAY [1112553, 1112554, 1111525, 1110141, 1110236, 1111781, 1110495, 1110149, 1111166, 1110179, 1112374, 1112551, 1110519, 1111289, 1111587, 1111586, 1112000, 1111661, 1112283 ];
+ nodes INT ARRAY DEFAULT ARRAY [1113084, 1112756, 1113139, 1111517, 1112497, 1112488, 1113013, 1112215, 1111826, 1111691, 1112820, 1113109, 1112159, 1111978, 1112296, 1112819, 1112757, 1111834, 1112887 ];
+-- edges INT ARRAY DEFAULT ARRAY [1112283 ];
+-- nodes INT ARRAY DEFAULT ARRAY [1112887 ];
 edge INT;
 node INT;
 BEGIN
@@ -327,7 +335,7 @@ BEGIN
 		LOOP
 		raise notice'counter: %', edge || ' ' || node;
 	insert into kenya_osm_edges with tmp as (select a.*, (st_dump(st_split(a.geom, b.geom))).geom as geom2 from kenya_osm_edges a, kenya_osm_nodes b where a.oid = edge and b.oid = node),
-	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) * 10000 ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
+	tmp2 as (select geom2 as geom, length, ( oid :: text || row_number ( ) over ( ) ) :: int as oid, line, gauge, status, mode, structure, speed_freight, speed_passenger, comment, st_startpoint ( geom2 ), st_endpoint ( geom2 ) from tmp ) select 
 	a.geom,
 	round( st_length ( st_transform ( a.geom, 32736 ) ) :: numeric, 2 ) as length,
 	b.oid as source,
@@ -353,23 +361,23 @@ BEGIN
 END LOOP;
 END $$;
 
--- connect the NICD Longonot line to the metre gauge at - add node 290  to beginning of line 2532 (positon zero) and change source to 290
+-- connect the NICD Longonot line to the metre gauge at - add node 1110290  to beginning of line 1112532 (positon zero) and change source to 1110290
 UPDATE kenya_osm_edges
-	SET geom = ST_AddPoint(geom, (select geom from kenya_osm_nodes where oid = 290), 0),
-	source = 290,
+	SET geom = ST_AddPoint(geom, (select geom from kenya_osm_nodes where oid = 1110290), 0),
+	source = 1110290,
 	gauge = '1000',
 	line = 'NICD - Longonot Railway Link'
-   WHERE oid = 2532;
+   WHERE oid = 1112532;
 -- update
 UPDATE kenya_osm_edges
 	SET length = round(st_length(st_transform(geom, 32736))::numeric,2)
-	WHERE oid = 2532;
+	WHERE oid = 1112532;
 
--- gap in edge on Magadi line. Extend line 1106 to node 2801
+-- gap in edge on Magadi line. Extend line 1111106 to node 1112801
 UPDATE kenya_osm_edges
-	SET geom = ST_AddPoint(geom, (select geom from kenya_osm_nodes where oid = 2801), st_npoints(geom)),
-	target = 2801
-   WHERE oid = 1106;
+	SET geom = ST_AddPoint(geom, (select geom from kenya_osm_nodes where oid = 1112801), st_npoints(geom)),
+	target = 1112801
+   WHERE oid = 1111106;
 		
 -- Update line information
 -- metre gauge lines	
@@ -379,8 +387,8 @@ UPDATE kenya_osm_edges
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                348,
-		246,
+                1110348,
+		1110246,
 		false
 		) AS X
 		ORDER BY seq)
@@ -393,8 +401,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1512,
-		1699,
+                1111512,
+		1111699,
 		false
 		) AS X
 		ORDER BY seq)
@@ -406,8 +414,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1512,
-		93,
+                1111512,
+		1110093,
 		false
 		) AS X
 		ORDER BY seq)
@@ -419,8 +427,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1517,
-		2489,
+                1111517,
+		1112489,
 		false
 		) AS X
 		ORDER BY seq)
@@ -431,32 +439,29 @@ line = 'Changamwe-Kilindini'
 where oid in (select edge from tmp);
 
 
--- Nanyuki to Malaba (border with Uganda oid 1632 joins to 915) 
+-- Nanyuki to Malaba (border with Uganda) 
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1520,
-		1632,
+                1111520,
+		1111632,
 		false
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Nakuru-Malaba'
+set line = 'Nakuru-Malaba',
+gauge = '1000',
+status = 'rehabilitation',
+comment = 'Currently out of use, rehabilitation due to be completed September 2021'
 where oid in (select edge from tmp);
-
-UPDATE kenya_osm_edges
-	SET gauge = '1000',
-	status = 'rehabilitation',
-	comment = 'Currently out of use, rehabilitation due to be completed September 2021'
-	WHERE line = 'Nakuru-Malaba';
 
 
 -- Nanyuki to Kisumu
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1520,
-		663,
+                1111520,
+		1110663,
 		false
 		) AS X
 		ORDER BY seq)
@@ -468,8 +473,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                2215,
-		1792,
+                1112215,
+		1111792,
 		false
 		) AS X
 		ORDER BY seq)
@@ -481,77 +486,68 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1691,
-		1690,
+                1111691,
+		1111690,
 		false
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Rongai-Solai'
+set line = 'Rongai-Solai',
+gauge = '1000'
 where oid in (select edge from tmp);
-
-UPDATE kenya_osm_edges
-	SET gauge = '1000'
-	WHERE line = 'Rongai-Solai';
 
 
 -- Gilgil to Nyahururu
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1826,
-		1829,
+                1111826,
+		1111829,
 		false
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Gilgil-Nyahururu'
+set line = 'Gilgil-Nyahururu',
+gauge = '1000'
 where oid in (select edge from tmp);
 
-UPDATE kenya_osm_edges
-	SET gauge = '1000'
-	WHERE line = 'Gilgil-Nyahururu';
-		
+
 -- Eldoret to Kitale
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                2820,
-		2095,
+                1112820,
+		1112095,
 		false
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Eldoret-Kitale'
+set line = 'Eldoret-Kitale',
+gauge = '1000'
 where oid in (select edge from tmp);
 
-UPDATE kenya_osm_edges
-	SET gauge = '1000'
-	WHERE line = 'Eldoret-Kitale';
 	
 -- branch to Chemelil town
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                2159,
-		2160,
+                1112159,
+		1112160,
 		false
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Chemelil branch'
+set line = 'Chemelil branch',
+gauge = '1000'
 where oid in (select edge from tmp);		
 
-UPDATE kenya_osm_edges
-	SET gauge = '1000'
-	WHERE line = 'Chemelil branch';
 	
 -- from Nairobi to Nakuru
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1699,
-		1520,
+                1111699,
+		1111520,
 		false
 		) AS X
 		ORDER BY seq)
@@ -563,8 +559,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1244,
-		2868,
+                1111244,
+		1112868,
 		false
 		) AS X
 		ORDER BY seq)
@@ -577,8 +573,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1978,
-		1979,
+                1111978,
+		1111979,
 		false
 		) AS X
 		ORDER BY seq)
@@ -592,8 +588,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                956,
-		1228,
+                1110956,
+		1111228,
 		false
 		) AS X
 		ORDER BY seq)
@@ -606,8 +602,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                956,
-		3191,
+                1110956,
+		1113191,
 		false
 		) AS X
 		ORDER BY seq)
@@ -623,8 +619,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1228,
-		1229,
+                1111228,
+		1111229,
 		false
 		) AS X
 		ORDER BY seq)
@@ -637,8 +633,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1229,
-		714,
+                1111229,
+		1110714,
 		false
 		) AS X
 		ORDER BY seq)
@@ -651,8 +647,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                2845,
-		3126,
+                1112845,
+		1113126,
 		false
 		) AS X
 		ORDER BY seq)
@@ -666,8 +662,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1834,
-		1835,
+                1111834,
+		1111835,
 		false
 		) AS X
 		ORDER BY seq)
@@ -682,8 +678,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                2887,
-		1259,
+                1112887,
+		1111259,
 		false
 		) AS X
 		ORDER BY seq)
@@ -698,8 +694,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1480,
-		2849,
+                1111480,
+		1112849,
 		false
 		) AS X
 		ORDER BY seq)
@@ -714,8 +710,8 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1330,
-		2757,
+                1111330,
+		1112757,
 		false
 		) AS X
 		ORDER BY seq)
@@ -741,8 +737,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                178,
-		1330,
+                1110178,
+		1111330,
 		false
 		) AS X inner join
 		kenya_osm_edges as a on a.oid = X.edge left join
