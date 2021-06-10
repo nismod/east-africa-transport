@@ -721,6 +721,15 @@ gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
+-- create spatial indexes
+CREATE INDEX kenya_osm_edges_geom_idx
+  ON kenya_osm_edges
+  USING GIST (geom);
+
+CREATE INDEX kenya_osm_nodes_geom_idx
+  ON kenya_osm_nodes
+  USING GIST (geom);
+
 -- update station gauge
 
 update kenya_osm_nodes

@@ -643,6 +643,16 @@ from tmp b
 WHERE a.oid = b.oid;
 
 
+-- create spatial indexes
+CREATE INDEX zambia_osm_edges_geom_idx
+  ON zambia_osm_edges
+  USING GIST (geom);
+
+CREATE INDEX zambia_osm_nodes_geom_idx
+  ON zambia_osm_nodes
+  USING GIST (geom);
+
+
 -- update station gauge on stations
 
 update zambia_osm_nodes

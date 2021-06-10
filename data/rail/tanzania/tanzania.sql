@@ -596,7 +596,7 @@ where oid in (select edge from tmp);
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2222785,
+                2223596,
 		2222188,
 		false
 		) AS X
@@ -790,6 +790,15 @@ set railway = 'station',
 name = 'Mchuchuma mine'
 where oid = 2240005;
 
+
+-- create spatial indexes
+CREATE INDEX tanzania_osm_edges_geom_idx
+  ON tanzania_osm_edges
+  USING GIST (geom);
+
+CREATE INDEX tanzania_osm_nodes_geom_idx
+  ON tanzania_osm_nodes
+  USING GIST (geom);
 
 -- update station gauge on stations
 
