@@ -42,7 +42,7 @@ ALTER TABLE uganda_osm_nodes ADD PRIMARY KEY (oid);
 -- add columns to nodes
 alter table uganda_osm_nodes
 ADD COLUMN gauge text,
-ADD COLUMN facility text; -- dry port, cargo terminus, gauge interchange
+ADD COLUMN facility text; -- dry_port, port, gauge_interchange, manufacturer
 
 
 -- set additional node for stations
@@ -51,26 +51,38 @@ set name = 'Kampala',
 railway = 'station'
 where oid = 1152;
 
+update uganda_osm_nodes
+set name = 'Namanve',
+railway = 'station'
+where oid = 864;
+
 -- facilities
 
--- dry port
+-- manufacturer
 update uganda_osm_nodes
-set facility = 'dry port'
-where oid in ();
+set facility = 'manufacturer',
+name = 'Tororo Cement',
+railway = 'stop'
+where oid = 918;
 
--- gauge interchange
+-- port
 update uganda_osm_nodes
-set facility = 'gauge freight interchange'
-where oid in ();
+set facility = 'port',
+name = 'Port Bell',
+railway = 'stop'
+where oid = 870;
 
--- cargo terminus
 update uganda_osm_nodes
-set facility = 'cargo terminus'
-where oid in ();
+set facility = 'port',
+name = 'Jinja Pier',
+railway = 'stop'
+where oid = 1014;
 
--- duplicate stations
-delete from uganda_osm_nodes
-where oid IN ()
+-- dry port (Gulu Station)
+update uganda_osm_nodes
+set facility = 'dry_port'
+where oid in (609);
+
 
 -- Update status - copy over from railway key if 'abandoned', 'disused'
 
@@ -117,30 +129,27 @@ drop column is_current;
 -- otherwise unnamed
 
 update uganda_osm_nodes
-set name = 
-(case when oid =  then ''
-when oid =  then ''
+set name =
+(case when oid = 264 then 'Namaganda'
+when oid = 533 then 'Lakwatomer'
+when oid = 575 then 'Awat Lela'
 else 'unnamed'
 end)
 where name is null and railway in ('station', 'stop', 'halt');
 
-update uganda_osm_nodes
-set name = '',
-railway = 'stop',
-facility = ''
-where oid = ;
 
 -- create new station nodes
 -- this is required as there can be several edges running through stations but the station node
 -- is located on an edge that isn't used for the route.
+-- Jinja 51 to 249
 
 DO $$ DECLARE
 -- create new station nodes
 -- note: must not be a node coincident with the closest point (reassign that node as a station instead)
--- nodes INT ARRAY DEFAULT ARRAY [];
--- edges INT ARRAY DEFAULT ARRAY [];
- nodes INT ARRAY DEFAULT ARRAY [];
- edges INT ARRAY DEFAULT ARRAY [];
+-- nodes INT ARRAY DEFAULT ARRAY [51];
+-- edges INT ARRAY DEFAULT ARRAY [249];
+ nodes INT ARRAY DEFAULT ARRAY [51];
+ edges INT ARRAY DEFAULT ARRAY [249];
 node INT;
 edge INT;
 idx INT;
@@ -222,13 +231,23 @@ END $$;
 
 -- allow routing through Jinja
 -- split 480 at 924
--- split 249 at 992
+
+-- allow routing out of Tororo to Gulu
+-- split 184 at 1220
+-- split 1121 at 1221
+
+-- allow routing north of Lira
+-- split 265 at 935
+
+-- Busoga loop (section to Busembatia)
+-- split 417 at 968
+
 
 DO $$ DECLARE
--- edges INT ARRAY DEFAULT ARRAY [480, 249];
--- nodes INT ARRAY DEFAULT ARRAY [924, 992];
- edges INT ARRAY DEFAULT ARRAY [480, 249];
- nodes INT ARRAY DEFAULT ARRAY [924, 992];
+-- edges INT ARRAY DEFAULT ARRAY [480,  184, 1121, 265, 417];
+-- nodes INT ARRAY DEFAULT ARRAY [924, 1220, 1221, 935, 968];
+ edges INT ARRAY DEFAULT ARRAY [417];
+ nodes INT ARRAY DEFAULT ARRAY [968];
 edge INT;
 node INT;
 BEGIN
@@ -269,7 +288,7 @@ with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
                 1152,
-		51,
+		10051,
 		false
 		) AS X
 		ORDER BY seq)
@@ -277,14 +296,14 @@ update uganda_osm_edges
 set line = 'Kampala - Malaba',
 gauge = '1000',
 status = 'open',
-mode = 'mixed'
+mode = 'freight'
 where oid in (select edge from tmp);
 
 -- Jinja - Malaba
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
-                51,
+                10051,
 		915,
 		false
 		) AS X
@@ -293,23 +312,258 @@ update uganda_osm_edges
 set line = 'Kampala - Malaba',
 gauge = '1000',
 status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- commuter train Namanve - Kampala
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                1152,
+		864,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Kampala - Malaba',
+gauge = '1000',
+status = 'open',
 mode = 'mixed'
+where oid in (select edge from tmp);
+
+-- insert line for simplified routing from Kampala to Port Bell
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from uganda_osm_nodes a, uganda_osm_nodes b where a.oid = 1152 and b.oid = 1106
+)
+insert into uganda_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+1152,
+1106,
+999910000
+from tmp as a;
+
+-- Kampala to Port Bell
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                1152,
+		870,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Kampala - Port Bell',
+gauge = '1000',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- insert line for simplified routing from Jinja to Jinja Pier
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from uganda_osm_nodes a, uganda_osm_nodes b where a.oid = 1013 and b.oid = 10051)
+insert into uganda_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+1013,
+10051,
+999910001
+from tmp as a;
+
+-- Jinja Pier
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                10051,
+		1014,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Jinja - Jinja Pier',
+gauge = '1000',
+status = 'open',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- insert line gap on Tororo - Gulu
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from uganda_osm_nodes a, uganda_osm_nodes b where a.oid = 944 and b.oid = 946)
+insert into uganda_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+944,
+946,
+999910002
+from tmp as a;
+
+-- Tororo - Gulu
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                69,
+		609,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Tororo - Gulu',
+gauge = '1000',
+status = 'rehabilitation',
+mode = 'freight',
+comment = 'EU part funded rehabilitation project, completion expected 2023'
+where oid in (select edge from tmp);
+
+-- Gulu to Pakwach
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                609,
+		941,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Gulu - Pakwach',
+gauge = '1000',
+status = 'disused',
+mode = 'freight'
+where oid in (select edge from tmp);
+
+-- abandoned Kampala to Kasese line
+-- join two nodes where no connecting line (for routing)
+-- insert line gap on Tororo - Gulu
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from uganda_osm_nodes a, uganda_osm_nodes b where a.oid = 894 and b.oid = 896)
+insert into uganda_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+894,
+896,
+999910003
+from tmp as a;
+
+-- Nalukolongo - Kasese
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                523,
+		341,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Kampala - Kasese',
+gauge = '1000',
+status = 'abandoned'
+where oid in (select edge from tmp);
+
+-- Kampala - Nalukolongo section still in use (freight)
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                4,
+		523,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Kampala - Kasese',
+gauge = '1000',
+status = 'open'
+where oid in (select edge from tmp);
+
+-- insert line to simplify routing onto Busoga Railway
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from uganda_osm_nodes a, uganda_osm_nodes b where a.oid = 193 and b.oid = 10051)
+insert into uganda_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+193,
+10051,
+999910004
+from tmp as a;
+
+-- Busoga Railway
+-- remove edge on main Jinja to Tororo line to ensure correct route
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM (select * from uganda_osm_edges where oid != 248) as a',
+                10051,
+		950,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Busoga Loop',
+gauge = '1000',
+status = 'disused',
+comment = 'Vandalised (substantial removal of tracks) and is out of use'
+where oid in (select edge from tmp);
+
+-- Busoga Loop into Busembatia
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                968,
+		969,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Busoga Loop',
+gauge = '1000',
+status = 'disused',
+comment = 'Vandalised (substantial removal of tracks) and is out of use'
+where oid in (select edge from tmp);
+
+-- Tororo Cement line
+-- simplify routing - add line to join 917 to 69
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from uganda_osm_nodes a, uganda_osm_nodes b where a.oid = 917 and b.oid = 69)
+insert into uganda_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+917,
+69,
+999910005
+from tmp as a;
+
+with tmp as(
+SELECT X.* FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
+                69,
+		918,
+		false
+		) AS X
+		ORDER BY seq)
+update uganda_osm_edges
+set line = 'Tororo Cement',
+gauge = '1000',
+status = 'open',
+mode = 'freight'
 where oid in (select edge from tmp);
 
 -- update station gauge on stations
 
 update uganda_osm_nodes
-set gauge = ''
-where st_intersects(geom, (select st_collect(geom) from uganda_osm_edges where gauge = '1067'))
+set gauge = '1000'
+where st_intersects(geom, (select st_collect(geom) from uganda_osm_edges where gauge = '1000'))
 and railway in ('station', 'halt', 'stop');
 
 
 		
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
-                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
-                51,
-915,
+                'SELECT oid as id, source, target, length AS cost FROM (select * from uganda_osm_edges where oid != 248) as a',
+                10051,
+950,
 		false
 		) AS X left join
 		uganda_osm_edges as a on a.oid = X.edge left join

@@ -42,7 +42,7 @@ ALTER TABLE zambia_osm_nodes ADD PRIMARY KEY (oid);
 -- add columns to nodes
 alter table zambia_osm_nodes
 ADD COLUMN gauge text,
-ADD COLUMN facility text; -- dry port, cargo terminus, gauge interchange
+ADD COLUMN facility text; -- dry_port, gauge_interchange, quarry, mine
 
 
 -- set additional node for stations
@@ -50,27 +50,6 @@ update zambia_osm_nodes
 set name = 'Kataba',
 railway = 'station'
 where oid = 796;
-
--- facilities
-
--- dry port
-update zambia_osm_nodes
-set facility = 'dry port'
-where oid in ();
-
--- gauge interchange
-update zambia_osm_nodes
-set facility = 'gauge freight interchange'
-where oid in ();
-
--- cargo terminus
-update zambia_osm_nodes
-set facility = 'cargo terminus'
-where oid in ();
-
--- duplicate stations
-delete from zambia_osm_nodes
-where oid IN ()
 
 -- Update status - copy over from railway key if 'abandoned', 'disused'
 
@@ -143,7 +122,7 @@ where oid = 1118;
 update zambia_osm_nodes
 set name = 'KCM Nkana Refinery',
 railway = 'stop',
-facility = 'Copper Refinery'
+facility = 'refinery'
 where oid = 1417;
 
 update zambia_osm_nodes
@@ -688,7 +667,6 @@ and railway in ('station', 'halt', 'stop');
 
 
 
-		
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
