@@ -540,7 +540,8 @@ SELECT X.* FROM pgr_dijkstra(
 update tanzania_osm_edges
 set line = 'Tanga Line (Moshi-Arusha)',
 gauge = '1000',
-status = 'open'
+status = 'open',
+comment = 'freight is currently cement from Tanga Cement; see: https://www.railwaygazette.com/africa/cement-trains-start-rolling-on-tanga-moshi-line/54254.article'
 where oid in (select edge from tmp);
 
 -- Tanga Line branch frieght - Tanga Cement PLC
@@ -823,8 +824,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM tanzania_osm_edges',
-                2220472,
-		2220522,
+                2220048,
+		2220462,
 		false
 		) AS X left join
 		tanzania_osm_edges as a on a.oid = X.edge left join

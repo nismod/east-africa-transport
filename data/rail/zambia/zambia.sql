@@ -665,8 +665,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.railway, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM zambia_osm_edges',
-                3331444,
-		3330025,
+                3330130,
+		3330033,
 		false
 		) AS X left join
 		zambia_osm_edges as a on a.oid = X.edge left join

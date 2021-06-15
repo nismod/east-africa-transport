@@ -43,17 +43,8 @@ ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
 
 
 -- delete duplicate station nodes(on same gauge)
--- may just select those coincident with defined routes for export?
-
--- Ngong - delete oid 1343
--- Syokimau - delete oid 92
--- Imara Daima - delete oid 1
--- Maai Mahiu - delete 1347
--- Suswa - delete 1345
--- Emali - delete 1337
--- Voi - delete 1305
-
--- delete from kenya_osm_nodes where oid in (1343, 92, 1, 1347, 1345, 1337, 1305)
+-- Nanyuki
+delete from kenya_osm_nodes where oid in (1110246);
 
 alter table kenya_osm_nodes
 add COLUMN gauge text,
@@ -66,6 +57,11 @@ update kenya_osm_nodes
 set name = 'Nairobi Central Station',
 railway = 'station'
 where oid = 1111699;
+
+update kenya_osm_nodes
+set name = 'Makadara Railway Station',
+railway = 'station'
+where oid = 1111354;
 
 -- incorrect name
 -- Jomo Kenyatta International Airport is Embakasi Village (bus available to JKIA from here)
@@ -387,7 +383,7 @@ UPDATE kenya_osm_edges
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1110348,
+                1111354,
 		1110246,
 		false
 		) AS X
@@ -439,7 +435,7 @@ line = 'Changamwe-Kilindini'
 where oid in (select edge from tmp);
 
 
--- Nanyuki to Malaba (border with Uganda) 
+-- Nakuru to Malaba (border with Uganda) 
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
@@ -456,7 +452,7 @@ comment = 'Currently out of use, rehabilitation due to be completed September 20
 where oid in (select edge from tmp);
 
 
--- Nanyuki to Kisumu
+-- Nakuru to Kisumu
 with tmp as(
 SELECT X.* FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
@@ -479,7 +475,9 @@ SELECT X.* FROM pgr_dijkstra(
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Kisumu-Butere'
+set line = 'Kisumu-Butere',
+status = 'disused',
+comment = 'May be rehabilitated following recent rehabilitation of Nakuru to Kisumu'
 where oid in (select edge from tmp);
 
 -- Rongai to Solai
@@ -595,7 +593,9 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Mombasa-Nairobi SGR',
-gauge = '1435'
+gauge = '1435',
+speed_passenger = 120,
+speed_freight = 80
 where oid in (select edge from tmp);		
 
 -- 	Mombasa-Nairobi SGR freight only
@@ -610,7 +610,8 @@ SELECT X.* FROM pgr_dijkstra(
 update kenya_osm_edges
 set line = 'Mombasa-Nairobi SGR',
 gauge = '1435',
-mode = 'freight'
+mode = 'freight',
+speed_freight = 80
 where oid in (select edge from tmp);		
 
 -- also at Nairobi
@@ -626,7 +627,9 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Nairobi-Naivasha SGR',
-gauge = '1435'
+gauge = '1435',
+speed_passenger = 120,
+speed_freight = 80
 where oid in (select edge from tmp);		
 
 -- Naivasha (Suswa) - Kisumu SGR
@@ -640,7 +643,9 @@ SELECT X.* FROM pgr_dijkstra(
 		ORDER BY seq)
 update kenya_osm_edges
 set line = 'Naivasha-Kisumu SGR',
-gauge = '1435'
+gauge = '1435',
+speed_passenger = 120,
+speed_freight = 80
 where oid in (select edge from tmp);		
 
 -- Nairobi Terminus to Inland Port - freight only
@@ -655,7 +660,8 @@ SELECT X.* FROM pgr_dijkstra(
 update kenya_osm_edges
 set line = 'Nairobi Terminus-Inland Container Port Nairobi SGR',
 gauge = '1435',
-mode = 'freight'
+mode = 'freight',
+speed_freight = 80
 where oid in (select edge from tmp);		
 
 -- Kibos - Kisumu Inland Container Port
@@ -687,7 +693,8 @@ update kenya_osm_edges
 set line = 'Naivasha Inland Container Port',
 gauge = '1435',
 mode = 'freight',
-status = 'open'
+status = 'open',
+speed_freight = 80
 where oid in (select edge from tmp);
 
 -- Embakasi Village - Nairobi
@@ -746,8 +753,8 @@ and railway in ('station', 'halt', 'stop');
 -- test routing		
 		SELECT X.*, a.line, a.status, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, length AS cost FROM kenya_osm_edges',
-                1110178,
-		1111330,
+                1110059,
+		1110663,
 		false
 		) AS X inner join
 		kenya_osm_edges as a on a.oid = X.edge left join

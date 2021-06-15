@@ -84,15 +84,30 @@ where oid = 1110290;
 -- Limuru 1110169 -> Naivasha 1110295 4 hours
 -- Naivasha 1110295 -> Nakuru 1110059 4 hours
 -- Nakuru 1110059 -> Timboroa 1110165 24 hours
--- Timoroa 1110165 -> Eldoret 1120217 4 hours
+-- Timboroa 1110165 -> Eldoret 1120217 4 hours
 -- Eldoret 1120217 -> Bungoma 1110586 20 hours
 -- Bungoma 1110586 -> Malaba 1120164 8 hours
 
+-- Makadara (points) 1112756 -> Nanyuki 1111341
+-- Use passenger timetable:
+-- http://www.krc.co.ke/wp-content/uploads/2020/12/Nairobi-to-Nanyuki-Train-Fares-and-Schedule.pdf
+-- Journey time: 7.5 hours
+
+-- Nakuru (points) 1111520 -> Kisumu 1110663
+-- when passenger services were running said to take around 9 hours
+-- see: https://www.seat61.com/Kenya.htm#Nairobi%20to%20Kisumu%20by%20train
+
+-- SGR
+-- design operating speed for freight: 80kmh = 80/60 km/minute = (80*1000)/60 m/minute
+
+update hvt_rail_network set time_freight = length/((80*1000)/60)
+where speed_freight = 80;
+
 DO $$ DECLARE
 
-origin_nodes INT ARRAY DEFAULT ARRAY [1111512, 1110440, 1110050, 1110360, 1110184, 1110352, 1110347, 1111699, 1110169, 1110295, 1110059, 1110165, 1120217, 1110586];
-destn_nodes  INT ARRAY DEFAULT ARRAY [1110440, 1110050, 1110360, 1110184, 1110352, 1110347, 1111699, 1110169, 1110295, 1110059, 1110165, 1120217, 1110586, 1120164];
-times    FLOAT4 ARRAY DEFAULT ARRAY [2, 4, 2, 5, 3, 4, 4, 4, 4, 4, 24, 4, 20, 8];
+origin_nodes INT ARRAY DEFAULT ARRAY [1111512, 1110440, 1110050, 1110360, 1110184, 1110352, 1110347, 1111699, 1110169, 1110295, 1110059, 1110165, 1120217, 1110586, 1112756, 1111520];
+destn_nodes  INT ARRAY DEFAULT ARRAY [1110440, 1110050, 1110360, 1110184, 1110352, 1110347, 1111699, 1110169, 1110295, 1110059, 1110165, 1120217, 1110586, 1120164, 1111341, 1110663];
+times    FLOAT4 ARRAY DEFAULT ARRAY [2, 4, 2, 5, 3, 4, 4, 4, 4, 4, 24, 4, 20, 8, 7.5, 9];
 origin_node  INT; 
 destn_node   INT;
 time         NUMERIC;
@@ -144,14 +159,31 @@ END $$;
 -- In 2017 said to take 4 days for freight trains to complete the route (www.railjournal.com/in_depth/new-management-team-aims-to-revitalise-tazara)
 -- Dare es Salaam (Tazara) 2221971 -> New Kapiri Mposhi 3330084 96 hours
 
--- Zambia
+-- Mpanda line
+-- 2017 timetable suggests Kaliwa 2220048 -> Mpanda 2220462 takes 9 hours
+-- https://www.fahrplancenter.com/TRL_FAHRPLAN.html
+
+-- Singida Line
+-- 2017 timetable suggests Manyoni (points) 2222901 -> Singida 2220317 take 4 hours 
+-- https://www.fahrplancenter.com/TRL_FAHRPLAN.html
+
+-- Tanga Line
+-- TRC timetable has journey from Korogwe to Arusha taking just over 12 hours. The distance is approx 354km. Suggesting average speed
+-- of approx 30kmh. Assume this for the Tanga -> Arusha line
+
+update hvt_rail_network set time_freight = length/((30*1000)/60)
+where line like '%Tanga Line%';
+
+-- new SGR will operate at 120 kmh for freight
+update hvt_rail_network set time_freight = length/((120*1000)/60)
+where speed_freight = 120;
 
 
 DO $$ DECLARE
 
-origin_nodes INT ARRAY DEFAULT ARRAY [2222785, 2230312, 2220114, 2230326, 2230326, 2221954, 2221971];
-destn_nodes  INT ARRAY DEFAULT ARRAY [2230312, 2220114, 2230326, 2220563, 2220205, 2222585, 3330084];
-times    FLOAT4 ARRAY DEFAULT ARRAY [8, 8, 13, 12, 11, 11, 96];
+origin_nodes INT ARRAY DEFAULT ARRAY [2222785, 2230312, 2220114, 2230326, 2230326, 2221954, 2221971, 2220048, 2222901];
+destn_nodes  INT ARRAY DEFAULT ARRAY [2230312, 2220114, 2230326, 2220563, 2220205, 2222585, 3330084, 2220462, 2220317];
+times    FLOAT4 ARRAY DEFAULT ARRAY [8, 8, 13, 12, 11, 11, 96, 9, 4];
 origin_node  INT; 
 destn_node   INT;
 time         NUMERIC;
@@ -181,8 +213,81 @@ where a.oid = b.edge;
 END LOOP;
 END $$;
 
+-- Zambia
+
+-- New Kapiri Mposhi 3330084 -> junction with Zambia Railways network; south 3331239; north 3331256
+-- assume 0
+
+-- Lusaka 3330106 -> Kafue 3330116 1
+-- Kafue 3330116 -> Choma 3330130 10
+-- Lusaka 3330106 -> Kabwe 3330011 8
+-- Kabwe 3330011 -> Ndola 3330010 11
+-- Ndola 3330010 -> Kitwe 3330033 3
+
+DO $$ DECLARE
+
+origin_nodes INT ARRAY DEFAULT ARRAY [3330084, 3330084, 3330106, 3330116, 3330106, 3330011, 3330010];
+destn_nodes  INT ARRAY DEFAULT ARRAY [3331239, 3331256, 3330116, 3330130, 3330011, 3330010, 3330033];
+times    FLOAT4 ARRAY DEFAULT ARRAY [0, 0, 1, 10, 8, 11, 3];
+origin_node  INT; 
+destn_node   INT;
+time         NUMERIC;
+
+BEGIN
+		for origin_node, destn_node, time in select unnest(origin_nodes), unnest(destn_nodes), unnest(times)
+		LOOP
+
+raise notice 'counter: %', origin_node || ' ' || destn_node || ' ' || time ;	
+
+with tmp as(
+SELECT a.seq, a.edge, b.length, a.cost, round(((time * 60) / sum(cost) over () * b.length)::numeric, 2) as time_cost_mins FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, length AS cost FROM hvt_rail_network',
+                origin_node,
+		destn_node,
+		false
+		) AS a
+		left join
+		hvt_rail_network as b on a.edge = b.oid
+    ORDER BY seq
+		)
+update hvt_rail_network a
+set time_freight = time_cost_mins
+from tmp b
+where a.oid = b.edge;
+
+END LOOP;
+END $$;
+
+-- Uganda
+
+
 
 -- test time cost
+
+-- Karogwe -> Arusha 2220112 -> 2221207,
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                2220112,
+		2221207,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
+		
+
+-- Choma 3330130 -> Kitwe 3330033
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                3330130,
+		3330033,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
+		
+
 -- Old Mombasa to Malaba (92 hours)
 		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
                 'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
