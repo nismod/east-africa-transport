@@ -151,7 +151,7 @@ where oid in (2220165);
 -- Mbalizi (Tazara) 2221944
 -- Matambwe (Tazara) 2221948
 delete from tanzania_osm_nodes
-where oid IN (2221949, 2221944, 2221948)
+where oid IN (2221949, 2221944, 2221948);
 
 -- Update status - copy over from railway key if 'abandoned', 'construction', 'dismantled', 'disused', 'preserved'
 
@@ -472,21 +472,7 @@ gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
--- routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge. 
-update tanzania_osm_edges
-set gauge = '1000 <-> 1067',
-mode = 'freight',
-status = 'disused',
-line = 'Kidatu gauge interchange'
-where oid = 2223388;
-
-update kenya_osm_edges
-set gauge = '1000 <-> 1435',
-mode = 'freight',
-status = 'construction'
-where oid = 1130000
-
--- make an existing node Kilosa station for metre gauge - ensuring break in gauge
+-- make an existing node Kilosa station for metre gauge
 update tanzania_osm_nodes
 set name = 'Msolwa Station',
 gauge = '1000'
@@ -800,6 +786,26 @@ set railway = 'station',
 name = 'Mchuchuma mine'
 where oid = 2240005;
 
+
+-- add edge for gauge interchange at Kidatu.
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from tanzania_osm_nodes a, tanzania_osm_nodes b where a.oid = 2223212 and b.oid = 2220740
+)
+insert into tanzania_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+2223212,
+2220740,
+2240010
+from tmp as a;
+
+update tanzania_osm_edges
+set gauge = '1000 <-> 1067',
+mode = 'freight',
+status = 'disused',
+line = 'Kidatu gauge interchange'
+where oid = 2240010;
 
 -- create spatial indexes
 CREATE INDEX tanzania_osm_edges_geom_idx

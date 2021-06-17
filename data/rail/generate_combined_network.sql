@@ -190,7 +190,7 @@ where line = 'Mtwara';
 -- assume there would be a 24 time cost at Kidatu gauge interchange (currently disused)
 update hvt_rail_network
 set time_freight = 1440
-where oid = 2223388;
+where oid = 2240010;
 
 DO $$ DECLARE
 
@@ -282,7 +282,40 @@ set time_freight = length/((25*1000)/60)
 where time_freight = 99999;
 
 
+-- time cost matrix b/w major towns (open lines)
+-- loop
+
+
+
+-- assuming all lines were open
+
+
+
 -- test time cost
+
+-- test via the proposed NICD gauge Interchange
+-- Mombasa Port SGR to Malaba (narrow gauge) 
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                1113191,
+		1120164,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
+		
+-- test via the disused Kidatu gauge interchange TIZARA -> metre gauge
+-- New Kapiri Mposhi to Dodoma
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                3330084,
+		2220114,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
 
 -- Karogwe -> Arusha 2220112 -> 2221207,
 		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
