@@ -472,10 +472,19 @@ gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
--- need to prevent routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge.
--- remove edge 
-delete from tanzania_osm_edges
+-- routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge. 
+update tanzania_osm_edges
+set gauge = '1000 <-> 1067',
+mode = 'freight',
+status = 'disused',
+line = 'Kidatu gauge interchange'
 where oid = 2223388;
+
+update kenya_osm_edges
+set gauge = '1000 <-> 1435',
+mode = 'freight',
+status = 'construction'
+where oid = 1130000
 
 -- make an existing node Kilosa station for metre gauge - ensuring break in gauge
 update tanzania_osm_nodes
@@ -541,7 +550,7 @@ update tanzania_osm_edges
 set line = 'Tanga Line (Moshi-Arusha)',
 gauge = '1000',
 status = 'open',
-comment = 'freight is currently cement from Tanga Cement; see: https://www.railwaygazette.com/africa/cement-trains-start-rolling-on-tanga-moshi-line/54254.article'
+comment = 'freight is currently cement from Tanga Cement; see: https://bit.ly/2SHijzh'
 where oid in (select edge from tmp);
 
 -- Tanga Line branch frieght - Tanga Cement PLC
