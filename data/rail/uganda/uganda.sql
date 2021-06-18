@@ -450,21 +450,8 @@ SELECT X.* FROM pgr_dijkstra(
 update uganda_osm_edges
 set line = 'Kampala - Kasese',
 gauge = '1000',
-status = 'abandoned'
-where oid in (select edge from tmp);
-
-with tmp as(
-SELECT X.* FROM pgr_dijkstra(
-                'SELECT oid as id, source, target, length AS cost FROM uganda_osm_edges',
-                4440004,
-		4441107,
-		false
-		) AS X
-		ORDER BY seq)
-update uganda_osm_edges
-set line = NULL,
-gauge = NULL,
-status = 'open'
+status = 'abandoned',
+mode = 'mixed'
 where oid in (select edge from tmp);
 
 
@@ -480,7 +467,8 @@ SELECT X.* FROM pgr_dijkstra(
 update uganda_osm_edges
 set line = 'Kampala - Kasese',
 gauge = '1000',
-status = 'open'
+status = 'open',
+mode = 'freight',
 where oid in (select edge from tmp);
 
 -- insert line to simplify routing onto Busoga Railway
@@ -509,6 +497,7 @@ update uganda_osm_edges
 set line = 'Busoga Loop',
 gauge = '1000',
 status = 'disused',
+mode = 'mixed',
 comment = 'Vandalised (substantial removal of tracks) and is out of use'
 where oid in (select edge from tmp);
 
@@ -525,6 +514,7 @@ update uganda_osm_edges
 set line = 'Busoga Loop',
 gauge = '1000',
 status = 'disused',
+mode = 'mixed',
 comment = 'Vandalised (substantial removal of tracks) and is out of use'
 where oid in (select edge from tmp);
 
