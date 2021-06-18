@@ -285,6 +285,8 @@ where time_freight = 99999;
 -- time cost matrix b/w major towns (open lines)
 -- loop
 
+-- origins
+-- destinations
 
 
 -- assuming all lines were open

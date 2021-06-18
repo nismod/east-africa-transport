@@ -101,6 +101,13 @@ UPDATE kenya_osm_edges
  WHEN railway in ('level_crossing', 'platform', 'station', 'turntable') THEN railway
  end;
  
+ -- tunnels
+ -- Nachu (1112056)
+ -- Ngong (1111598)
+ update kenya_osm_edges
+ set structure = 'tunnel'
+ where oid in (1112056, 1111598)
+ 
 -- populate gauge column
 -- where railway = 'rail' gauge is standard as per OSM coding
 update kenya_osm_edges
@@ -455,7 +462,7 @@ update kenya_osm_edges
 set line = 'Nakuru-Malaba',
 gauge = '1000',
 status = 'rehabilitation',
-comment = 'Currently out of use, rehabilitation due to be completed September 2021'
+comment = 'Currently out of use, rehabilitation due to be completed September 2021 (https://bit.ly/2TKPIcN)'
 where oid in (select edge from tmp);
 
 
