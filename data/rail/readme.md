@@ -3,7 +3,7 @@
 ## Summary of methodology
 
 * Starting data were geopackages for each country (Kenya, Tanzania, Uganda, and Zambia) containing a rail 'network' consisting of nodes and edges extracted from OpenStreetMap data using [this script](https://github.com/nismod/east-africa-transport/blob/main/preprocess/rail/rail.sh).
-* The edges and node features for each country were reviewed in QGIS.
+* The edge and node features for each country were reviewed in QGIS.
 * The edge and node features were then imported as tables into a PostgreSQL spatial database (with postGIS and pgRouting extensions).
 * All subsequent processing was carried out using SQL queries (and blocks of procedural code). There is a commented SQL file for each country which will recreate the processed data from the original geopackage files.
 * pgRouting was used to identify the edges making up (undirected) routes between key station pairs. Attributes were then assigned to these edges (for example, name of the line, gauge, and status). 
@@ -57,7 +57,7 @@
 
 ### Nodes
 
-Notes that only halts/stops and stations are included in this dataset. 
+Note that only halts/stops and stations are included in this dataset. 
 
 * oid (integer) - unique ID (PK).
 * country (text).
@@ -83,3 +83,24 @@ Notes that only halts/stops and stations are included in this dataset.
 
 As the network includes lines that have a different statuses, edges should be selected/removed as required prior to routing. For example, if routing only on current open lines is required, then edges with the status 'open' would be selected to represent the graph.
 
+Example route *showing stations only*:
+
+```sql
+-- via the disused Kidatu gauge interchange TIZARA -> metre gauge (showing station edges only)
+		with tmp as (
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                2221298,
+		2220114,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq)
+		select node, edge, round(cost::numeric, 2) as time_mins, round(agg_cost::numeric, 2) as agg_time_mins, country, line, gauge, status, type, name from tmp where type in ('station', 'stop', 'halt')
+		;
+```
+
+Result:
+
+![example query](example_query.png)
