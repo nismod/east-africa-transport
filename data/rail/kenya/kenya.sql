@@ -40,8 +40,6 @@ UPDATE kenya_osm_nodes set oid = 1110000 + reverse(split_part(reverse(id), '_', 
 ALTER TABLE kenya_osm_nodes DROP CONSTRAINT kenya_osm_nodes_pkey;
 ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
 
-
-
 -- delete duplicate station nodes(on same gauge)
 -- Nanyuki
 delete from kenya_osm_nodes where oid in (1110246);

@@ -838,6 +838,12 @@ set
 from tmp b
 WHERE a.oid = b.oid;
 
+-- station nodes
+update tanzania_osm_nodes
+set railway = 'station',
+name = 'Mwanza (SGR)'
+where oid = 2240009;
+
 -- create spatial indexes
 CREATE INDEX tanzania_osm_edges_geom_idx
   ON tanzania_osm_edges
@@ -863,7 +869,6 @@ update tanzania_osm_nodes
 set gauge = '1067'
 where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = '1067'))
 and railway in ('station', 'halt', 'stop');
-
 
 
 		
