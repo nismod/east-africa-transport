@@ -9,6 +9,7 @@
 * pgRouting was used to identify the edges making up (undirected) routes between key station pairs. Attributes were then assigned to these edges (for example, name of the line, gauge, and status). 
 * The OSM data was not fully routable, and it was necessary to split some lines at existing nodes.
 * As there are often multiple lines through stations, the station node was not always on an edge forming the selected route through a station. In this case, either a suitable existing node was reassigned or, a new node was generated on the nearest point of the appropriate edge.
+* Any gaps in OSM data for abandoned or disused lines have been removed by adding a straight line between the two existing nodes. This is to ensure that the network can be used for routing as if the lines existed and were operational.
 * Nodes and edges for proposed lines were created in QGIS (and the SQL code then exported). Only the following proposed lines where funding has been committed/allocated have been included:
   * Phase 3-5 of the SGR in Tanzania (though note that funding is only currently committed for phase 5).
   * Mtwara to Mbamba SGR Line in Tanzania.
