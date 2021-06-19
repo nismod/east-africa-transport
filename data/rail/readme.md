@@ -33,6 +33,7 @@
   - open - the line is open for passenger and/or freight operations
   - rehabilitation - the line is being rehabilitated and is not currently in use
   - construction - the line is being constructed
+  - proposed - proposed line where funding has been allocated/committed
   - disused - a line that is thought to be largely intact but is not currently used
   - abandoned - a line where track and other infrastructure are now missing (and/or built-over) and a complete re-build would be required. 
 - gauge (text) - the gauge in millimetres of the line that this edge forms part of. Available options are:
@@ -43,7 +44,7 @@
   - 1000 <-> 1435 (assigned to a 'fake' edge indicating the availability of freight gauge interchange facilities).
 - mode (text) - the type of traffic on this edge:
   - mixed - passenger and freight - the default assumption
-  - freight - if definitively known to be the case).
+  - freight - if definitively known to be the case.
 - structure (text) - identifies if the edge forms part of the following structures:
   - bridge
   - tunnel
