@@ -65,7 +65,7 @@ Note that only halts/stops and stations are included in this dataset.
 * type:
   * station
   * halt (station without facilities)
-  * stop - this is used to identify locations other than stations or halts. For example, ports or inland container ports.
+  * stop - this is used to identify locations other than stations or halts. For example, ports or inland container ports. It is also used in the OSM data to identify train stopping points.
 * name (text) - name of the station or facility.
 * facility - identifies if a particular facility is associated with the station/stop location. Options are:
   * cargo_terminal
