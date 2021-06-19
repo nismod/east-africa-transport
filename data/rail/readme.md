@@ -82,7 +82,7 @@ Note that only halts/stops and stations are included in this dataset.
 
 ## Using the network
 
-As the network includes lines that have a different statuses, edges should be selected/removed as required prior to routing. For example, if routing only on current open lines is required, then edges with the status 'open' would be selected to represent the graph.
+As the network includes lines that have different statuses, edges should be selected/removed as required prior to routing. For example, if routing only on current open lines is required, then edges with the status 'open' would be selected to represent the graph.
 
 Example route *showing stations only*:
 
