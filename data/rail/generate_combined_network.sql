@@ -386,6 +386,31 @@ where time_freight = 99999;
 		hvt_rail_network as a on a.oid = X.edge left join
 		hvt_rail_nodes as b on b.oid = X.node
 		ORDER BY seq;
+		
+		-- via the disused Kidatu gauge interchange TIZARA -> metre gauge (showing station edges only)
+		with tmp as (
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                2221298,
+		2220114,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq)
+		select node, edge, round(agg_cost::numeric, 2) as agg_time_mins, country, line, gauge, status, type, name from tmp where type in ('station', 'stop', 'halt')
+		;
+		
+		-- Tazara Dar es Salaam (SGR) to Mwanza (SGR)
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                2231958,
+		2240009,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
 
 
 -- test routing		
