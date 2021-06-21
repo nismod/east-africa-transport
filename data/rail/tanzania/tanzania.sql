@@ -151,7 +151,7 @@ where oid in (2220165);
 -- Mbalizi (Tazara) 2221944
 -- Matambwe (Tazara) 2221948
 delete from tanzania_osm_nodes
-where oid IN (2221949, 2221944, 2221948)
+where oid IN (2221949, 2221944, 2221948);
 
 -- Update status - copy over from railway key if 'abandoned', 'construction', 'dismantled', 'disused', 'preserved'
 
@@ -472,12 +472,7 @@ gauge = '1000',
 status = 'open'
 where oid in (select edge from tmp);
 
--- need to prevent routing from disused Kilosa-Msolwa (1000mm) to Tazara line (1067mm) at Msolwa Station - break in gauge.
--- remove edge 
-delete from tanzania_osm_edges
-where oid = 2223388;
-
--- make an existing node Kilosa station for metre gauge - ensuring break in gauge
+-- make an existing node Kilosa station for metre gauge
 update tanzania_osm_nodes
 set name = 'Msolwa Station',
 gauge = '1000'
@@ -541,7 +536,7 @@ update tanzania_osm_edges
 set line = 'Tanga Line (Moshi-Arusha)',
 gauge = '1000',
 status = 'open',
-comment = 'freight is currently cement from Tanga Cement; see: https://www.railwaygazette.com/africa/cement-trains-start-rolling-on-tanga-moshi-line/54254.article'
+comment = 'freight is currently cement from Tanga Cement; see: https://bit.ly/2SHijzh'
 where oid in (select edge from tmp);
 
 -- Tanga Line branch frieght - Tanga Cement PLC
@@ -766,7 +761,9 @@ set
 	status = 'proposed',
 	line = 'Mtwara',
 	gauge = 1435,
-	comment = 'As of October 2020 feasibility studies and architectural designs have been completed (not funded)'
+	speed_freight = 120,
+  speed_passenger = 160,
+	comment = 'As of June 2021 feasibility studies and architectural designs have been completed and funding allocated (https://bit.ly/3cP1WYm)'
 from tmp b
 WHERE a.oid = b.oid;
 
@@ -791,6 +788,61 @@ set railway = 'station',
 name = 'Mchuchuma mine'
 where oid = 2240005;
 
+-- add edge for gauge interchange at Kidatu.
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from tanzania_osm_nodes a, tanzania_osm_nodes b where a.oid = 2223212 and b.oid = 2220740
+)
+insert into tanzania_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+2223212,
+2220740,
+2240010
+from tmp as a;
+
+update tanzania_osm_edges
+set gauge = '1000 <-> 1067',
+mode = 'freight',
+status = 'disused',
+line = 'Kidatu gauge interchange'
+where oid = 2240010;
+
+-- SGR proposed phases 3-5 - approximate route
+
+-- edge
+INSERT INTO tanzania_osm_edges ("geom" , "oid") VALUES ('0102000020E61000001400000072970EE72B8D4140696105AEE12017C068BEEB4632864140B1DD70286A0417C0ECCDAF6E5F75414068AE0B2F99E216C056CD48A12BDB40408DCE8C54DC5015C04DF9693E37704040B01BAC02A01C14C05C7F5691F08B4040C620C39DCC9F11C04E9A81023C8940404C13AC63A51F10C0B748EF5728B240405148ACD21AF90DC05C3FB0847DB240403AE34E75BD5B0CC0AC1DC79005A94040A60B8E1D2DD60AC076897355339E4040B4F0C777137109C0C7678A61BB94404047C885CCA0F307C0D50CEC49968A40408B4146C8F26506C0617A749C547540408E788B5358BD04C04945142C9E744040B67C410C727B04C0ADEEF866F97340403D807512076604C0BB2DA9018C73404015C4E958DC5004C0FE655D24387340401514A0755F3A04C0F0E957CB1F734040D23AB17E453304C06CAB541E93724040DFDF1267202904C0', 2240011);
+
+-- node (Mwanza)
+INSERT INTO tanzania_osm_nodes ("geom" , "oid") VALUES ('0101000020E61000006CAB541E93724040DFDF1267202904C0', 2240009);
+
+with tmp as(
+select a.oid, b.oid as source, c.oid as target
+from tanzania_osm_edges a
+join tanzania_osm_nodes b on st_intersects(b.geom, st_startpoint(a.geom))
+join tanzania_osm_nodes c on st_intersects(c.geom, st_endpoint(a.geom))
+where a.oid = 2240011
+)
+update tanzania_osm_edges a
+set 
+	source = b.source,
+	target = b.target,
+	length = round( st_length ( st_transform ( a.geom, 21036 ) ) :: numeric, 2 ),
+	mode = 'mixed',
+	status = 'proposed',
+	line = 'SGR Phases 3 - 5',
+	gauge = 1435,
+	speed_freight = 120,
+	speed_passenger = 160,
+	comment = 'Phase 5 (Isaka–Mwanza) contract awarded (https://bit.ly/3cSPiHP) completion expected May 2024. Plans for Phase 3 (Makutopora–Tabora) and Phase 4 (Tabora-Isaka) not awarded nor funding committed yet.'
+from tmp b
+WHERE a.oid = b.oid;
+
+-- station nodes
+update tanzania_osm_nodes
+set railway = 'station',
+name = 'Mwanza (SGR)'
+where oid = 2240009;
 
 -- create spatial indexes
 CREATE INDEX tanzania_osm_edges_geom_idx
@@ -817,7 +869,6 @@ update tanzania_osm_nodes
 set gauge = '1067'
 where st_intersects(geom, (select st_collect(geom) from tanzania_osm_edges where gauge = '1067'))
 and railway in ('station', 'halt', 'stop');
-
 
 
 		

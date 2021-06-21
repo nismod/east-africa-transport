@@ -103,6 +103,11 @@ where oid = 1110290;
 update hvt_rail_network set time_freight = length/((80*1000)/60)
 where speed_freight = 80;
 
+-- Longonot gauge interchange. Assume 24 hour time cost
+update hvt_rail_network
+set time_freight = 1440
+where oid = 1130000;
+
 DO $$ DECLARE
 
 origin_nodes INT ARRAY DEFAULT ARRAY [1111512, 1110440, 1110050, 1110360, 1110184, 1110352, 1110347, 1111699, 1110169, 1110295, 1110059, 1110165, 1120217, 1110586, 1112756, 1111520];
@@ -169,15 +174,23 @@ END $$;
 
 -- Tanga Line
 -- TRC timetable has journey from Korogwe to Arusha taking just over 12 hours. The distance is approx 354km. Suggesting average speed
--- of approx 30kmh. Assume this for the Tanga -> Arusha line
+-- of approx 30kmph. Assume this for the Tanga -> Arusha line
 
 update hvt_rail_network set time_freight = length/((30*1000)/60)
 where line like '%Tanga Line%';
 
--- new SGR will operate at 120 kmh for freight
+-- new SGR will operate at 120 kmph for freight
 update hvt_rail_network set time_freight = length/((120*1000)/60)
 where speed_freight = 120;
 
+-- assume proposed standard gauge Mtwara line would also operate at 120kmph
+update hvt_rail_network set time_freight = length/((120*1000)/60)
+where line = 'Mtwara';
+
+-- assume there would be a 24 time cost at Kidatu gauge interchange (currently disused)
+update hvt_rail_network
+set time_freight = 1440
+where oid = 2240010;
 
 DO $$ DECLARE
 
@@ -259,10 +272,52 @@ END LOOP;
 END $$;
 
 -- Uganda
+-- no specific information available.
+
+-- all countries
+-- all edges with no specific freight speed set
+-- assume speed of 25kmph
+update hvt_rail_network
+set time_freight = length/((25*1000)/60)
+where time_freight = 99999;
+
+
+-- time cost matrix b/w major towns (open lines)
+-- loop
+
+-- origins
+-- destinations
+
+
+-- assuming all lines were open
 
 
 
 -- test time cost
+
+-- test via the proposed NICD gauge Interchange
+-- Mombasa Port SGR to Malaba (narrow gauge) 
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                1113191,
+		1120164,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
+		
+-- test via the disused Kidatu gauge interchange TIZARA -> metre gauge
+-- New Kapiri Mposhi to Dodoma
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                3330084,
+		2220114,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
 
 -- Karogwe -> Arusha 2220112 -> 2221207,
 		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
@@ -326,6 +381,31 @@ END $$;
                 'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
                 2221971,
 		3330084,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq;
+		
+		-- via the disused Kidatu gauge interchange TIZARA -> metre gauge (showing station edges only)
+		with tmp as (
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                2221298,
+		2220114,
+		false
+		) AS X left join
+		hvt_rail_network as a on a.oid = X.edge left join
+		hvt_rail_nodes as b on b.oid = X.node
+		ORDER BY seq)
+		select node, edge, round(agg_cost::numeric, 2) as agg_time_mins, country, line, gauge, status, type, name from tmp where type in ('station', 'stop', 'halt')
+		;
+		
+		-- Tazara Dar es Salaam (SGR) to Mwanza (SGR)
+		SELECT X.*, a.country, a.line, a.gauge, a.time_freight, a.status, b.type, b.name FROM pgr_dijkstra(
+                'SELECT oid as id, source, target, time_freight AS cost FROM hvt_rail_network',
+                2231958,
+		2240009,
 		false
 		) AS X left join
 		hvt_rail_network as a on a.oid = X.edge left join

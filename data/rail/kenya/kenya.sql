@@ -40,8 +40,6 @@ UPDATE kenya_osm_nodes set oid = 1110000 + reverse(split_part(reverse(id), '_', 
 ALTER TABLE kenya_osm_nodes DROP CONSTRAINT kenya_osm_nodes_pkey;
 ALTER TABLE kenya_osm_nodes ADD PRIMARY KEY (oid);
 
-
-
 -- delete duplicate station nodes(on same gauge)
 -- Nanyuki
 delete from kenya_osm_nodes where oid in (1110246);
@@ -100,6 +98,13 @@ UPDATE kenya_osm_edges
  WHEN bridge = 'viaduct' then 'viaduct'
  WHEN railway in ('level_crossing', 'platform', 'station', 'turntable') THEN railway
  end;
+ 
+ -- tunnels
+ -- Nachu (1112056)
+ -- Ngong (1111598)
+ update kenya_osm_edges
+ set structure = 'tunnel'
+ where oid in (1112056, 1111598)
  
 -- populate gauge column
 -- where railway = 'rail' gauge is standard as per OSM coding
@@ -165,10 +170,17 @@ railway = 'stop'
 where oid = 1111835;
 
 update kenya_osm_nodes
-set name = 'Naivasha Inland Container Depot',
+set name = 'Naivasha Inland Container Depot (SGR)',
 facility = 'dry_port',
 railway = 'stop'
 where oid = 1111259;
+
+update kenya_osm_nodes
+set name = 'Naivasha Inland Container Depot (MGR)',
+facility = 'dry_port',
+railway = 'stop',
+gauge = '1000'
+where oid = 1113089;
 
 update kenya_osm_nodes
 set name = 'Mombasa Port',
@@ -448,7 +460,7 @@ update kenya_osm_edges
 set line = 'Nakuru-Malaba',
 gauge = '1000',
 status = 'rehabilitation',
-comment = 'Currently out of use, rehabilitation due to be completed September 2021'
+comment = 'Currently out of use, rehabilitation due to be completed September 2021 (https://bit.ly/2TKPIcN)'
 where oid in (select edge from tmp);
 
 
@@ -563,7 +575,8 @@ SELECT X.* FROM pgr_dijkstra(
 		) AS X
 		ORDER BY seq)
 update kenya_osm_edges
-set line = 'Konza-Magadi'
+set line = 'Konza-Magadi',
+comment = 'Primarily used by Tata Chemicals, though a commuter route between Kajiado and Konza. See: https://bit.ly/3cPblzg'
 where oid in (select edge from tmp);		
 
 		
@@ -696,6 +709,26 @@ mode = 'freight',
 status = 'open',
 speed_freight = 80
 where oid in (select edge from tmp);
+
+-- add edge for NICD gauge interchange. Assume 24 hour cost.
+with tmp as
+(
+select st_makeline(a.geom, b.geom) as line from kenya_osm_nodes a, kenya_osm_nodes b where a.oid = 1113089 and b.oid = 1111259
+)
+insert into kenya_osm_edges select 
+a.line,
+round( st_length ( st_transform ( a.line, 21036 ) ) :: numeric, 2 ) as length,
+1113089,
+1111259,
+1130000
+from tmp as a;
+
+update kenya_osm_edges
+set gauge = '1000 <-> 1435',
+mode = 'freight',
+status = 'construction',
+line = 'NICD gauge interchange'
+where oid = 1130000;
 
 -- Embakasi Village - Nairobi
 with tmp as(
