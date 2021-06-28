@@ -5,3 +5,9 @@
 # Editor config
 .vscode
 config.json
+
+# Python
+__pycache__
+*.pyd
+*.pyc
+.vscode
