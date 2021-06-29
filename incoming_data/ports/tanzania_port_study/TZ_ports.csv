@@ -1,0 +1,14 @@
+﻿id,name,location,country,type,latitude,longitude,passengers,cargo_import,cargo_export,cargo_transit,cargo_total
+port_1,Dar es Salaam,Indian Ocean,Tanzania,Maritime,-6.826000215,39.29820825,1412357,11867655,2037897,430275,14335827
+port_2,Mtwara,Indian Ocean,Tanzania,Maritime, -10.26782465,40.1978283,0,221022,135334,0,356356
+port_3,Tanga,Indian Ocean,Tanzania,Maritime,-5.050632955,39.126091,87600,264918,103424,0,845000
+port_4,Mwanza,Lake Victoria,Tanzania,Lake,-2.510387895,32.90117835,735794,,,,61050
+port_5,Bukoba,Lake Victoria,Tanzania,Lake,-1.34640944,31.81550505,80014,,,,40259
+port_6,Kemondo Bay,Lake Victoria,Tanzania,Lake,-1.478496,31.751138,8890,,,,12654
+port_7,Musoma,Lake Victoria,Tanzania,Lake,-1.48920959,33.8135128,0,,,,1299
+port_8,Nansio,Lake Victoria,Tanzania,Lake,-2.109758,33.084481,112055,,,,243
+port_9,Kigoma,Lake Tanganyika,Tanzania,Lake,-4.877131,29.624137,15349,42450,37640,8296,88386
+port_10,Bujumbura,Lake Tanganyika,Burundi,Lake,-3.378011,29.345,,,,,0
+port_11,Kalimie,Lake Tanganyika,DRC,Lake,-5.948008,29.201574,,,,,0
+port_12,Uvira,Lake Tanganyika,DRC,Lake,-3.433895,29.130216,,,,,0
+port_13,Mpulungu,Lake Tanganyika,Zambia,Lake,-8.763388,31.105484,,,,,0

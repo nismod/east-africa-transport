@@ -1,0 +1,19 @@
+﻿id,name,country,location,type,latitude,longitude,passengers_embarked,passengers_disembarked,passenger_total,cargo_import,cargo_export,cargo_transit,cargo_inwards,cargo_outwards,cargo_total
+port_1,Dar es Salaam,Tanzania,Indian Ocean,Maritime,-6.826000215,39.29820825,790131,778922,"1,569,053",11684093,2106545,486278,,,"14,276,916"
+port_2,Mtwara,Tanzania,Indian Ocean,Maritime, -10.26782465,40.1978283,0,,0,125187,147678,0,,,"272,865"
+port_3,Tanga,Tanzania,Indian Ocean,Maritime,-5.050632955,39.126091,0,,0,613981,62925,0,,,"676,906"
+port_17,Mombasa,Kenya,Indian Ocean,Maritime,-4.055278,39.651944,,,0,25798000,3848000,994000,,,"30,640,000"
+port_18,Lamu,Kenya,Indian Ocean,Maritime,-2.164231625,40.90647147,,,0,,,,,,
+port_4,Mwanza,Tanzania,Lake Victoria,Lake,-2.510387895,32.90117835,109525,97238,"206,763",,28946,,10669,53841,"93,456"
+port_5,Bukoba,Tanzania,Lake Victoria,Lake,-1.34640944,31.81550505,80014,,"80,014",,,,,,0
+port_6,Kemondo Bay,Tanzania,Lake Victoria,Lake,-1.478496,31.751138,8890,,"8,890",,,,,,0
+port_7,Musoma,Tanzania,Lake Victoria,Lake,-1.48920959,33.8135128,0,,0,,,,,,0
+port_8,Nansio,Tanzania,Lake Victoria,Lake,-2.109758,33.084481,112055,,"112,055",,,,,,0
+﻿port_15,﻿Kisumo,Kenya,Lake Victoria,Lake,﻿-0.106070100314797,﻿34.747335599865401,,,0,,,,,,
+port_9,Kigoma,Tanzania,Lake Tanganyika,Lake,-4.877131,29.624137,1903,2797,"4,700",33137,92336,0,5670,8427,"139,570"
+port_10,Bujumbura,Burundi,Lake Tanganyika,Lake,-3.378011,29.345,,,0,,,,,,0
+port_11,Kalimie,DRC,Lake Tanganyika,Lake,-5.948008,29.201574,,,0,,,,,,0
+port_12,Uvira,DRC,Lake Tanganyika,Lake,-3.433895,29.130216,,,0,,,,,,0
+port_13,Mpulungu,Zambia,Lake Tanganyika,Lake,-8.763388,31.105484,,,0,,,,,,0
+port_14,Port Bell,Uganda,Lake Victoria,Lake,﻿0.292015788386783,﻿32.570741369390902,,,0,,,,,,
+port_16,﻿Kasanga,Tanzania,Lake Tanganyika,Lake,﻿-8.487000000000000,﻿31.059000000000001,,,,,,,,,
