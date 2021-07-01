@@ -8,8 +8,13 @@ channels:
 dependencies:
   - python=3.9
   - pip
+  - cartopy
   - fiona
   - geopandas
+  - notebook
+  - rasterio
+  - rioxarray
+  - shapely
   - tqdm
   - pip:
     - snkit
