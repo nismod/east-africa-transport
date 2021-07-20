@@ -1,0 +1,7 @@
+OD airport pair,company,freight_tonnes,freight_capacity,O,D
+DAR-NBO,passenger,7361.5,14723.0,DAR,NBO
+NBO-DAR,passenger,3538.0,7076.0,NBO,DAR
+EBB-NBO,passenger,4167.75,8335.5,EBB,NBO
+LUN-NBO,passenger,1247.64,2495.28,LUN,NBO
+NBO-EBB,passenger,522.75,1045.5,NBO,EBB
+NBO-LUN,passenger,764.52,1529.04,NBO,LUN

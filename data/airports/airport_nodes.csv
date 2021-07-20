@@ -1,0 +1,7 @@
+IATA,Name,country,lat,lon,Freight,Passengers,iso2
+DAR,Julius Nyerere International Airport,Tanzania,-6.875277778,39.20194444,"28,680","1,666,317",TZ
+EBB,Entebbe International Airport,Uganda,0.0425,32.43805556,"44,399","1,336,138",UG
+EDL,Eldoret Airport,Kenya,0.516666667,35.28333333,"8,000","45,897",KE
+LUN,Kenneth Kaunda International Airport,Zambia,-15.32916667,28.45277778,"29,883","879,472",ZM
+NBO,Jomo Kenyatta International Airport,Kenya,-1.316666667,36.93083333,"340,800","6,241,678",KE
+MBA,Moi International Airport,Kenya,-4.04,39.59,"4,000","902,600",KE

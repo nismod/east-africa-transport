@@ -62,7 +62,7 @@ def main(config):
             os.mkdir(summary_path)
 
     output_excel = os.path.join(summary_path,
-                                'road_conditions.xlsx',
+                                'road_conditions_2.xlsx',
                                 )
     output_wrtr = pd.ExcelWriter(output_excel)
     for country in countries:
