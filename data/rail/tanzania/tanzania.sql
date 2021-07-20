@@ -391,7 +391,7 @@ set line = 'Central Line',
 gauge = '1000',
 status = 'open',
 speed_freight = 30,
-comment = 'Rehabilitation project underway. Due to complete 30 September 2022'
+comment = 'Rehabilitation project underway to increase average speed from 30kmph to 70kmph. Due to complete 30 September 2022. See: https://bit.ly/3vI0hdW and https://bit.ly/3vOxR1D'
 where oid in (select edge from tmp);
 
 -- Central Line Kigoma port
