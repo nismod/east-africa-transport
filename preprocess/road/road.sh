@@ -15,11 +15,11 @@ countries=(
     "uganda"
     "zambia"
 )
-mkdir -p scratch/rail
+mkdir -p scratch/road
 for country in "${countries[@]}"; do
     osmium tags-filter \
         incoming_data/osm/$country-$date.osm.pbf \
-        wnr/road \
+        wnr/highway \
         --overwrite \
         -o scratch/road/$country-road.osm.pbf
 
