@@ -1,5 +1,5 @@
-http://download.geofabrik.de/africa/kenya-210422.osm.pbf
-http://download.geofabrik.de/africa/tanzania-210422.osm.pbf
-http://download.geofabrik.de/africa/uganda-210422.osm.pbf
-http://download.geofabrik.de/africa/zambia-210422.osm.pbf
+http://download.geofabrik.de/africa/kenya-211027.osm.pbf
+http://download.geofabrik.de/africa/tanzania-211027.osm.pbf
+http://download.geofabrik.de/africa/uganda-211027.osm.pbf
+http://download.geofabrik.de/africa/zambia-211027.osm.pbf
 
