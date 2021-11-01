@@ -66,8 +66,18 @@ def main(config):
                                 )
     output_wrtr = pd.ExcelWriter(output_excel)
     for country in countries:
+        # Read the geopackage file that was converted from osm.pdf 
         edges = gpd.read_file(os.path.join(networks,f"{country}-{date}_highway.shp"))
 
+        # From the geopackage file extract 
+        # highway = ['motorway','motorway_link',
+        #             'trunk','trunk_link',
+        #             'primary','primary_link',
+        #             'secondary','secondary_link',
+        #             'tertiary','tertiary_link']
+
+
+        # Add attributes
         edges['surface_material'] = edges.progress_apply(lambda x:get_road_condition_surface(x),axis=1)
         edges[['road_cond','material']] = edges['surface_material'].apply(pd.Series)
         edges.drop('surface_material',axis=1,inplace=True)
@@ -76,9 +86,25 @@ def main(config):
         processed_path = os.path.join(data_path,'road',country)
         if os.path.exists(processed_path) == False:
             os.mkdir(processed_path)
-        edges.to_file(os.path.join(processed_path,f"{country}-{date}_highway.shp"))
+        # edges.to_file(os.path.join(processed_path,f"{country}-{date}_highway.gpkg"),layer="edges")
 
         edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
+        
+        # Create network topology
+        network = create_network_from_nodes_and_edges(
+            None,
+            edges,
+            "road",
+            os.path.join(
+                data_path, "road",country,f"{country}-{date}.gpkg"
+            ),
+        )
+        # set projection systems and find the actual road lengths in meters
+        network.edges['road_length_m'] = network.edges.progress_apply(lambda x:x.geometry.length,axis=1)
+        # Store the final road network in geopackage in the processed_path
+        # network.edges.to_file(out_fname, layer='edges', driver='GPKG')
+        # network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
+        
         edges = edges.groupby(['highway','road_cond'])[['length_km']].sum().reset_index()
         print (edges)
         edges = (edges.set_index(['highway']).pivot(
@@ -89,7 +115,6 @@ def main(config):
         output_wrtr.save()
 
 
-    
     
 
 
