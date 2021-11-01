@@ -45,7 +45,7 @@ def main(config):
     networks = os.path.join(incoming_data_path,'SHP')
 
     # Extract date string
-    date="210422"
+    date="211027"
 
     width = 6.5 # Default carriageway width in meters
     shoulder = 1.5
