@@ -1,1 +1,0 @@
-http://worldmap.harvard.edu/geoserver/wfs?outputFormat=SHAPE-ZIP&service=WFS&request=GetFeature&format_options=charset%3AUTF-8&typename=geonode%3Aglobal_oil_pipelines_7z9&version=1.0.0
