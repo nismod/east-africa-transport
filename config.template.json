@@ -4,6 +4,7 @@
         "incoming_data": "./incoming_data",
         "data": "./data",
         "figures": "./figures",
+        "scratch":"./scratch",
         "output": "./output"
     }
 }
