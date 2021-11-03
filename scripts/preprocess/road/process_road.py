@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-"""Pocess road data from OSM extracts
+"""Process road data from OSM extracts and create road network topology 
 """
 import os
 from glob import glob
@@ -41,14 +41,16 @@ def main(config):
     incoming_data_path = config['paths']['incoming_data']
     data_path = config['paths']['data']
     output_path = config['paths']['output']
-    
-    networks = os.path.join(incoming_data_path,'SHP')
+    scratch_path = config['paths']['scratch']
+
+    networks = os.path.join(scratch_path,'road')
 
     # Extract date string
-    date="210422"
+    date="211101"
 
     width = 6.5 # Default carriageway width in meters
     shoulder = 1.5
+
     # Extract rail features from .osm.pbf to .gpkg
     countries=[
         "kenya",
@@ -62,60 +64,69 @@ def main(config):
             os.mkdir(summary_path)
 
     output_excel = os.path.join(summary_path,
-                                'road_conditions_2.xlsx',
+                                'road_conditions_summary.xlsx',
                                 )
     output_wrtr = pd.ExcelWriter(output_excel)
     for country in countries:
         # Read the geopackage file that was converted from osm.pdf 
-        edges = gpd.read_file(os.path.join(networks,f"{country}-{date}_highway.shp"))
-
-        # From the geopackage file extract 
-        # highway = ['motorway','motorway_link',
-        #             'trunk','trunk_link',
-        #             'primary','primary_link',
-        #             'secondary','secondary_link',
-        #             'tertiary','tertiary_link']
-
+        edges = gpd.read_file(os.path.join(networks,f"{country}-road.gpkg"), layer = "lines")
+        
+        # From the geopackage file extract relevant roads
+        highway_list = ['motorway','motorway_link',
+                   'trunk','trunk_link',
+                   'primary','primary_link',
+                   'secondary','secondary_link',
+                   'tertiary','tertiary_link']
+        edges = edges[edges.highway.isin(highway_list)]
 
         # Add attributes
         edges['surface_material'] = edges.progress_apply(lambda x:get_road_condition_surface(x),axis=1)
         edges[['road_cond','material']] = edges['surface_material'].apply(pd.Series)
         edges.drop('surface_material',axis=1,inplace=True)
         edges['width_m'] = edges.progress_apply(lambda x:get_road_width(x,width,shoulder),axis=1)
+        edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
 
         processed_path = os.path.join(data_path,'road',country)
+
         if os.path.exists(processed_path) == False:
             os.mkdir(processed_path)
-        # edges.to_file(os.path.join(processed_path,f"{country}-{date}_highway.gpkg"),layer="edges")
 
-        edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
+        out_fname = os.path.join(data_path, "road",country,f"{country}-{date}.gpkg")
         
         # Create network topology
         network = create_network_from_nodes_and_edges(
             None,
             edges,
             "road",
-            os.path.join(
-                data_path, "road",country,f"{country}-{date}.gpkg"
-            ),
+            out_fname,
         )
-        # set projection systems and find the actual road lengths in meters
-        network.edges['road_length_m'] = network.edges.progress_apply(lambda x:x.geometry.length,axis=1)
-        # Store the final road network in geopackage in the processed_path
-        # network.edges.to_file(out_fname, layer='edges', driver='GPKG')
-        # network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
         
-        edges = edges.groupby(['highway','road_cond'])[['length_km']].sum().reset_index()
-        print (edges)
-        edges = (edges.set_index(['highway']).pivot(
+        # Set projection systems find the actual road lengths in meters
+        # Length may be invalid for a geographic CRS using degrees as units; must project geometries to a planar CRS
+        # EPSG 32736 works for Burundi, Eswatini, Kenya, Malawi, Mozambique, Rwanda, South Africa, Tanzania, Uganda, Zambia, Zimbabwe
+        # Use https://epsg.io/ to find for other areas 
+        network.edges = network.edges.set_crs(epsg=4326)
+        network.nodes = network.nodes.set_crs(epsg=4326)
+        network.edges = network.edges.to_crs(epsg=32736)
+        network.nodes = network.nodes.to_crs(epsg=32736)
+
+        network.edges['road_length_m'] = network.edges.progress_apply(lambda x:x.geometry.length,axis=1)
+
+        # Store the final road network in geopackage in the processed_path
+        network.edges.to_file(out_fname, layer='edges', driver='GPKG')
+        network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
+        
+        # Generate summary statistics
+        sum_network = network.edges.groupby(['highway','road_cond'])[['road_length_m']].sum().reset_index()
+        print (sum_network) # length in m
+
+        sum_network2 = (sum_network.set_index(['highway']).pivot(
                                     columns='road_cond'
-                                    )['length_km'].reset_index().rename_axis(None, axis=1)).fillna(0)
+                                    )['road_length_m'].div(1000).reset_index().rename_axis(None, axis=1)).fillna(0)
+        print(sum_network2) # length converted to km
 
-        edges.to_excel(output_wrtr,country, index=False)
+        sum_network2.to_excel(output_wrtr,country, index=False)
         output_wrtr.save()
-
-
-    
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ set -e
 set -x
 
 # Extract date string
-date="210422" #this should change to 211027 once raw files are updated
+date="211101"
 
 # Extract road features from .osm.pbf to .gpkg
 countries=(
@@ -23,11 +23,11 @@ for country in "${countries[@]}"; do
         --overwrite \
         -o scratch/road/$country-road.osm.pbf
 
-    OSM_CONFIG_FILE=preprocess/road/osmconf_road.ini ogr2ogr -f GPKG \
+    OSM_CONFIG_FILE=scripts/preprocess/road/osmconf_road.ini ogr2ogr -f GPKG \
         scratch/road/$country-road.gpkg \
         scratch/road/$country-road.osm.pbf \
         points lines multipolygons
 done
 
 # Run script
-python preprocess/road/process_road.py
+python scripts/preprocess/road/process_road.py
