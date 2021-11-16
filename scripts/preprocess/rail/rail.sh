@@ -31,3 +31,6 @@ done
 
 # Run script
 python preprocess/rail/process_rail.py
+
+# Replace gpkg with new one which includes costs 
+python preprocess/rail/costs_rail.py

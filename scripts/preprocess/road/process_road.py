@@ -95,12 +95,12 @@ def main(config):
         edges['lanes'] = edges.progress_apply(lambda x:get_road_lanes(x),axis=1)
         edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
 
-        processed_path = os.path.join(data_path,'road',country)
+        processed_path = os.path.join(data_path,country,'networks')
 
         if os.path.exists(processed_path) == False:
             os.mkdir(processed_path)
 
-        out_fname = os.path.join(data_path, "road",country,f"{country}-{date}.gpkg")
+        out_fname = os.path.join(data_path,country,"networks","road.gpkg")
         
         # Create network topology
         network = create_network_from_nodes_and_edges(

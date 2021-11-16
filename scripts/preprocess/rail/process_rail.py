@@ -52,7 +52,7 @@ def main():
         country = os.path.basename(fname).replace('-rail_filtered.gpkg', '')
         print(country)
 
-        out_fname = os.path.join('data', 'rail', f"{country}-rail.gpkg")
+        out_fname = os.path.join('data',country,'networks',"rail.gpkg")
         try:
             os.remove(out_fname)
         except FileNotFoundError:

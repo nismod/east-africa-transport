@@ -31,3 +31,6 @@ done
 
 # Run script
 python scripts/preprocess/road/process_road.py
+
+# Replace gpkg with new one which includes costs 
+python scripts/preprocess/road/costs_road.py
