@@ -36,6 +36,14 @@ def get_road_width(x,width,shoulder):
     else:
         return float(x.lanes)*width + 2.0*shoulder
 
+def get_road_lanes(x):
+    if not x.lanes:
+        if x.highway in ('motorway','motorway_link','trunk','trunk_link','primary','primary_link'):
+            return 2
+        else:
+            return 1
+    else:
+        return x.lanes
 
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
@@ -84,6 +92,7 @@ def main(config):
         edges[['road_cond','material']] = edges['surface_material'].apply(pd.Series)
         edges.drop('surface_material',axis=1,inplace=True)
         edges['width_m'] = edges.progress_apply(lambda x:get_road_width(x,width,shoulder),axis=1)
+        edges['lanes'] = edges.progress_apply(lambda x:get_road_lanes(x),axis=1)
         edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
 
         processed_path = os.path.join(data_path,'road',country)
