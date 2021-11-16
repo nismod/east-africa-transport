@@ -157,12 +157,12 @@ def main(config):
         hazard_data_files = []
         for root, dirs, files in os.walk(hazard_data_path):
             for file in files:
-                if file.endswith(".csv"):
+                if file.endswith("with_transforms.csv"):
                     hazard_data_files.append(file)
         # print (hazard_data_files)
         
 
-        Set up problem for sensitivity analysis
+        # Set up problem for sensitivity analysis
         problem = {
                   'num_vars': 2,
                   'names': ['cost_uncertainty_parameter','damage_uncertainty_parameter'],
