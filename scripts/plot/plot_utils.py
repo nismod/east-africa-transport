@@ -44,6 +44,21 @@ def within_extent(x, y, extent):
     xmin, xmax, ymin, ymax = extent
     return (xmin < x) and (x < xmax) and (ymin < y) and (y < ymax)
 
+def get_projection(extent=(-74.04, -52.90, -20.29, -57.38), epsg=None):
+    """Get map axes
+
+    Default to Argentina extent // Lambert Conformal projection
+    """
+    if epsg is not None:
+        ax_proj = ccrs.epsg(epsg)
+    else:
+        x0, x1, y0, y1 = extent
+        cx = x0 + ((x1 - x0) / 2)
+        cy = y0 + ((y1 - y0) / 2)
+        ax_proj = ccrs.TransverseMercator(central_longitude=cx, central_latitude=cy)
+
+    return ax_proj
+
 
 def get_axes(ax,extent=None):
     """Get map axes
@@ -53,7 +68,10 @@ def get_axes(ax,extent=None):
     extent, optional: tuple (x0, x1, y0, y1)
         to be provided in AFRICA grid coordinates
     """
-    ax_proj = ccrs.epsg(AFRICA_GRID_EPSG)
+    if AFRICA_GRID_EPSG != 4326:
+        ax_proj = ccrs.epsg(AFRICA_GRID_EPSG)
+    else:
+        ax_proj = ccrs.PlateCarree()
 
     # plt.figure(figsize=(12, 8), dpi=500)
     # ax = plt.axes([0.025, 0.025, 0.95, 0.95], projection=ax_proj)
@@ -63,7 +81,7 @@ def get_axes(ax,extent=None):
 
     return ax
 
-def scale_bar_and_direction(ax,arrow_location=(0.86,0.08),scalebar_location=(0.88,0.05),scalebar_distance=25,zorder=20):
+def scale_bar_and_direction(ax,arrow_location=(0.88,0.08),scalebar_location=(0.92,0.05),scalebar_distance=25,zorder=20):
     """Draw a scale bar and direction arrow
 
     Parameters
@@ -90,7 +108,7 @@ def scale_bar_and_direction(ax,arrow_location=(0.86,0.08),scalebar_location=(0.8
 def plot_basemap_labels(ax,ax_crs=None,labels=None,label_column=None,label_offset=0,include_zorder=20):
     """Plot countries and regions background
     """
-    if ax_crs is None:
+    if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
     else:
         proj = ccrs.epsg(ax_crs)
@@ -103,7 +121,7 @@ def plot_basemap_labels(ax,ax_crs=None,labels=None,label_column=None,label_offse
             size = 8
             if within_extent(x, y, extent):
                 ax.text(
-                    x - 10*label_offset, y - 10*label_offset,
+                    x - 0.1*label_offset, y - 0.1*label_offset,
                     text,
                     alpha=0.7,
                     size=size,
@@ -111,22 +129,64 @@ def plot_basemap_labels(ax,ax_crs=None,labels=None,label_column=None,label_offse
                     zorder = include_zorder,
                     transform=proj)
 
-def plot_basemap(ax, data_path, ax_crs=AFRICA_GRID_EPSG, plot_regions=False, region_labels=False):
-    """Plot countries and regions background
-    """
-    boundaries = os.path.join(data_path, 'boundaries', 'admin_boundaries.gpkg')
-    states = geopandas.read_file(boundaries, layer='admin0')#.to_crs(ax_crs)
+# def plot_basemap(ax, countries,lakes,ax_crs=AFRICA_GRID_EPSG, regions=None, region_labels=False):
+#     """Plot countries and regions background
+#     """
+#     countries.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.GREY_1, zorder=1)
+#     lakes.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.BACKGROUND, zorder=2)
 
-    states.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.GREY_1, zorder=1)
+#     if regions is not None:
+#         regions.plot(ax=ax, edgecolor=Palette.TRANSPARENT, facecolor=Palette.GREY_2)
+#         regions.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.TRANSPARENT, zorder=3)
+#         if region_labels is True:
+#             plot_basemap_labels(ax,ax_crs=ax_crs,
+#                                 labels=regions,label_column='NAME_1',label_offset=100)
+#     # scale_bar_and_direction(ax,ax_crs,location=(0.75, 0.05))
 
-    if plot_regions:
-        regions = geopandas.read_file(boundaries, layer='admin1').to_crs(ax_crs)
-        regions.plot(ax=ax, edgecolor=Palette.TRANSPARENT, facecolor=Palette.GREY_2)
-        regions.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.TRANSPARENT, zorder=2)
+# def plot_basemap(ax, countries,ax_crs=AFRICA_GRID_EPSG, regions=None, region_labels=False):
+#     """Plot countries and regions background
+#     """
+#     countries.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.GREY_1, zorder=1)
+#     if regions is not None:
+#         regions.plot(ax=ax, edgecolor=Palette.TRANSPARENT, facecolor=Palette.GREY_2)
+#         regions.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.TRANSPARENT, zorder=3)
+#         if region_labels is True:
+#             plot_basemap_labels(ax,ax_crs=ax_crs,
+#                                 labels=regions,label_column='NAME_1',label_offset=100)
+#     # scale_bar_and_direction(ax,ax_crs,location=(0.75, 0.05))
+
+
+def plot_basemap(ax, countries,lakes,ax_crs=AFRICA_GRID_EPSG,regions=None,country_labels=False,region_labels=False):
+    proj = ccrs.PlateCarree() # See more on projections here: https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html#cartopy-projections
+    for boundary in countries.itertuples():
+        ax.add_geometries(
+            [boundary.geometry],
+            crs=proj,
+            edgecolor=Palette.WHITE,
+            facecolor=Palette.GREY_1,
+            zorder=1)
+    if country_labels is True:
+            plot_basemap_labels(ax,ax_crs=ax_crs,
+                                labels=countries,label_column='NAME_0',label_offset=0.0)
+    for boundary in lakes.itertuples():
+        ax.add_geometries(
+            [boundary.geometry],
+            crs=proj,
+            edgecolor=Palette.WHITE,
+            facecolor=Palette.BACKGROUND,
+            zorder=3)
+
+    if regions is not None:
+        for boundary in regions.itertuples():
+            ax.add_geometries(
+                [boundary.geometry],
+                crs=proj,
+                edgecolor=Palette.WHITE,
+                facecolor=Palette.GREY_2,
+                zorder=2)
         if region_labels is True:
             plot_basemap_labels(ax,ax_crs=ax_crs,
-                                labels=regions,label_column='PARISH',label_offset=100)
-    # scale_bar_and_direction(ax,ax_crs,location=(0.75, 0.05))
+                                labels=regions,label_column='NAME_1',label_offset=0.3)
 
 def plot_point_assets(ax,ax_crs,nodes,colors,size,marker,zorder):
     proj_lat_lon = ccrs.epsg(ax_crs)
@@ -578,14 +638,6 @@ def plot_raster(ax, tif_path, cmap='viridis', levels=None, colors=None,
 
     return im
 
-def test_plot(data_path, figures_path):
-    plt.figure(figsize=(12, 8), dpi=500)
-    ax = plt.axes([0.025, 0.025, 0.95, 0.95], projection=ccrs.epsg(AFRICA_GRID_EPSG))
-    ax = get_axes(ax,extent=(598251, 838079, 610353, 714779))
-    plot_basemap(ax, data_path, plot_regions=True, region_labels=True)
-    scale_bar_and_direction(ax,arrow_location=(0.86,0.08),scalebar_location=(0.88,0.05))
-    save_fig(os.path.join(figures_path, "admin_map.png"))
-
 
 def load_config():
     """Read config.json"""
@@ -606,13 +658,3 @@ def save_fig(output_filename):
     print(" * Save", os.path.basename(output_filename))
     plt.savefig(output_filename,bbox_inches='tight')
     plt.close()
-
-
-if __name__ == '__main__':
-    # Ignore reading-geopackage warnings
-    warnings.filterwarnings('ignore', message='.*Sequential read of iterator was interrupted.*')
-    # Load config
-    CONFIG = load_config()
-    test_plot(CONFIG['paths']['data'], CONFIG['paths']['figures'])
-    # Show for ease of check/test
-    plt.show()
