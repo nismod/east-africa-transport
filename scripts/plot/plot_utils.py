@@ -258,30 +258,32 @@ def plot_lines_and_points(ax,legend_handles,sector,sector_dataframe=None,layer_k
     use_labels = []
     for i,(cat,color,label,zorder) in enumerate(layer_details):
         if layer_key == "edge":
-            ax = plot_line_assets(ax,AFRICA_GRID_EPSG,
-                                sector_dataframe[sector_dataframe[sector["edge_classify_column"]] == cat],
-                                color,
-                                marker_size_factor*sector["edge_categories_linewidth"][i],
-                                zorder)
-            if label not in use_labels:
-                legend_handles.append(mpatches.Patch(color=color,
-                                                label=label))
-                use_labels.append(label)
+            if len(sector_dataframe[sector_dataframe[sector["edge_classify_column"]] == cat].index) > 0:
+                ax = plot_line_assets(ax,AFRICA_GRID_EPSG,
+                                    sector_dataframe[sector_dataframe[sector["edge_classify_column"]] == cat],
+                                    color,
+                                    marker_size_factor*sector["edge_categories_linewidth"][i],
+                                    zorder)
+                if label not in use_labels:
+                    legend_handles.append(mpatches.Patch(color=color,
+                                                    label=label))
+                    use_labels.append(label)
         elif layer_key == "node":
-            ax = plot_point_assets(ax,AFRICA_GRID_EPSG,
-                            sector_dataframe[sector_dataframe[sector["node_classify_column"]] == cat],
-                            color,
-                            sector["node_categories_markersize"][i],
-                            sector["node_categories_marker"][i],
-                            zorder)
-            if label not in use_labels:
-                legend_handles.append(plt.plot([],[],
-                                        marker=sector["node_categories_marker"][i], 
-                                        ms=marker_size_factor*sector["node_categories_markersize"][i], 
-                                        ls="",
-                                        color=color,
-                                        label=label)[0])
-                use_labels.append(label)
+            if len(sector_dataframe[sector_dataframe[sector["node_classify_column"]] == cat].index) > 0:
+                ax = plot_point_assets(ax,AFRICA_GRID_EPSG,
+                                sector_dataframe[sector_dataframe[sector["node_classify_column"]] == cat],
+                                color,
+                                sector["node_categories_markersize"][i],
+                                sector["node_categories_marker"][i],
+                                zorder)
+                if label not in use_labels:
+                    legend_handles.append(plt.plot([],[],
+                                            marker=sector["node_categories_marker"][i], 
+                                            ms=marker_size_factor*sector["node_categories_markersize"][i], 
+                                            ls="",
+                                            color=color,
+                                            label=label)[0])
+                    use_labels.append(label)
         
     return ax, legend_handles
 
