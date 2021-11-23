@@ -29,16 +29,17 @@ def main(config):
                                                     "SOM","COD","MWI","MOZ",
                                                     "ZWE","AGO","NAM","BWA"],
                             "country_labels":True,
+                            "country_label_offset":{"COD":1.0,"SOM":-0.3,"AGO":-0.1,"All":0.07},
                             "admin_labels":False,
                             "save_fig":"east-africa-region.png"                        
                             },
-
                             {
                             "center_countries":["KEN"],
                             "boundary_countries":["KEN","TZA","UGA",
-                                                    "RWA","BDI","ETH","SSD",
+                                                    "ETH","SSD",
                                                     "SOM"],
                             "country_labels":True,
+                            "country_label_offset":{"All":0.07},
                             "admin_labels":True,
                             "save_fig":"kenya-region.png"
                             },
@@ -46,13 +47,19 @@ def main(config):
                             "center_countries":["TZA"],
                             "boundary_countries":["KEN","TZA","UGA","ZMB",
                                                     "RWA","BDI","MWI","MOZ"],
+                            "country_labels":True,
+                            "country_label_offset":{"UGA":-0.02,"All":0.07},
+                            "admin_labels":True,
                             "save_fig":"tanzania-region.png"
                             },
                             {
                             "center_countries":["UGA"],
                             "boundary_countries":["KEN","TZA","UGA",
-                                                    "RWA","BDI","SSD",
+                                                    "RWA","SSD",
                                                     "COD"],
+                            "country_labels":True,
+                            "country_label_offset":{"All":0.07},
+                            "admin_labels":True,
                             "save_fig":"uganda-region.png"
                             },
                             {
@@ -60,6 +67,9 @@ def main(config):
                             "boundary_countries":["TZA","ZMB",
                                                     "COD","MWI","MOZ",
                                                     "ZWE","AGO","NAM","BWA"],
+                            "country_labels":True,
+                            "country_label_offset":{"All":0.07},
+                            "admin_labels":True,
                             "save_fig":"zambia-region.png"
                             },
                         ]
@@ -68,9 +78,7 @@ def main(config):
         countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
         countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
         bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
-        print ("Orignial",bounds)
-        bounds = (bounds[0]-0.2,bounds[2]+0.2,bounds[1]-0.1,bounds[3])
-        print ("Modified",bounds)
+        bounds = (bounds[0]-0.2,bounds[2]+0.4,bounds[1]-0.1,bounds[3]+0.2)
         ax_proj = get_projection(extent=bounds)
         lakes = geopandas.read_file(lakes_path).to_crs(AFRICA_GRID_EPSG)
         regions = geopandas.read_file(admin_boundaries,layer="level1").to_crs(AFRICA_GRID_EPSG)
@@ -80,8 +88,11 @@ def main(config):
                 figsize=(12,12),
                 dpi=500)
         ax = get_axes(ax,extent=bounds)
-        plot_basemap(ax, countries,lakes,regions=regions,country_labels=False,region_labels=False)
-        # plot_basemap(ax, countries,regions=regions,region_labels=True)
+        plot_basemap(ax, countries,lakes,
+                    regions=regions,
+                    country_labels=map_plot["country_labels"],
+                    label_offset = map_plot["country_label_offset"],
+                    region_labels=map_plot["admin_labels"])
         scale_bar_and_direction(ax,scalebar_distance=50)
         save_fig(os.path.join(figure_path,map_plot["save_fig"]))
 

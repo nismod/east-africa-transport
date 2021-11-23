@@ -13,6 +13,7 @@ import numpy
 import math
 import rasterio
 import rioxarray
+from shapely.geometry import box
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from shapely.geometry import LineString
@@ -105,95 +106,117 @@ def scale_bar_and_direction(ax,arrow_location=(0.88,0.08),scalebar_location=(0.9
     ax.arrow(*arrow_location, 0, 0.02, length_includes_head=True,
           head_width=0.01, head_length=0.04, overhang=0.2,transform=ax.transAxes, facecolor='k',zorder=zorder)
 
-def plot_basemap_labels(ax,ax_crs=None,labels=None,label_column=None,label_offset=0,include_zorder=20):
+def plot_basemap_labels(ax,ax_crs=None,
+                        labels=None,label_column=None,
+                        label_id_column=None,label_offset={"All":1.0},
+                        label_size=8,include_zorder=20):
     """Plot countries and regions background
     """
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
     else:
         proj = ccrs.epsg(ax_crs)
-    extent = ax.get_extent()
+    extent = ax.get_extent(crs=proj)
+    extent_x_center = (extent[0] + extent[1])/2.0
+    extent_y_center = (extent[2] + extent[3])/2.0
     if labels is not None:
         for label in labels.itertuples():
             text = getattr(label,label_column)
-            x = float(label.geometry.centroid.x)
-            y = float(label.geometry.centroid.y)
-            size = 8
-            if within_extent(x, y, extent):
-                ax.text(
-                    x - 0.1*label_offset, y - 0.1*label_offset,
-                    text,
-                    alpha=0.7,
-                    size=size,
-                    horizontalalignment='center',
-                    zorder = include_zorder,
-                    transform=proj)
+            if label_id_column is not None:
+                if getattr(label,label_id_column) in list(label_offset.keys()):
+                    apply_offset = label_offset[getattr(label,label_id_column)]
+                else:
+                    apply_offset = label_offset["All"]
+            else:
+                apply_offset = label_offset["All"]
+            if 'zanzibar' not in text.lower() and 'pemba' not in text.lower():
+                x = float(label.geometry.centroid.x)
+                y = float(label.geometry.centroid.y)
+                if within_extent(x, y, extent) is False:
+                    polygon = geopandas.GeoDataFrame(index=[0], 
+                                                    crs=f"EPSG:{ax_crs}", 
+                                                    geometry=[box(extent[0], extent[2], extent[1], extent[3])])
+                    geom = label.geometry.intersection(polygon.geometry.values[0])
+                    x = float(geom.centroid.x)
+                    y = float(geom.centroid.y)
 
-# def plot_basemap(ax, countries,lakes,ax_crs=AFRICA_GRID_EPSG, regions=None, region_labels=False):
-#     """Plot countries and regions background
-#     """
-#     countries.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.GREY_1, zorder=1)
-#     lakes.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.BACKGROUND, zorder=2)
+                if within_extent(x, y, extent):    
+                    if text.lower() == "democratic republic of the congo":
+                        # print (x,y,extent)
+                        offset = -3.5
+                    elif text.lower() == "malawi":
+                        offset = -10.0
+                    else:
+                        offset = 1.5
+                    if x < extent_x_center:
+                        offset_x_adjust = -0.7
+                    else:
+                        offset_x_adjust = 0.7
 
-#     if regions is not None:
-#         regions.plot(ax=ax, edgecolor=Palette.TRANSPARENT, facecolor=Palette.GREY_2)
-#         regions.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.TRANSPARENT, zorder=3)
-#         if region_labels is True:
-#             plot_basemap_labels(ax,ax_crs=ax_crs,
-#                                 labels=regions,label_column='NAME_1',label_offset=100)
-#     # scale_bar_and_direction(ax,ax_crs,location=(0.75, 0.05))
+                    if y < extent_y_center:
+                        offset_y_adjust = -1.0
+                    else:
+                        offset_y_adjust = 1.1
 
-# def plot_basemap(ax, countries,ax_crs=AFRICA_GRID_EPSG, regions=None, region_labels=False):
-#     """Plot countries and regions background
-#     """
-#     countries.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.GREY_1, zorder=1)
-#     if regions is not None:
-#         regions.plot(ax=ax, edgecolor=Palette.TRANSPARENT, facecolor=Palette.GREY_2)
-#         regions.plot(ax=ax, edgecolor=Palette.WHITE, facecolor=Palette.TRANSPARENT, zorder=3)
-#         if region_labels is True:
-#             plot_basemap_labels(ax,ax_crs=ax_crs,
-#                                 labels=regions,label_column='NAME_1',label_offset=100)
-#     # scale_bar_and_direction(ax,ax_crs,location=(0.75, 0.05))
+                    ax.text(
+                        x + offset_x_adjust*offset*apply_offset, y + offset_y_adjust*offset*apply_offset,
+                        text,
+                        alpha=0.7,
+                        size=label_size,
+                        horizontalalignment='center',
+                        zorder = include_zorder,
+                        transform=proj)
 
+                    
 
-def plot_basemap(ax, countries,lakes,ax_crs=AFRICA_GRID_EPSG,regions=None,country_labels=False,region_labels=False):
-    proj = ccrs.PlateCarree() # See more on projections here: https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html#cartopy-projections
-    for boundary in countries.itertuples():
-        ax.add_geometries(
-            [boundary.geometry],
-            crs=proj,
-            edgecolor=Palette.WHITE,
-            facecolor=Palette.GREY_1,
-            zorder=1)
+def plot_basemap(ax, countries,lakes,ax_crs=AFRICA_GRID_EPSG,regions=None,country_labels=False,label_offset={"All":1.0},region_labels=False):
+    if ax_crs is None or ax_crs == 4326:
+        proj = ccrs.PlateCarree()
+    else:
+        proj = ccrs.epsg(ax_crs)
+    # See more on projections here: https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html#cartopy-projections
+    ax.add_geometries(
+        list(countries.geometry),
+        crs=proj,
+        edgecolor=Palette.WHITE,
+        facecolor=Palette.GREY_1,
+        zorder=1)
     if country_labels is True:
             plot_basemap_labels(ax,ax_crs=ax_crs,
-                                labels=countries,label_column='NAME_0',label_offset=0.0)
-    for boundary in lakes.itertuples():
-        ax.add_geometries(
-            [boundary.geometry],
-            crs=proj,
-            edgecolor=Palette.WHITE,
-            facecolor=Palette.BACKGROUND,
-            zorder=3)
+                                labels=countries,
+                                label_column='NAME_0',
+                                label_id_column='GID_0',
+                                label_offset=label_offset,
+                                label_size=10)
+    ax.add_geometries(
+        list(lakes.geometry),
+        crs=proj,
+        edgecolor=Palette.WHITE,
+        facecolor=Palette.BACKGROUND,
+        zorder=3)
 
     if regions is not None:
-        for boundary in regions.itertuples():
-            ax.add_geometries(
-                [boundary.geometry],
-                crs=proj,
-                edgecolor=Palette.WHITE,
-                facecolor=Palette.GREY_2,
-                zorder=2)
+        ax.add_geometries(
+            list(regions.geometry),
+            crs=proj,
+            edgecolor=Palette.WHITE,
+            facecolor=Palette.GREY_2,
+            zorder=2)
         if region_labels is True:
             plot_basemap_labels(ax,ax_crs=ax_crs,
-                                labels=regions,label_column='NAME_1',label_offset=0.3)
+                                labels=regions,
+                                label_column='NAME_1',
+                                label_offset={"All":0.0})
 
 def plot_point_assets(ax,ax_crs,nodes,colors,size,marker,zorder):
-    proj_lat_lon = ccrs.epsg(ax_crs)
+    if ax_crs is None or ax_crs == 4326:
+        proj = ccrs.PlateCarree()
+    else:
+        proj = ccrs.epsg(ax_crs)
     ax.scatter(
         list(nodes.geometry.x),
         list(nodes.geometry.y),
-        transform=proj_lat_lon,
+        transform=proj,
         facecolor=colors,
         s=size,
         marker=marker,
@@ -202,10 +225,13 @@ def plot_point_assets(ax,ax_crs,nodes,colors,size,marker,zorder):
     return ax
 
 def plot_line_assets(ax,ax_crs,edges,colors,size,zorder):
-    proj_lat_lon = ccrs.epsg(ax_crs)
+    if ax_crs is None or ax_crs == 4326:
+        proj = ccrs.PlateCarree()
+    else:
+        proj = ccrs.epsg(ax_crs)
     ax.add_geometries(
         list(edges.geometry),
-        crs=proj_lat_lon,
+        crs=proj,
         linewidth=size,
         edgecolor=colors,
         facecolor='none',
@@ -367,6 +393,7 @@ def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_t
     return legend_handles
 
 def line_map_plotting_colors_width(ax,df,column,
+                        ax_crs=4326,
                         edge_classify_column=None,
                         edge_categories=["1","2","3","4","5"],
                         edge_colors=['#7bccc4','#6baed6','#807dba','#2171b5','#08306b'],
@@ -381,6 +408,12 @@ def line_map_plotting_colors_width(ax,df,column,
                         legend_size=7,
                         plot_title=False,
                         significance=0):
+    
+    if ax_crs is None or ax_crs == 4326:
+        proj = ccrs.PlateCarree()
+    else:
+        proj = ccrs.epsg(ax_crs)
+
     layer_details = list(
                         zip(
                             edge_categories,
@@ -470,7 +503,7 @@ def line_map_plotting_colors_width(ax,df,column,
         cat_style = styles[cat]
         ax.add_geometries(
             geoms,
-            crs=ccrs.epsg(AFRICA_GRID_EPSG),
+            crs=proj,
             linewidth=0.0,
             facecolor=cat_style.color,
             edgecolor='none',
@@ -486,6 +519,7 @@ def line_map_plotting_colors_width(ax,df,column,
     return ax
 
 def point_map_plotting_colors_width(ax,df,column,
+                        ax_crs=4326,
                         point_classify_column=None,
                         point_categories=["1","2","3","4","5"],
                         point_colors=['#7bccc4','#6baed6','#807dba','#2171b5','#08306b'],
@@ -502,7 +536,11 @@ def point_map_plotting_colors_width(ax,df,column,
                         legend_size=6,
                         plot_title=False,
                         significance=0):
-
+    
+    if ax_crs is None or ax_crs == 4326:
+        proj = ccrs.PlateCarree()
+    else:
+        proj = ccrs.epsg(ax_crs)
 
     layer_details = list(
                         zip(
@@ -584,7 +622,7 @@ def point_map_plotting_colors_width(ax,df,column,
             ax.scatter(
                 g[0].x,
                 g[0].y,
-                transform=ccrs.epsg(AFRICA_GRID_EPSG),
+                transform=proj,
                 facecolor=cat_style.color,
                 s=g[1],
                 alpha=0.8,
@@ -616,7 +654,10 @@ def plot_raster(ax, tif_path, cmap='viridis', levels=None, colors=None,
             maxx=right,
             maxy=top,
         )
-    crs = ccrs.epsg(reproject_transform)
+    if reproject_transform == 4326:
+        crs = ccrs.PlateCarree()
+    else:
+        crs = ccrs.epsg(ax_crs)
     # Plot raster
     if levels is not None and colors is not None:
         im = ds.plot(
