@@ -64,7 +64,7 @@ def main(path):
 
 
     def epoch(p):
-        if "hist" in p:
+        if "_hist_" in p:
             return "hist"
         return int(re.search(r"_(\d\d\d\d)_", p).group(1))
 

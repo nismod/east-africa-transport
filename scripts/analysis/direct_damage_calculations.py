@@ -97,8 +97,8 @@ def estimate_direct_damage_costs_and_units(x,cost_unit_column,damage_cost_column
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
-    output_data_path = config['paths']['output']
-    
+    results_data_path = config['paths']['results']
+
     
     hazard_attributes = [
                             {
@@ -140,14 +140,15 @@ def main(config):
                                                         'asset_sheet']]
     asset_data_details = pd.read_csv(os.path.join(damage_data_path,
                             "network_layers_hazard_intersections_details.csv"))
+    
     for country in country_attributes:
-        direct_damages_results = os.path.join(output_data_path,
+        direct_damages_results = os.path.join(results_data_path,
                                             country["country"],
                                             "direct_damages")
         if os.path.exists(direct_damages_results) == False:
             os.mkdir(direct_damages_results)
 
-        hazard_asset_intersection_path = os.path.join(output_data_path,
+        hazard_asset_intersection_path = os.path.join(results_data_path,
                                     country["country"],
                                     "hazard_asset_intersection")
 
@@ -159,8 +160,8 @@ def main(config):
             for file in files:
                 if file.endswith("with_transforms.csv"):
                     hazard_data_files.append(file)
-        # print (hazard_data_files)
         
+        #print (hazard_data_files)
 
         # Set up problem for sensitivity analysis
         problem = {
@@ -171,20 +172,20 @@ def main(config):
         
         # And create parameter values
         param_values = morris.sample(problem, 10, num_levels=4, optimal_trajectories=8,local_optimization =False)
-        print (param_values)
+        # print (param_values)
         param_values = list(set([(p[0],p[1]) for p in param_values]))
         # param_values = param_values[:2]
         # print (param_values)
-        with open(f"{country['country']}_parameter_combinations.txt","w+") as f:
+        with open(os.path.join(damage_data_path, f"{country['country']}_parameter_combinations.txt"),"w+") as f:
             f.write("parameter_set cost_uncertainty_parameter damage_uncertainty_parameter\n") 
             for p in range(len(param_values)):  
                 f.write(f"{p} {param_values[p][0]} {param_values[p][1]}\n")
         
         f.close()
 
-        # param_values = pd.read_csv('parameter_combinations.txt', sep=" ")
-        print (param_values)
-        
+        param_values = pd.read_csv(os.path.join(damage_data_path, f"{country['country']}_parameter_combinations.txt"), sep=" ")
+        # print (param_values)
+
         for param in param_values.itertuples():
             set_count = param.parameter_set
             cost_uncertainty_parameter = param.cost_uncertainty_parameter
@@ -203,7 +204,7 @@ def main(config):
 
             damage_curves = pd.concat(damage_curves,axis=0,ignore_index=True)
             del damage_curve_df
-
+            
             for asset_info in asset_data_details.itertuples():
                 asset_sector = asset_info.sector
                 asset_id = asset_info.asset_id_column
@@ -226,8 +227,9 @@ def main(config):
                 hazard_damages = []
                 for hazard_file in hazard_data_files:
                     hazard_intersection_file = os.path.join(hazard_asset_intersection_path,
-                                        f"{asset_info.asset_gpkg}_splits__{hazard_file.replace('.csv','')}__{asset_info.asset_layer}.geoparquet")
+                                        f"{asset_info.asset_gpkg}_splits__{hazard_file.replace('__with_transforms.csv','')}__{asset_info.asset_layer}.geoparquet")
                     hazard_data_details = pd.read_csv(os.path.join(hazard_data_path,hazard_file),encoding="latin1")
+                    
                     if os.path.isfile(hazard_intersection_file) is True: 
                         hazard_df = gpd.read_parquet(hazard_intersection_file)
                         hazard_df = hazard_df.to_crs(epsg=country["epsg_country"])
@@ -235,6 +237,7 @@ def main(config):
                             if getattr(asset_info,f"{hazard_info.hazard}_asset_damage_lookup_column") != 'none':
                                 asset_hazard = getattr(asset_info,f"{hazard_info.hazard}_asset_damage_lookup_column")
                                 hazard_effect_df = hazard_df[[asset_id,hazard_info.key,'geometry']]
+                                # print(hazard_effect_df)
                                 damages_df = damage_curves[
                                                             (
                                                                 damage_curves['sector'] == asset_sector
@@ -270,6 +273,8 @@ def main(config):
                                     hazard_effect_df['rcp'] = hazard_info.rcp 
                                     hazard_effect_df['epoch'] = hazard_info.epoch   
                                     hazard_effect_df['confidence'] = hazard_info.confidence
+                                    hazard_effect_df['subsidence'] = hazard_info.subsidence
+                                    hazard_effect_df['model'] = hazard_info.model
 
                                     hazard_effect_df = add_exposure_dimensions(hazard_effect_df,
                                                                         dataframe_type=asset_info.asset_layer,
@@ -294,7 +299,7 @@ def main(config):
                                                         'exposure_unit',
                                                         'damage_cost_unit',
                                                         'hazard',
-                                                        'rp','rcp','epoch','confidence'
+                                                        'rp','rcp','epoch','confidence','subsidence','model'
                                                         ],
                                                         dropna=False).agg({
                                                             "exposure": "sum", 
