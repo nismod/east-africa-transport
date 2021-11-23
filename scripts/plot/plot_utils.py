@@ -19,6 +19,7 @@ import matplotlib.patches as mpatches
 from shapely.geometry import LineString
 from matplotlib.lines import Line2D
 from scalebar import scale_bar
+import jenkspy
 
 def _get_palette():
     colors = {
@@ -326,16 +327,16 @@ def generate_weight_bins(weights, n_steps=9, width_step=0.01, interpolation='lin
     width_by_range = OrderedDict()
 
     if interpolation == 'linear':
-        mins = np.linspace(min_weight, max_weight, n_steps,endpoint=True)
+        mins = numpy.linspace(min_weight, max_weight, n_steps,endpoint=True)
     elif interpolation == 'log':
-        mins = np.geomspace(min_weight, max_weight, n_steps,endpoint=True)
+        mins = numpy.geomspace(min_weight, max_weight, n_steps,endpoint=True)
     elif interpolation == 'quantiles':
-        weights = np.array([min_weight] + list(weights) + [max_weight])
-        mins = np.quantile(weights,q=np.linspace(0,1,n_steps,endpoint=True))
+        weights = numpy.array([min_weight] + list(weights) + [max_weight])
+        mins = numpy.quantile(weights,q=numpy.linspace(0,1,n_steps,endpoint=True))
     elif interpolation == 'equal bins':
-        mins = np.array([min_weight] + list(sorted(set([cut.right for cut in pd.qcut(sorted(weights),n_steps-1)])))[:-1] + [max_weight])  
+        mins = numpy.array([min_weight] + list(sorted(set([cut.right for cut in pd.qcut(sorted(weights),n_steps-1)])))[:-1] + [max_weight])  
     elif interpolation == 'fisher-jenks':
-        weights = np.array([min_weight] + list(weights) + [max_weight])
+        weights = numpy.array([min_weight] + list(weights) + [max_weight])
         mins = jenkspy.jenks_breaks(weights, nb_class=n_steps-1)
     else:
         raise ValueError('Interpolation must be log or linear')
@@ -344,9 +345,9 @@ def generate_weight_bins(weights, n_steps=9, width_step=0.01, interpolation='lin
     assert len(maxs) == len(mins)
 
     if interpolation in ('log','fisher-jenks'):
-        scale = np.geomspace(1, len(mins),len(mins))
+        scale = numpy.geomspace(1, len(mins),len(mins))
     else:
-        scale = np.linspace(1,len(mins),len(mins))
+        scale = numpy.linspace(1,len(mins),len(mins))
 
 
     for i, (min_, max_) in enumerate(zip(mins, maxs)):
@@ -409,7 +410,8 @@ def line_map_plotting_colors_width(ax,df,column,
                         interpolation="linear",
                         legend_size=7,
                         plot_title=False,
-                        significance=0):
+                        significance=0,
+                        legend_location='upper right'):
     
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
@@ -515,7 +517,7 @@ def line_map_plotting_colors_width(ax,df,column,
     if plot_title:
         ax.set_title(plot_title, fontsize=9)
     print ('* Plotting ',plot_title)
-    first_legend = ax.legend(handles=legend_handles,fontsize=legend_size,title=legend_label,loc='upper right')
+    first_legend = ax.legend(handles=legend_handles,fontsize=legend_size,title=legend_label,loc=legend_location)
     ax.add_artist(first_legend).set_zorder(20)
     legend_from_style_spec(ax, styles,fontsize=legend_size,loc='lower left',zorder=20)
     return ax
@@ -537,7 +539,8 @@ def point_map_plotting_colors_width(ax,df,column,
                         interpolation="linear",
                         legend_size=6,
                         plot_title=False,
-                        significance=0):
+                        significance=0,
+                        legend_location='upper right'):
     
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
@@ -634,7 +637,7 @@ def point_map_plotting_colors_width(ax,df,column,
 
     if plot_title:
         plt.title(plot_title, fontsize=9)
-    first_legend = ax.legend(handles=legend_handles,fontsize=legend_size,title=legend_label,loc='upper right')
+    first_legend = ax.legend(handles=legend_handles,fontsize=legend_size,title=legend_label,loc=legend_location)
     ax.add_artist(first_legend).set_zorder(20)
     print ('* Plotting ',plot_title)
     legend_from_style_spec(ax, styles,fontsize=legend_size,loc='lower left',zorder=20)
