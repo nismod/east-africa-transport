@@ -200,3 +200,55 @@ def country_basemap_attributes():
                         },
                     ]
     return map_country_codes
+
+def country_risk_basemap_attributes():
+    map_country_codes = [
+                        {
+                        "country":"kenya",
+                        "center_countries":["KEN"],
+                        "boundary_countries":["KEN","TZA","UGA",
+                                                "ETH","SSD",
+                                                "SOM"],
+                        "country_labels":True,
+                        "country_label_offset":{"All":0.07},
+                        "admin_labels":True,
+                        "legend_location":"upper right",
+                        "save_fig":"kenya-region.png"
+                        },
+                        {
+                        "country":"tanzania",
+                        "center_countries":["TZA"],
+                        "boundary_countries":["KEN","TZA","UGA","ZMB",
+                                                "RWA","BDI","MWI","MOZ"],
+                        "country_labels":True,
+                        "country_label_offset":{"UGA":-0.02,"All":0.07},
+                        "admin_labels":True,
+                        "legend_location":"upper right",
+                        "save_fig":"tanzania-region.png"
+                        },
+                        {
+                        "country":"uganda",
+                        "center_countries":["UGA"],
+                        "boundary_countries":["KEN","TZA","UGA",
+                                                "RWA","SSD",
+                                                "COD"],
+                        "country_labels":True,
+                        "country_label_offset":{"All":0.07},
+                        "admin_labels":True,
+                        "legend_location":"upper right",
+                        "save_fig":"uganda-region.png"
+                        },
+                        {
+                        "country":"zambia",
+                        "center_countries":["ZMB"],
+                        "boundary_countries":["TZA","ZMB",
+                                                "COD","MWI","MOZ",
+                                                "ZWE","AGO","NAM","BWA"],
+                        "country_labels":True,
+                        "country_label_offset":{"All":0.07},
+                        "admin_labels":True,
+                        "legend_location":"upper right",
+                        "save_fig":"zambia-region.png"
+                        },
+                    ]
+    return map_country_codes
