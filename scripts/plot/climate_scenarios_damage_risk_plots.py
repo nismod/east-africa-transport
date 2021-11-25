@@ -74,7 +74,7 @@ def main(config):
                                 ("river","4.5","2050"),
                                 ("river","4.5","2080")
                             ]
-    damages_filter_lables = ["Baseline","RCP 4.5 - 2030","RCP 4.5 - 2050","RCP 4.5 - 2050"]
+    damages_filter_lables = ["Baseline","RCP 4.5 - 2030","RCP 4.5 - 2050","RCP 4.5 - 2080"]
     no_value_string = "No risk/exposure/operation"
     legend_title = "Expected Annual Damages (US$)"
     for sector in sector_details:
