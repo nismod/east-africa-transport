@@ -52,7 +52,7 @@ def get_asset_total_damage_values(sector,damage_data_path,
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
-    output_data_path = config['paths']['output']
+    output_data_path = config['paths']['results']
     figure_path = config['paths']['figures']
 
     admin_boundaries = os.path.join(processed_data_path,
