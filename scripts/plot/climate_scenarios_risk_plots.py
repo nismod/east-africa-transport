@@ -226,8 +226,13 @@ def main(config):
                                                                 map_plot["country"],    
                                                                 "direct_damages_summary") 
                         for h in hazard:
+                            if h == "river":
+                                baseyear = "1980"
+                            if h == "coastal":
+                                baseyear = "hist"
+
                             tot_damages_filter_values = [
-                                                        (h,"baseline","1980"),
+                                                        (h,"baseline",baseyear),
                                                         (h,"4.5","2030"),
                                                         (h,"4.5","2050"),
                                                         (h,"4.5","2080"),
@@ -252,7 +257,7 @@ def main(config):
                                 for r in rcp:
                                     print("* Starting sector: "+sector['sector_label']+", country: "+map_plot['country']+", hazard: "+h+", rcp: "+r+".")
                                     damages_filter_values = [
-                                                                (h,"baseline","1980"),
+                                                                (h,"baseline",baseyear),
                                                                 (h,r,"2030"),
                                                                 (h,r,"2050"),
                                                                 (h,r,"2080")

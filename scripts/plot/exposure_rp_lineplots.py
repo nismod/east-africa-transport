@@ -98,6 +98,7 @@ def main(config):
                     for h in hazard:
                         tot_damages_filter_values = [
                                                     (h,"baseline","1980"),
+                                                    (h,"baseline","hist"),
                                                     (h,"4.5","2030"),
                                                     (h,"4.5","2050"),
                                                     (h,"4.5","2080"),
@@ -116,7 +117,10 @@ def main(config):
                             
                             figure_texts = ['a.','b.','c.']
                             plot_column = "exposure"
-                            baseyear = "1980"
+                            if h == "river":
+                                baseyear = "1980"
+                            if h == "coastal":
+                                baseyear = "hist"
                             length_factor = 0.001 # Convert length from m to km
                             fig, ax_plots = plt.subplots(1,3,
                                     figsize=(20,12),
