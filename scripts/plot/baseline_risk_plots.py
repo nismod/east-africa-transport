@@ -51,8 +51,12 @@ def get_asset_total_damage_values(sector,damage_data_path,
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
-    output_data_path = config['paths']['output']
+    output_data_path = config['paths']['results']
     figure_path = config['paths']['figures']
+
+    folder_path = os.path.join(figure_path,"baseline_risk")
+    if os.path.exists(folder_path) == False:
+        os.mkdir(folder_path)
 
     admin_boundaries = os.path.join(processed_data_path,"Admin_boundaries","east_africa_admin_levels","admin_levels.gpkg")
     lakes_path = os.path.join(processed_data_path,"naturalearth","ne_10m_lakes.shp")
@@ -68,7 +72,7 @@ def main(config):
     no_value_string = "No risk/exposure/operation"
     legend_title = "Expected Annual Damages (US$)"
     for sector in sector_details:
-        if sector["sector"] in ["road"]:
+        if sector["sector"] in ["road","rail"]:
             for map_plot in map_country_codes:
                 edges = gpd.read_file(os.path.join(
                                     processed_data_path,
@@ -121,7 +125,7 @@ def main(config):
                                                             )
                         save_fig(
                                 os.path.join(
-                                    figure_path, 
+                                    folder_path, 
                                     f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{damage_file_string}.png"
                                     )
                                 )

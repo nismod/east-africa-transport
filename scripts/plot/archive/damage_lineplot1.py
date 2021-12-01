@@ -42,14 +42,16 @@ def filter_asset_total_damage_values(sector,damage_data_path,
                     os.path.join(
                         damage_data_path,
                         f"{sector['sector_gpkg'].replace('.gpkg','')}_{sector[f'{layer_key}_layer']}_{damage_string}.csv"
-                        )
+                        ), 
+                    low_memory=False
                     )
     for d_filter in damages_filter_columns:
         damages[d_filter] = damages[d_filter].apply(str)
     damages = damages.set_index(damages_filter_columns)
     damages = damages[damages.index.isin(damages_filter_values)].reset_index()
-    
+
     damages, damage_sum_columns = quantiles(damages,[asset_id_column] + damage_groupby,damage_sum_columns)
+    
     damages = damages.groupby(
                     damage_groupby,dropna=False
                     ).agg(
@@ -59,6 +61,7 @@ def filter_asset_total_damage_values(sector,damage_data_path,
                                 )
                             )
                         ).reset_index() 
+    
     min_damages = min(damages[damage_sum_columns].min())
     max_damages = max(damages[damage_sum_columns].max())
     return damages, min_damages, max_damages
@@ -72,7 +75,7 @@ def main(config):
     map_country_codes = country_risk_basemap_attributes()
     sector_details = sector_attributes() 
     damage_string = "direct_damages" 
-    damage_columns = ["exposure"]
+    damage_columns = ["direct_damage_cost_mean"] 
     damage_groupby = ["hazard","rcp","rp","epoch"]
     damages_filter_columns = ["hazard","rcp","epoch"]
 
@@ -108,9 +111,9 @@ def main(config):
                         rps = list(set(tot_damages['rp'].values.tolist()))
                         
                         figure_texts = ['a.','b.','c.']
-                        plot_column = "exposure"
+                        plot_column = "direct_damage_cost_mean"
                         baseyear = "1980"
-                        length_factor = 0.001 # Convert length from m to km
+                        length_factor = 0.000001 # Convert usd to million usd
                         fig, ax_plots = plt.subplots(1,3,
                                 figsize=(20,12),
                                 dpi=500)
@@ -136,7 +139,7 @@ def main(config):
 
                                         
                             ax.set_xlabel('Return period (years)',fontsize=14,fontweight='bold')
-                            ax.set_ylabel('Flooded length (km)',fontsize=14,fontweight='bold')
+                            ax.set_ylabel('Direct damage costs (million USD)',fontsize=14,fontweight='bold')
                             ax.set_xscale('log')
                             ax.set_ylim(length_factor*min_limits,length_factor*max_limits)
                             ax.tick_params(axis='both', labelsize=14)
@@ -164,7 +167,7 @@ def main(config):
                         save_fig(
                                 os.path.join(
                                     figure_path, 
-                                    f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_exposures_lineplot.png"
+                                    f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_damage_lineplot.png"
                                     )
                                 )
                         plt.close()

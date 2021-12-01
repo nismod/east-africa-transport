@@ -18,6 +18,11 @@ def main(config):
     processed_data_path = config['paths']['data']
     output_data_path = config['paths']['output']
     figure_path = config['paths']['figures']
+    
+    folder_path = os.path.join(figure_path,"networks")
+    if os.path.exists(folder_path) == False:
+        os.mkdir(folder_path)
+
 
     admin_boundaries = os.path.join(processed_data_path,"Admin_boundaries","east_africa_admin_levels","admin_levels.gpkg")
     lakes_path = os.path.join(processed_data_path,"naturalearth","ne_10m_lakes.shp")
@@ -65,7 +70,7 @@ def main(config):
                     ax, legend_handles = plot_lines_and_points(ax,legend_handles,sector,sector_dataframe=nodes,layer_key="node")
                 
                 ax.legend(handles=legend_handles,fontsize=10,loc=map_plot["legend_location"]) 
-                save_fig(os.path.join(figure_path,f"{map_plot['country']}-{sector['sector']}-network.png"))
+                save_fig(os.path.join(folder_path,f"{map_plot['country']}-{sector['sector']}-network.png"))
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings

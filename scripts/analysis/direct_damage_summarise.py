@@ -70,52 +70,49 @@ def main(config):
         param_values = pd.read_csv(os.path.join(damage_data_path, f"{country['country']}_parameter_combinations.txt"), sep=" ")
         uncertainty_columns = param_values.columns.values.tolist()[1:]
         damage_results_types = ["direct_damages","EAD"]
-        include_confidence_values = [True,False]
-        for confidence in include_confidence_values:
-            for asset_info in asset_data_details.itertuples():
-                asset_damages_results = os.path.join(direct_damages_results,f"{asset_info.asset_gpkg}_{asset_info.asset_layer}")
-                for damages_type in damage_results_types:
-                    for param in param_values.itertuples():
-                        damage_file = os.path.join(
-                                        asset_damages_results,
-                                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_{damages_type}_parameter_set_{param.parameter_set}.csv"
-                                        )
-                        if os.path.isfile(damage_file) is True:
-                            df = pd.read_csv(damage_file).fillna(0)
-                            print ("* Done with creating list of all dataframes")
-                            haz_rcp_epoch_subs_model = list(set(df.set_index(["hazard","rcp","epoch","subsidence","model"]).index.values.tolist()))
-                            #print (haz_rcp_epoch_subs_model)
-                            summarised_damages = []
-                            for i,(haz,rcp,epoch,subs,model) in enumerate(haz_rcp_epoch_subs_model):
-                                damages = df[(df.hazard == haz) & (df.rcp == rcp) & (df.epoch == epoch) & (df.subsidence == subs) & (df.model == model)]
-                                
-                                #damages = pd.concat(damages,axis=0,ignore_index=True)
-                                
-                                print ("* Done with concatinating all dataframes")
-                                if confidence is False:
-                                    damages.drop("confidence",axis=1,inplace=True)
-                                    confidence_string = "_without_confidence_value"
-                                else:
-                                    confidence_string = ""
-                                index_columns = [c for c in damages.columns.values.tolist() if (
-                                                            c not in ["direct_damage_cost"]
-                                                            ) and ("EAD_" not in c)]
-                                index_columns = [i for i in index_columns if i not in uncertainty_columns]
-                                damage_columns = [c for c in damages.columns.values.tolist() if (
-                                                            c in ["direct_damage_cost"]
-                                                            ) or ("EAD_" in c)]
+        
+        for asset_info in asset_data_details.itertuples():
+            asset_damages_results = os.path.join(direct_damages_results,f"{asset_info.asset_gpkg}_{asset_info.asset_layer}")
+            for damages_type in damage_results_types:
+                for param in param_values.itertuples():
+                    damage_file = os.path.join(
+                                    asset_damages_results,
+                                    f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_{damages_type}_parameter_set_{param.parameter_set}.csv"
+                                    )
+                    if os.path.isfile(damage_file) is True:
+                        df = pd.read_csv(damage_file).fillna(0)
+                        print ("* Done with creating list of all dataframes")
+                        haz_rcp_epoch = list(set(df.set_index(["hazard","rcp","epoch"]).index.values.tolist()))
+                        #print (haz_rcp_epoch_subs_model)
+                        summarised_damages = []
+                        for i,(haz,rcp,epoch) in enumerate(haz_rcp_epoch):
+                            damages = df[(df.hazard == haz) & (df.rcp == rcp) & (df.epoch == epoch)]
                             
-                                if len(damages.index) > 0:
-                                    summarised_damages.append(quantiles(damages,index_columns,damage_columns))
-                                print (f"* Done with {haz} {rcp} {epoch} {subs} {model}")
-                                
-                            summarised_damages = pd.concat(summarised_damages,axis=0,ignore_index=True)
-                            print ("* Done with concatinating results")
+                            #damages = pd.concat(damages,axis=0,ignore_index=True)
                             
-                            summarised_damages.to_csv(os.path.join(summary_results,
-                                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_{damages_type}{confidence_string}.csv"),index=False)
+                            print ("* Done with concatinating all dataframes")
+                            
+                            #index_columns = [asset_info.asset_id_column,"exposure_unit","damage_cost_unit","hazard","rp","rcp","epoch"]
+                            index_columns = [c for c in damages.columns.values.tolist() if (
+                                                        c not in ["direct_damage_cost","subsidence","model","confidence"]
+                                                        ) and ("EAD_" not in c)]
+                            index_columns = [i for i in index_columns if i not in uncertainty_columns]
+                            
+                            damage_columns = [c for c in damages.columns.values.tolist() if (
+                                                        c in ["direct_damage_cost"]
+                                                        ) or ("EAD_" in c)]
 
-                        print (f"* Done with {country['country']} {asset_info.asset_gpkg} {asset_info.asset_layer} {damages_type} with confidence value {confidence}")
+                            if len(damages.index) > 0:
+                                summarised_damages.append(quantiles(damages,index_columns,damage_columns))
+                            print (f"* Done with {haz} {rcp} {epoch}")
+                            
+                        summarised_damages = pd.concat(summarised_damages,axis=0,ignore_index=True)
+                        print ("* Done with concatinating results")
+                        
+                        summarised_damages.to_csv(os.path.join(summary_results,
+                                    f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_{damages_type}.csv"),index=False)
+
+                    print (f"* Done with {country['country']} {asset_info.asset_gpkg} {asset_info.asset_layer} {damages_type}")
 
 if __name__ == '__main__':
     CONFIG = load_config()

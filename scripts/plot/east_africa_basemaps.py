@@ -18,6 +18,10 @@ def main(config):
     output_data_path = config['paths']['output']
     figure_path = config['paths']['figures']
 
+    folder_path = os.path.join(figure_path,"basemaps")
+    if os.path.exists(folder_path) == False:
+        os.mkdir(folder_path)
+   
     admin_boundaries = os.path.join(processed_data_path,"Admin_boundaries","east_africa_admin_levels","admin_levels.gpkg")
     lakes_path = os.path.join(processed_data_path,"naturalearth","ne_10m_lakes.shp")
 
@@ -94,7 +98,7 @@ def main(config):
                     label_offset = map_plot["country_label_offset"],
                     region_labels=map_plot["admin_labels"])
         scale_bar_and_direction(ax,scalebar_distance=50)
-        save_fig(os.path.join(figure_path,map_plot["save_fig"]))
+        save_fig(os.path.join(folder_path,map_plot["save_fig"]))
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings

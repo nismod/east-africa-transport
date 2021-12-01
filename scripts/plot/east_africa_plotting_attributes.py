@@ -9,7 +9,7 @@ def sector_attributes():
                             {
                                 "sector":"rail",
                                 "sector_gpkg":"rail.gpkg",
-                                "sector_label":"Railways",
+                                "sector_label":"railways",
                                 "edge_layer":"edges",
                                 "node_layer":"nodes",
                                 "area_layer":None,
@@ -43,7 +43,7 @@ def sector_attributes():
                             {
                                 "sector":"road",
                                 "sector_gpkg":"road.gpkg",
-                                "sector_label":"Roads",
+                                "sector_label":"roads",
                                 "edge_layer":"edges",
                                 "node_layer":"nodes",
                                 "area_layer":None,
@@ -79,7 +79,7 @@ def sector_attributes():
                             {
                                 "sector":"port",
                                 "sector_gpkg":"port.gpkg",
-                                "sector_label":"Ports",
+                                "sector_label":"ports",
                                 "edge_layer":None,
                                 "node_layer":None,
                                 "edge_id_column":None,
@@ -113,7 +113,7 @@ def sector_attributes():
                             {
                                 "sector":"air",
                                 "sector_gpkg":"airport.gpkg",
-                                "sector_label":"Airports",
+                                "sector_label":"airports",
                                 "edge_layer":None,
                                 "node_layer":None,
                                 "area_layer":"areas",
@@ -212,7 +212,8 @@ def country_risk_basemap_attributes():
                         "country_labels":True,
                         "country_label_offset":{"All":0.07},
                         "admin_labels":True,
-                        "legend_location":"upper right",
+                        "legend_location":(0.01,0.04),
+                        "bounds":(0.3,0.4,0.1,0.6),
                         "save_fig":"kenya-region.png"
                         },
                         {
@@ -223,7 +224,8 @@ def country_risk_basemap_attributes():
                         "country_labels":True,
                         "country_label_offset":{"UGA":-0.02,"All":0.07},
                         "admin_labels":True,
-                        "legend_location":"upper right",
+                        "legend_location":(0.01,0.05),
+                        "bounds":(0.8,0.6,0.8,0.8),
                         "save_fig":"tanzania-region.png"
                         },
                         {
@@ -235,7 +237,8 @@ def country_risk_basemap_attributes():
                         "country_labels":True,
                         "country_label_offset":{"All":0.07},
                         "admin_labels":True,
-                        "legend_location":"upper right",
+                        "legend_location":(0.42,0.01),
+                        "bounds":(0.2,0.4,0.4,0.1),
                         "save_fig":"uganda-region.png"
                         },
                         {
@@ -247,7 +250,8 @@ def country_risk_basemap_attributes():
                         "country_labels":True,
                         "country_label_offset":{"All":0.07},
                         "admin_labels":True,
-                        "legend_location":"upper right",
+                        "legend_location":(0.01,0.73),
+                        "bounds":(0.2,0.4,0.5,0.6),
                         "save_fig":"zambia-region.png"
                         },
                     ]

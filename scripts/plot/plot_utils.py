@@ -288,7 +288,7 @@ def plot_lines_and_points(ax,legend_handles,sector,sector_dataframe=None,layer_k
         
     return ax, legend_handles
 
-def legend_from_style_spec(ax, styles, fontsize = 10, loc='lower left',zorder=20):
+def legend_from_style_spec(ax, styles, fontsize = 11, loc='lower left',zorder=20):
     """Plot legend
     """
     handles = [
@@ -377,8 +377,8 @@ def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_t
     legend_handles = []
     significance_ndigits = find_significant_digits(divisor,significance,width_by_range)
     for (i, ((nmin, nmax), width)) in enumerate(width_by_range.items()):
-        value_template = '{:.' + str(significance_ndigits) + \
-            'f}-{:.' + str(significance_ndigits) + 'f}'
+        value_template = '{:,.' + str(significance_ndigits) + \
+            'f} - {:,.' + str(significance_ndigits) + 'f}'
         label = value_template.format(
             round(nmin/divisor, significance_ndigits), round(nmax/divisor, significance_ndigits))
 
@@ -387,6 +387,7 @@ def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_t
                                 marker=marker, 
                                 ms=width/legend_weight, 
                                 ls="",
+                                weight='bold',
                                 color=legend_colors[i],
                                 label=label)[0])
         else:
@@ -399,7 +400,7 @@ def line_map_plotting_colors_width(ax,df,column,
                         ax_crs=4326,
                         edge_classify_column=None,
                         edge_categories=["1","2","3","4","5"],
-                        edge_colors=['#7bccc4','#6baed6','#807dba','#2171b5','#08306b'],
+                        edge_colors=['#7fcdbb','#41b6c4','#1d91c0','#225ea8','#0c2c84'],
                         edge_labels=[None,None,None,None,None],
                         edge_zorder=[6,7,8,9,10],
                         divisor=1.0,legend_label="Legend",
