@@ -49,7 +49,7 @@ def filter_asset_total_damage_values(sector,damage_data_path,
     damages = damages.set_index(damages_filter_columns)
     damages = damages[damages.index.isin(damages_filter_values)].reset_index()
 
-    damages, damage_sum_columns = quantiles(damages,[asset_id_column] + damage_groupby,damage_sum_columns)
+    #damages, damage_sum_columns = quantiles(damages,[asset_id_column] + damage_groupby,damage_sum_columns)
 
     damages = damages.groupby(
                     damage_groupby,dropna=False
@@ -79,7 +79,7 @@ def main(config):
     map_country_codes = country_risk_basemap_attributes()
     sector_details = sector_attributes() 
     damage_string = "direct_damages" 
-    damage_columns = ["exposure"]
+    damage_columns = ["exposure_median","exposure_q5","exposure_q95"]
     damage_groupby = ["hazard","rcp","rp","epoch"]
     damages_filter_columns = ["hazard","rcp","epoch"]
 

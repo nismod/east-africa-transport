@@ -94,12 +94,12 @@ def main(config):
                             
                             #index_columns = [asset_info.asset_id_column,"exposure_unit","damage_cost_unit","hazard","rp","rcp","epoch"]
                             index_columns = [c for c in damages.columns.values.tolist() if (
-                                                        c not in ["direct_damage_cost","subsidence","model","confidence"]
+                                                        c not in ["exposure","direct_damage_cost","subsidence","model","confidence"]
                                                         ) and ("EAD_" not in c)]
                             index_columns = [i for i in index_columns if i not in uncertainty_columns]
                             
                             damage_columns = [c for c in damages.columns.values.tolist() if (
-                                                        c in ["direct_damage_cost"]
+                                                        c in ["exposure","direct_damage_cost"]
                                                         ) or ("EAD_" in c)]
 
                             if len(damages.index) > 0:
