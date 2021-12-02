@@ -43,15 +43,15 @@ def main(config):
                             {
                             'country': 'kenya',
                             },
-                            {
-                            'country': 'tanzania',
-                            },
-                            {
-                            'country': 'uganda',
-                            },
-                            {
-                            'country': 'zambia',
-                            },
+                            # {
+                            # 'country': 'tanzania',
+                            # },
+                            # {
+                            # 'country': 'uganda',
+                            # },
+                            # {
+                            # 'country': 'zambia',
+                            # },
                         ]
 
     damage_data_path = os.path.join(processed_data_path,
@@ -81,12 +81,16 @@ def main(config):
                                     f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_{damages_type}_parameter_set_{param.parameter_set}.csv"
                                     )
                     if os.path.isfile(damage_file) is True:
-                        damages.append(pd.read_csv(damage_file).fillna(0))
+                        damage_df = pd.read_csv(damage_file).fillna(0)
+                        # These two columns have mixed type of data, so same values are sometimes stored as float and sometimes as string
+                        for cl in ["rcp","epoch"]:
+                            damage_df[cl] = damage_df[cl].apply(str)
+                        damages.append(damage_df)
                 print ("* Done with creating list of all dataframes")
                             
                 damages = pd.concat(damages,axis=0,ignore_index=True)
                 print ("* Done with concatinating all dataframes")
-                            
+
                 #index_columns = [asset_info.asset_id_column,"exposure_unit","damage_cost_unit","hazard","rp","rcp","epoch"]
                 index_columns = [c for c in damages.columns.values.tolist() if (
                                             c not in ["exposure","direct_damage_cost","subsidence","model","confidence"]
