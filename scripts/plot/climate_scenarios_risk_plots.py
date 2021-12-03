@@ -266,13 +266,23 @@ def main(config):
                                 
                                     countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
                                     countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
-                                    bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
-                                    offset = map_plot["bounds"]
-                                    bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
-                                    ax_proj = get_projection(extent=bounds)
+                                    
                                     lakes = geopandas.read_file(lakes_path).to_crs(AFRICA_GRID_EPSG)
                                     regions = geopandas.read_file(admin_boundaries,layer="level1").to_crs(AFRICA_GRID_EPSG)
                                     regions = regions[regions["GID_0"].isin(map_plot["center_countries"])]
+                                    coastal_prov = regions[regions["GID_1"].isin(map_plot["coastal_provinces"])]
+
+                                    if h == "river":
+                                        bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
+                                        offset = map_plot["offset_river"]
+                                    if h == "coastal":
+                                        bounds = coastal_prov.geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
+                                        offset = map_plot["offset_coastal"]
+                                    
+                                    bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
+                                    ax_proj = get_projection(extent=bounds)
+
+
                                     fig, ax_plots = plt.subplots(1,4,
                                         subplot_kw={'projection': ax_proj},
                                         figsize=(24,16),

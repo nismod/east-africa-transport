@@ -43,15 +43,15 @@ def main(config):
                             {
                             'country': 'kenya',
                             },
-                            # {
-                            # 'country': 'tanzania',
-                            # },
-                            # {
-                            # 'country': 'uganda',
-                            # },
-                            # {
-                            # 'country': 'zambia',
-                            # },
+                            {
+                            'country': 'tanzania',
+                            },
+                            {
+                            'country': 'uganda',
+                            },
+                            {
+                            'country': 'zambia',
+                            },
                         ]
 
     damage_data_path = os.path.join(processed_data_path,
