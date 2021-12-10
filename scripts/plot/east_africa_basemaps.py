@@ -50,7 +50,7 @@ def main(config):
                             {
                             "center_countries":["TZA"],
                             "boundary_countries":["KEN","TZA","UGA","ZMB",
-                                                    "RWA","BDI","MWI","MOZ"],
+                                                    "RWA","BDI","MWI","MOZ","COD"],
                             "country_labels":True,
                             "country_label_offset":{"UGA":-0.02,"All":0.07},
                             "admin_labels":True,
@@ -77,10 +77,16 @@ def main(config):
                             "save_fig":"zambia-region.png"
                             },
                         ]
-
+    
     for map_plot in map_country_codes:
         countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
         countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
+
+        if map_plot["center_countries"] == ['TZA']:
+            countries.loc[countries.GID_0 == "COD", "NAME_0"] = ""
+            countries.loc[countries.GID_0 == "MWI", "NAME_0"] = ""
+            # gets rid of DRC and Malawi label for Tanzania
+
         bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
         bounds = (bounds[0]-0.2,bounds[2]+0.4,bounds[1]-0.1,bounds[3]+0.2)
         ax_proj = get_projection(extent=bounds)

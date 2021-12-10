@@ -167,7 +167,7 @@ def country_basemap_attributes():
                         "country":"tanzania",
                         "center_countries":["TZA"],
                         "boundary_countries":["KEN","TZA","UGA","ZMB",
-                                                "RWA","BDI","MWI","MOZ"],
+                                                "RWA","BDI","MWI","MOZ","COD"],
                         "country_labels":True,
                         "country_label_offset":{"UGA":-0.02,"All":0.07},
                         "admin_labels":True,
