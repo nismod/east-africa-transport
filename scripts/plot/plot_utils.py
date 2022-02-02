@@ -650,6 +650,7 @@ def plot_raster(ax, tif_path, cmap='viridis', levels=None, colors=None,
     """
     # Open raster
     ds = rioxarray.open_rasterio(tif_path, mask_and_scale=True)
+    print (ds.band)
     if reproject_transform is not None:
         ds = ds.rio.reproject(f"EPSG:{reproject_transform}")
     if clip_extent is not None:
@@ -672,7 +673,8 @@ def plot_raster(ax, tif_path, cmap='viridis', levels=None, colors=None,
             colors=colors,
             transform=crs,
             alpha=0.6,
-            add_colorbar=False
+            add_colorbar=False,
+            zorder=30
         )
     else:
         im =ds.plot(
@@ -680,7 +682,8 @@ def plot_raster(ax, tif_path, cmap='viridis', levels=None, colors=None,
             cmap=cmap,
             transform=crs,
             alpha=0.6,
-            add_colorbar=False
+            add_colorbar=False,
+            zorder=30
         )
 
     return im

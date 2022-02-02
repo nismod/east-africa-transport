@@ -4,6 +4,38 @@ import sys
 import os
 import json
 import snkit
+import pandas as pd
+import geopandas as gpd
+import fiona
+from shapely.geometry import shape, mapping
+
+def gdf_geom_clip(gdf_in, clip_geom):
+    """Filter a dataframe to contain only features within a clipping geometry
+
+    Parameters
+    ---------
+    gdf_in
+        geopandas dataframe to be clipped in
+    province_geom
+        shapely geometry of province for what we do the calculation
+
+    Returns
+    -------
+    filtered dataframe
+    """
+    return gdf_in.loc[gdf_in['geometry'].apply(lambda x: x.within(clip_geom))].reset_index(drop=True)
+
+def get_nearest_values(x,input_gdf,column_name):
+    polygon_index = input_gdf.distance(x.geometry).sort_values().index[0]
+    return input_gdf.loc[polygon_index,column_name]
+
+def extract_gdf_values_containing_nodes(x, input_gdf, column_name):
+    a = input_gdf.loc[list(input_gdf.geometry.contains(x.geometry))]
+    if len(a.index) > 0:
+        return a[column_name].values[0]
+    else:
+        polygon_index = input_gdf.distance(x.geometry).sort_values().index[0]
+        return input_gdf.loc[polygon_index,column_name]
 
 def load_config():
     """Read config.json

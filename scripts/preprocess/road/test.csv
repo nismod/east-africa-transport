@@ -1,0 +1,61 @@
+Country,Tariff,ISO_A3,tariff_min_max,tariff_min,tariff_max
+South Africa,,['ZAF'],"(0.0, 0.0)",0.0,0.0
+Tanzania and other African countries,0.08-0.14,['TZA'],"(0.08, 0.14)",0.08,0.14
+Myanmar,0.03-0.14,['MMR'],"(0.03, 0.14)",0.03,0.14
+Colombia,0.16,['COL'],"(0.16, 0.16)",0.16,0.16
+Ivory Coast,0.11,['XYZ'],"(0.11, 0.11)",0.11,0.11
+Mexico,0.1,['MEX'],"(0.1, 0.1)",0.1,0.1
+Malawi,0.09,['MWI'],"(0.09, 0.09)",0.09,0.09
+Indonesia,0.06,['IDN'],"(0.06, 0.06)",0.06,0.06
+Bangladesh,0.06,['BGD'],"(0.06, 0.06)",0.06,0.06
+China,0.055,['CHN'],"(0.055, 0.055)",0.055,0.055
+Ethiopia,0.05,['ETH'],"(0.05, 0.05)",0.05,0.05
+United States of America,0.04,['USA'],"(0.04, 0.04)",0.04,0.04
+Brazil,0.04,['BRA'],"(0.04, 0.04)",0.04,0.04
+Australia,0.04,['AUS'],"(0.04, 0.04)",0.04,0.04
+Argentina,0.03,['ARG'],"(0.03, 0.03)",0.03,0.03
+India,0.03,['IND'],"(0.03, 0.03)",0.03,0.03
+Pakistan,0.02,['PAK'],"(0.02, 0.02)",0.02,0.02
+China,,['CHN'],"(0.0, 0.0)",0.0,0.0
+Vietnam,,['VNM'],"(0.0, 0.0)",0.0,0.0
+Thailand,,['THA'],"(0.0, 0.0)",0.0,0.0
+South Africa,,['ZAF'],"(0.0, 0.0)",0.0,0.0
+Asia to Europe,,"['SCR', 'MNG', 'GBR', 'ESB', 'AZE', 'VAT', 'MNE', 'LVA', 'ROU', 'RUS', 'ISL', 'SMR', 'IMN', 'HRV', 'KAZ', 'IOA', 'BGR', 'LUX', 'SVN', 'BTN', 'JEY', 'PGA', 'SRB', 'SGP', 'FIN', 'SVK', 'DNK', 'SWE', 'THA', 'NPL', 'IND', 'QAT', 'TLS', 'PSE', 'CYP', 'NOR', 'MCO', 'GEO', 'EST', 'LAO', 'KAS', 'KOR', 'ALB', 'JOR', 'SAU', 'LKA', 'OMN', 'FRA', 'PAK', 'CHN', 'KHM', 'LTU', 'HKG', 'TKM', 'ISR', 'GGY', 'JPN', 'MAC', 'ALA', 'AFG', 'HUN', 'CYN', 'KOS', 'IRN', 'IRQ', 'WSB', 'LBN', 'LIE', 'PRT', 'MLT', 'CNM', 'CZE', 'DEU', 'BRN', 'UZB', 'SYR', 'MKD', 'PHL', 'YEM', 'TWN', 'PRK', 'GIB', 'ITA', 'ESP', 'KGZ', 'CHE', 'GRC', 'AND', 'AUT', 'BGD', 'KAB', 'BEL', 'BLR', 'FRO', 'BHR', 'IRL', 'ARE', 'KWT', 'MDA', 'ARM', 'POL', 'IDN', 'UKR', 'NLD', 'TJK', 'VNM', 'MMR', 'BIH', 'TUR', 'MYS']","(0.0, 0.0)",0.0,0.0
+Central America,0.17,['XYZ'],"(0.17, 0.17)",0.17,0.17
+Brazil,0.035,['BRA'],"(0.035, 0.035)",0.035,0.035
+Kenya,0.04,['KEN'],"(0.04, 0.04)",0.04,0.04
+Uganda,0.085,['UGA'],"(0.085, 0.085)",0.085,0.085
+Rwanda,0.09,['RWA'],"(0.09, 0.09)",0.09,0.09
+Niger,0.13,['NER'],"(0.13, 0.13)",0.13,0.13
+Congo,0.12,['COG'],"(0.12, 0.12)",0.12,0.12
+Burundi,0.11,['BDI'],"(0.11, 0.11)",0.11,0.11
+Burkina Faso,0.09,['BFA'],"(0.09, 0.09)",0.09,0.09
+African corridors,0.06-0.11,"['BEN', 'LBR', 'GAB', 'SEN', 'GIN', 'BFA', 'SLE', 'TUN', 'MDG', 'EGY', 'TCD', 'GNQ', 'GMB', 'SSD', 'AGO', 'ZWE', 'COG', 'COM', 'MAR', 'CPV', 'MOZ', 'COD', 'TGO', 'SWZ', 'ETH', 'TZA', 'UGA', 'MWI', 'ESH', 'ZMB', 'NAM', 'CMR', 'LBY', 'SDN', 'SOM', 'CAF', 'LSO', 'GNB', 'ERI', 'KEN', 'CIV', 'MLI', 'NER', 'SOL', 'STP', 'GHA', 'BWA', 'BRT', 'MRT', 'NGA', 'RWA', 'BDI', 'DZA', 'DJI', 'ZAF']","(0.06, 0.11)",0.06,0.11
+Zambia,0.037-0.056,['ZMB'],"(0.037, 0.056)",0.037,0.056
+China,0.05,['CHN'],"(0.05, 0.05)",0.05,0.05
+Pakistan,0.02,['PAK'],"(0.02, 0.02)",0.02,0.02
+United States of America,0.02-0.11,['USA'],"(0.02, 0.11)",0.02,0.11
+France,0.05,['FRA'],"(0.05, 0.05)",0.05,0.05
+Costa Rica,0.11 (0.034),['CRI'],"(0.0, 0.0)",0.0,0.0
+El Salvador,0.16,['SLV'],"(0.16, 0.16)",0.16,0.16
+Guatamala,0.16,['XYZ'],"(0.16, 0.16)",0.16,0.16
+Honduras,0.16,['HND'],"(0.16, 0.16)",0.16,0.16
+Nicaragua,0.11,['NIC'],"(0.11, 0.11)",0.11,0.11
+Panama,0.33,['PAN'],"(0.33, 0.33)",0.33,0.33
+Argentina,0.03-0.08,['ARG'],"(0.03, 0.08)",0.03,0.08
+Bangladesh,0.08-0.12,['BGD'],"(0.08, 0.12)",0.08,0.12
+India,0.05,['IND'],"(0.05, 0.05)",0.05,0.05
+Kenya domestic,0.04,['KEN'],"(0.04, 0.04)",0.04,0.04
+Kenya international,0.085-0.12,['KEN'],"(0.085, 0.12)",0.085,0.12
+Tanzania,0.07-0.1,['TZA'],"(0.07, 0.1)",0.07,0.1
+China,0.06,['CHN'],"(0.06, 0.06)",0.06,0.06
+Poland,0.04,['POL'],"(0.04, 0.04)",0.04,0.04
+Brazil,0.03-0.08,['BRA'],"(0.03, 0.08)",0.03,0.08
+Belgium,,['BEL'],"(0.0, 0.0)",0.0,0.0
+Europe,0.07-0.14,"['GBR', 'VAT', 'MNE', 'LVA', 'ROU', 'RUS', 'ISL', 'SMR', 'IMN', 'HRV', 'BGR', 'LUX', 'SVN', 'JEY', 'SRB', 'FIN', 'SVK', 'DNK', 'SWE', 'NOR', 'MCO', 'EST', 'ALB', 'FRA', 'LTU', 'GGY', 'ALA', 'HUN', 'KOS', 'LIE', 'PRT', 'MLT', 'CZE', 'DEU', 'MKD', 'GIB', 'ITA', 'ESP', 'CHE', 'GRC', 'AND', 'AUT', 'BEL', 'BLR', 'FRO', 'IRL', 'MDA', 'POL', 'UKR', 'NLD', 'BIH']","(0.07, 0.14)",0.07,0.14
+Europe,0.04,"['GBR', 'VAT', 'MNE', 'LVA', 'ROU', 'RUS', 'ISL', 'SMR', 'IMN', 'HRV', 'BGR', 'LUX', 'SVN', 'JEY', 'SRB', 'FIN', 'SVK', 'DNK', 'SWE', 'NOR', 'MCO', 'EST', 'ALB', 'FRA', 'LTU', 'GGY', 'ALA', 'HUN', 'KOS', 'LIE', 'PRT', 'MLT', 'CZE', 'DEU', 'MKD', 'GIB', 'ITA', 'ESP', 'CHE', 'GRC', 'AND', 'AUT', 'BEL', 'BLR', 'FRO', 'IRL', 'MDA', 'POL', 'UKR', 'NLD', 'BIH']","(0.04, 0.04)",0.04,0.04
+Europe and Japan,,['JPN'],"(0.0, 0.0)",0.0,0.0
+"Australia, Canada and United States of America",,"['USA', 'CAN', 'AUS']","(0.0, 0.0)",0.0,0.0
+Rest of World,,['XYZ'],"(0.0, 0.0)",0.0,0.0
+Europe,0.1-0.13,"['GBR', 'VAT', 'MNE', 'LVA', 'ROU', 'RUS', 'ISL', 'SMR', 'IMN', 'HRV', 'BGR', 'LUX', 'SVN', 'JEY', 'SRB', 'FIN', 'SVK', 'DNK', 'SWE', 'NOR', 'MCO', 'EST', 'ALB', 'FRA', 'LTU', 'GGY', 'ALA', 'HUN', 'KOS', 'LIE', 'PRT', 'MLT', 'CZE', 'DEU', 'MKD', 'GIB', 'ITA', 'ESP', 'CHE', 'GRC', 'AND', 'AUT', 'BEL', 'BLR', 'FRO', 'IRL', 'MDA', 'POL', 'UKR', 'NLD', 'BIH']","(0.1, 0.13)",0.1,0.13
+Vietnam,0.17-0.45,['VNM'],"(0.17, 0.45)",0.17,0.45

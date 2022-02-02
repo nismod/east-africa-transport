@@ -7,10 +7,7 @@ import snkit
 import pandas as pd
 import geopandas as gpd
 import fiona
-from geopy import distance
-import shapely.geometry
-from shapely.geometry import Point, shape, mapping
-from boltons.iterutils import pairwise
+from shapely.geometry import shape, mapping
 
 def gdf_geom_clip(gdf_in, clip_geom):
     """Filter a dataframe to contain only features within a clipping geometry
@@ -39,27 +36,6 @@ def extract_gdf_values_containing_nodes(x, input_gdf, column_name):
     else:
         polygon_index = input_gdf.distance(x.geometry).sort_values().index[0]
         return input_gdf.loc[polygon_index,column_name]
-
-def line_length_km(line, ellipsoid='WGS-84'):
-    """Length of a line in meters, given in geographic coordinates.
-
-    Adapted from https://gis.stackexchange.com/questions/4022/looking-for-a-pythonic-way-to-calculate-the-length-of-a-wkt-linestring#answer-115285
-
-    Args:
-        line: a shapely LineString object with WGS-84 coordinates.
-
-        ellipsoid: string name of an ellipsoid that `geopy` understands (see http://geopy.readthedocs.io/en/latest/#module-geopy.distance).
-
-    Returns:
-        Length of line in kilometers.
-    """
-    if line.geometryType() == 'MultiLineString':
-        return sum(line_length_km(segment) for segment in line)
-
-    return sum(
-        distance.distance(tuple(reversed(a)), tuple(reversed(b)),ellipsoid=ellipsoid).km
-        for a, b in pairwise(line.coords)
-    )
 
 def load_config():
     """Read config.json
