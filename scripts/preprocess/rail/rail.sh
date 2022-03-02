@@ -23,14 +23,14 @@ for country in "${countries[@]}"; do
         --overwrite \
         -o scratch/rail/$country-rail.osm.pbf
 
-    OSM_CONFIG_FILE=preprocess/rail/osmconf_rail.ini ogr2ogr -f GPKG \
+    OSM_CONFIG_FILE=scripts/preprocess/rail/osmconf_rail.ini ogr2ogr -f GPKG \
         scratch/rail/$country-rail.gpkg \
         scratch/rail/$country-rail.osm.pbf \
         points lines multipolygons
 done
 
 # Run script
-python preprocess/rail/process_rail.py
+python scripts/preprocess/rail/process_rail.py
 
-# Replace gpkg with new one which includes costs 
-python preprocess/rail/costs_rail.py
+# Replace gpkg with new one which includes costs
+python scripts/preprocess/rail/costs_rail.py

@@ -6,7 +6,7 @@ not current)
 - process to connected network (link nodes and split edges)
 """
 import os
-from glob import glob
+import sys
 
 import fiona
 import geopandas as gpd
@@ -15,13 +15,13 @@ import snkit
 from tqdm import tqdm
 
 
-def main():
-    raw_files = sorted(glob('scratch/rail/*-rail.gpkg'))
-
+def main(raw_files):
+    filtered_files = []
     for fname in tqdm(raw_files):
         print(f"\n{fname}")
         layers = fiona.listlayers(fname)
         out_fname = fname.replace('.gpkg', '_filtered.gpkg')
+        filtered_files.append(out_fname)
         try:
             os.remove(out_fname)
         except FileNotFoundError:
@@ -46,7 +46,6 @@ def main():
                 df.to_file(out_fname, layer='centroids', driver="GPKG")
 
     ## Connected network
-    filtered_files = sorted(glob('scratch/rail/*_filtered.gpkg'))
 
     for fname in tqdm(filtered_files):
         country = os.path.basename(fname).replace('-rail_filtered.gpkg', '')
@@ -151,4 +150,8 @@ def read_edges(fname):
 
 
 if __name__ == '__main__':
-    main()
+    fnames = sys.argv[1:]
+    print("Files to process:")
+    for fname in fnames:
+        print(f"- {fname}")
+    main(fnames)
