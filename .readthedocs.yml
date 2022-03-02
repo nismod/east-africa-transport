@@ -1,0 +1,14 @@
+# Read The Docs config
+# - http://docs.readthedocs.io/en/latest/yaml-config.html
+
+# python version
+python:
+  version: 3.9
+  setup_py_install: false
+  use_system_site_packages: true
+
+requirements_file: requirements-docs.txt
+
+# build html and pdf
+formats:
+  - pdf

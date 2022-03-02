@@ -1,0 +1,8 @@
+Sphinx==4.4.0
+m2r
+matplotlib
+numpy
+pandas
+recommonmark
+requests
+scipy
