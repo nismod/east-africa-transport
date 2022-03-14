@@ -109,7 +109,7 @@ def scale_bar_and_direction(ax,arrow_location=(0.88,0.08),scalebar_location=(0.9
 
 def plot_basemap_labels(ax,ax_crs=None,
                         labels=None,label_column=None,
-                        label_id_column=None,label_offset={"All":1.0},
+                        label_id_column=None,label_offset={"All":(1.0,1.0)},
                         label_size=8,include_zorder=20):
     """Plot countries and regions background
     """
@@ -130,6 +130,7 @@ def plot_basemap_labels(ax,ax_crs=None,
                     apply_offset = label_offset["All"]
             else:
                 apply_offset = label_offset["All"]
+            
             if 'zanzibar' not in text.lower() and 'pemba' not in text.lower():
                 x = float(label.geometry.centroid.x)
                 y = float(label.geometry.centroid.y)
@@ -142,25 +143,18 @@ def plot_basemap_labels(ax,ax_crs=None,
                     y = float(geom.centroid.y)
 
                 if within_extent(x, y, extent):    
-                    if text.lower() == "democratic republic of the congo":
-                        # print (x,y,extent)
-                        offset = -3.5
-                    elif text.lower() == "malawi":
-                        offset = -10.0
-                    else:
-                        offset = 1.5
-                    if x < extent_x_center:
-                        offset_x_adjust = -0.7
-                    else:
-                        offset_x_adjust = 0.7
+                    # if x < extent_x_center:
+                    #     offset_x_adjust = -0.7
+                    # else:
+                    #     offset_x_adjust = 0.7
 
-                    if y < extent_y_center:
-                        offset_y_adjust = -1.0
-                    else:
-                        offset_y_adjust = 1.1
+                    # if y < extent_y_center:
+                    #     offset_y_adjust = -1.0
+                    # else:
+                    #     offset_y_adjust = 1.1
 
                     ax.text(
-                        x + offset_x_adjust*offset*apply_offset, y + offset_y_adjust*offset*apply_offset,
+                        x + apply_offset[0], y + apply_offset[1],
                         text,
                         alpha=0.7,
                         size=label_size,
@@ -225,7 +219,7 @@ def plot_point_assets(ax,ax_crs,nodes,colors,size,marker,zorder):
     )
     return ax
 
-def plot_line_assets(ax,ax_crs,edges,colors,size,zorder):
+def plot_line_assets(ax,ax_crs,edges,colors,size,linestyle,zorder):
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
     else:
@@ -234,6 +228,7 @@ def plot_line_assets(ax,ax_crs,edges,colors,size,zorder):
         list(edges.geometry),
         crs=proj,
         linewidth=size,
+        linestyle=linestyle,
         edgecolor=colors,
         facecolor='none',
         zorder=zorder
@@ -264,6 +259,7 @@ def plot_lines_and_points(ax,legend_handles,sector,sector_dataframe=None,layer_k
                                     sector_dataframe[sector_dataframe[sector["edge_classify_column"]] == cat],
                                     color,
                                     marker_size_factor*sector["edge_categories_linewidth"][i],
+                                    sector["edge_categories_linestyle"][i],
                                     zorder)
                 if label not in use_labels:
                     legend_handles.append(mpatches.Patch(color=color,
