@@ -25,16 +25,11 @@ def main(config):
     sector_details = sector_attributes() 
 
     for sector in sector_details:
-        if sector["sector"] in ("rail"): #("road","rail")
-            # edges = gpd.read_file(os.path.join(
-            #                     processed_data_path,
-            #                     "road",
-            #                     "africa",
-            #                     "eastafrica-roads.gpkg"),
-            #                     layer=sector["edge_layer"])
+        if sector["sector"] in ("road","rail"):
             edges = gpd.read_file(os.path.join(
                                 processed_data_path,
                                 "networks",
+                                sector["sector"],
                                 sector["sector_gpkg"]),
                                 layer=sector["edge_layer"])
             if edges.crs is None:
