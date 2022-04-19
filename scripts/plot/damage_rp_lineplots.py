@@ -76,7 +76,7 @@ def main(config):
     if os.path.exists(folder_path) == False:
         os.mkdir(folder_path)
 
-    map_country_codes = country_risk_basemap_attributes()
+    # map_country_codes = country_risk_basemap_attributes()
     sector_details = sector_attributes() 
     damage_string = "direct_damages" 
     damage_columns = ["direct_damage_cost_median","direct_damage_cost_q5","direct_damage_cost_q95"] 
@@ -90,96 +90,98 @@ def main(config):
     rcp_markers = ['s-','^-']
 
     for sector in sector_details:
-        if sector["sector"] in ["road","rail"]:
-            for map_plot in map_country_codes:
-                    damage_data_path = os.path.join(output_data_path,
-                                                            map_plot["country"],    
-                                                            "direct_damages_summary") 
-                    for h in hazard:
-                        tot_damages_filter_values = [
-                                                    (h,"baseline","1980"),
-                                                    (h,"baseline","hist"),
-                                                    (h,"4.5","2030"),
-                                                    (h,"4.5","2050"),
-                                                    (h,"4.5","2080"),
-                                                    (h,"8.5","2030"),
-                                                    (h,"8.5","2050"),
-                                                    (h,"8.5","2080")
-                                                    ]
-                        
-                        tot_damages, min_limits, max_limits = filter_asset_total_damage_values(sector,
-                                                                damage_data_path,damage_string,
-                                                                damages_filter_columns,
-                                                                tot_damages_filter_values,
-                                                                damage_groupby,damage_columns,"edge")
+        if sector["sector"] in ["road"]: #["road","rail"]
+            # for map_plot in map_country_codes:
+            #     damage_data_path = os.path.join(output_data_path,
+            #                                             map_plot["country"],    
+            #                                             "direct_damages_summary") 
+            damage_data_path = os.path.join(output_data_path,   
+                                                    "direct_damages_summary") 
+            for h in hazard:
+                tot_damages_filter_values = [
+                                            (h,"baseline","1980"),
+                                            (h,"baseline","hist"),
+                                            (h,"4.5","2030"),
+                                            (h,"4.5","2050"),
+                                            (h,"4.5","2080"),
+                                            (h,"8.5","2030"),
+                                            (h,"8.5","2050"),
+                                            (h,"8.5","2080")
+                                            ]
+                
+                tot_damages, min_limits, max_limits = filter_asset_total_damage_values(sector,
+                                                        damage_data_path,damage_string,
+                                                        damages_filter_columns,
+                                                        tot_damages_filter_values,
+                                                        damage_groupby,damage_columns,"edge")
 
-                        if tot_damages.empty == False:
-                            rps = list(set(tot_damages['rp'].values.tolist()))
-                            
-                            figure_texts = ['a.','b.','c.']
-                            plot_column = "direct_damage_cost"
-                            if h == "river":
-                                baseyear = "1980"
-                            if h == "coastal":
-                                baseyear = "hist"
-                            length_factor = 0.000001 # Convert usd to million usd
-                            fig, ax_plots = plt.subplots(1,3,
-                                    figsize=(20,12),
-                                    dpi=500)
-                            ax_plots = ax_plots.flatten()
-                            j = 0
-                            for year in years:
-                                ax = ax_plots[j]
-                                ax.plot(tot_damages[tot_damages['epoch'] == baseyear]['rp'],
-                                        length_factor*tot_damages[tot_damages['epoch'] == baseyear][f"{plot_column}_median"],
-                                        'o-',color='#fd8d3c',markersize=10,linewidth=2.0,
-                                        label='Baseline')
-                                for i, (r,m,cl) in enumerate(list(zip(rcp,rcp_markers,rcp_colors))):
-                                    exp = tot_damages[(tot_damages['epoch'] == year) & (tot_damages['rcp'] == r)]
-                                    ax.plot(exp['rp'],
-                                            length_factor*exp[f"{plot_column}_median"],
-                                            m,color=cl,markersize=10,linewidth=2.0,
-                                            label=f"RCP {r} - median")
-                                    ax.fill_between(exp['rp'],length_factor*exp[f"{plot_column}_q5"],
-                                        length_factor*exp[f"{plot_column}_q95"],
-                                        alpha=0.3,facecolor=cl,
-                                        label=f"RCP {r} - Q5-Q95")
+                if tot_damages.empty == False:
+                    rps = list(set(tot_damages['rp'].values.tolist()))
+                    
+                    figure_texts = ['a.','b.','c.']
+                    plot_column = "direct_damage_cost"
+                    if h == "river":
+                        baseyear = "1980"
+                    if h == "coastal":
+                        baseyear = "hist"
+                    length_factor = 0.000001 # Convert usd to million usd
+                    fig, ax_plots = plt.subplots(1,3,
+                            figsize=(20,12),
+                            dpi=500)
+                    ax_plots = ax_plots.flatten()
+                    j = 0
+                    for year in years:
+                        ax = ax_plots[j]
+                        ax.plot(tot_damages[tot_damages['epoch'] == baseyear]['rp'],
+                                length_factor*tot_damages[tot_damages['epoch'] == baseyear][f"{plot_column}_median"],
+                                'o-',color='#fd8d3c',markersize=10,linewidth=2.0,
+                                label='Baseline')
+                        for i, (r,m,cl) in enumerate(list(zip(rcp,rcp_markers,rcp_colors))):
+                            exp = tot_damages[(tot_damages['epoch'] == year) & (tot_damages['rcp'] == r)]
+                            ax.plot(exp['rp'],
+                                    length_factor*exp[f"{plot_column}_median"],
+                                    m,color=cl,markersize=10,linewidth=2.0,
+                                    label=f"RCP {r} - median")
+                            ax.fill_between(exp['rp'],length_factor*exp[f"{plot_column}_q5"],
+                                length_factor*exp[f"{plot_column}_q95"],
+                                alpha=0.3,facecolor=cl,
+                                label=f"RCP {r} - Q5-Q95")
 
 
-                                            
-                                ax.set_xlabel('Return period (years)',fontsize=14,fontweight='bold')
-                                ax.set_ylabel('Direct damage costs (million USD)',fontsize=14,fontweight='bold')
-                                ax.set_xscale('log')
-                                ax.set_ylim(length_factor*min_limits,length_factor*max_limits)
-                                ax.tick_params(axis='both', labelsize=14)
-                                ax.set_xticks([t for t in rps])
-                                ax.set_xticklabels([str(t) for t in rps])
-                                ax.grid(True)
-                                # ax.set_xticks([t for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))], 
-                                #             [str(t) for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))])
-                                ax.text(
-                                    0.05,
-                                    0.95,
-                                    f"{figure_texts[j]} {year}",
-                                    horizontalalignment='left',
-                                    transform=ax.transAxes,
-                                    size=18,
-                                    weight='bold')
+                                    
+                        ax.set_xlabel('Return period (years)',fontsize=14,fontweight='bold')
+                        ax.set_ylabel('Direct damage costs (million USD)',fontsize=14,fontweight='bold')
+                        ax.set_xscale('log')
+                        ax.set_ylim(length_factor*min_limits,length_factor*max_limits)
+                        ax.tick_params(axis='both', labelsize=14)
+                        ax.set_xticks([t for t in rps])
+                        ax.set_xticklabels([str(t) for t in rps])
+                        ax.grid(True)
+                        # ax.set_xticks([t for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))], 
+                        #             [str(t) for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))])
+                        ax.text(
+                            0.05,
+                            0.95,
+                            f"{figure_texts[j]} {year}",
+                            horizontalalignment='left',
+                            transform=ax.transAxes,
+                            size=18,
+                            weight='bold')
 
-                                j+=1            
+                        j+=1            
 
-                            ax_plots[-1].legend(
-                                        loc='lower left', 
-                                        bbox_to_anchor=(1.05,0.8),
-                                        prop={'size':18,'weight':'bold'})
-                            plt.tight_layout()
-                            save_fig(
-                                    os.path.join(
-                                        folder_path, 
-                                        f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_damage_lineplot.png"
-                                        )
-                                    )
-                            plt.close()
+                    ax_plots[-1].legend(
+                                loc='lower left', 
+                                bbox_to_anchor=(1.05,0.8),
+                                prop={'size':18,'weight':'bold'})
+                    plt.tight_layout()
+                    save_fig(
+                            os.path.join(
+                                folder_path, 
+                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_damage_lineplot.png"
+                                )
+                            )
+                    plt.close()
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings

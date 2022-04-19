@@ -19,6 +19,8 @@ from tqdm import tqdm
 tqdm.pandas()
 from utils import *
 
+from pyproj import Geod
+
 def components(edges,nodes):
     G = networkx.Graph()
     G.add_nodes_from(
@@ -35,22 +37,6 @@ def components(edges,nodes):
         nodes.loc[nodes[node_id_col].isin(c), "component"] = num
 
     return edges, nodes
-
-def mean_min_max(dataframe,grouping_by_columns,grouped_columns):
-    quantiles_list = ['mean','min','max']
-    df_list = []
-    for quant in quantiles_list:
-        if quant == 'mean':
-            # print (dataframe)
-            df = dataframe.groupby(grouping_by_columns,dropna=False)[grouped_columns].mean()
-        elif quant == 'min':
-            df = dataframe.groupby(grouping_by_columns,dropna=False)[grouped_columns].min()
-        elif quant == 'max':
-            df = dataframe.groupby(grouping_by_columns,dropna=False)[grouped_columns].max()
-
-        df.rename(columns=dict((g,'{}_{}'.format(g,quant)) for g in grouped_columns),inplace=True)
-        df_list.append(df)
-    return pd.concat(df_list,axis=1).reset_index()
 
 def get_road_condition_surface(x):
     if not x.surface:
@@ -141,38 +127,6 @@ def match_nodes_edges_to_countries(nodes,edges,countries):
     
     return nodes, edges
 
-def add_country_code_to_costs(x,country_codes):
-    country = str(x["Country"]).strip().lower()
-    match = [c[0] for c in country_codes if str(c[1]).strip().lower() == country]
-    if match:
-        return match
-    else:
-        match = [c[0] for c in country_codes if str(c[1]).strip().lower() in country]
-        if match:
-            return match
-        else:
-            match = [c[0] for c in country_codes if str(c[2]).strip().lower() in country]
-            if match:
-                return match
-            else:
-                return ["XYZ"]
-
-def add_tariff_min_max(x):
-    tariff = x["Tariff"]
-    if str(tariff).replace('.','').isdigit():
-        return float(tariff),float(tariff)
-    elif "-" in str(tariff):
-        return float(str(tariff).split("-")[0].strip()),float(str(tariff).split("-")[1].strip())
-    else:
-        return 0.0,0.0 
-
-def add_road_tariff_costs(x):
-    if x.road_cond == "paved":
-        return x.tariff_min, x.tariff_mean
-    else:
-        return x.tariff_mean, x.tariff_max
-
-
 def main(config):
     data_path = config['paths']['data']
     scratch_path = config['paths']['scratch']
@@ -222,6 +176,10 @@ def main(config):
 
     #Find the countries of the nodes and assign them to the node ID's, accordingly modify the edge ID's as well
 
+    nodes = gpd.read_file(out_fname,layer='nodes')
+    edges = gpd.read_file(out_fname,layer='edges')
+    print("Done reading files")
+
     global_country_info = gpd.read_file(os.path.join(data_path,
                                                 "Admin_boundaries",
                                                 "gadm36_levels_gpkg",
@@ -231,11 +189,10 @@ def main(config):
     global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
     # print (global_country_info)
 
-    nodes = gpd.read_file(out_fname,layer='nodes')
+    
     nodes["node_id"] = nodes.progress_apply(lambda x:"_".join(x["node_id"].split("_")[1:]),axis=1)
     nodes = nodes[["node_id","geometry"]]
 
-    edges = gpd.read_file(out_fname,layer='edges')
     edges["edge_id"] = edges.progress_apply(lambda x:"_".join(x["edge_id"].split("_")[1:]),axis=1)
     edges["from_node"] = edges.progress_apply(lambda x:"_".join(x["from_node"].split("_")[1:]),axis=1)
     edges["to_node"] = edges.progress_apply(lambda x:"_".join(x["to_node"].split("_")[1:]),axis=1)
@@ -292,60 +249,18 @@ def main(config):
     edges_simple[["cost_min","cost_max","cost_unit"]] = edges_simple["rehab_costs"].progress_apply(pd.Series)
     edges_simple.drop("rehab_costs",axis=1,inplace=True)
 
-    # Prepare tariff costs csv file
-    country_continent_codes = list(set(zip(
-                                     road_speeds["ISO_A3"].values.tolist(),
-                                     road_speeds["NAME"].values.tolist(),
-                                     road_speeds["CONTINENT"].values.tolist()
-                                     )
-                                 )
-                             )
-
-    cost_data = pd.read_excel(os.path.join(data_path,"costs","transport_costs.xlsx"),sheet_name="Sheet1",header=[0,1])
-    cost_data = cost_data[[('Country','Country'),
-                        ('Transport costs (USD/ton-km)','Road')]]
-    cost_data.columns = ["Country","Tariff"]
-    cost_data["ISO_A3"] = cost_data.progress_apply(lambda x:add_country_code_to_costs(x,country_continent_codes),axis=1)
-
-    cost_data["tariff_min_max"] = cost_data.progress_apply(lambda x:add_tariff_min_max(x),axis=1)
-    cost_data[["tariff_min","tariff_max"]] = cost_data["tariff_min_max"].apply(pd.Series)
-    
-    all_tariffs = []
-    for row in cost_data.itertuples():
-        if row.tariff_max > 0:
-            all_tariffs += list(zip(row.ISO_A3,
-                                    [row.tariff_min]*len(row.ISO_A3)
-                                    )
-                            )
-            all_tariffs += list(zip(row.ISO_A3,
-                                    [row.tariff_max]*len(row.ISO_A3)
-                                    )
-                            )
-    all_iso_codes = list(set(edges["from_iso"].values.tolist()))
-    all_tariffs_codes = list(set([t[0] for t in all_tariffs]))
-    tariff_xyz = [t[1] for t in all_tariffs if t[0] == "XYZ"]
-    for iso in all_iso_codes:
-        if iso not in all_iso_codes:
-            all_tariffs += list(zip([iso]*len(tariff_xyz),
-                                    tariff_xyz
-                                    )
-                            )
-    all_tariffs = pd.DataFrame(all_tariffs,columns=["iso_code","tariff"])
-    all_tariffs = mean_min_max(all_tariffs,["iso_code"],["tariff"])
-    all_tariffs.to_csv(os.path.join(data_path,"costs","road_tariffs.csv"),index=False)
-
-    edges_simple = pd.merge(edges_simple,all_tariffs,how="left",left_on=["from_iso"],right_on=["iso_code"]).fillna(0.0)
-    
     # Assign tariff costs 
-    edges_simple["tariff_costs"] = edges_simple.progress_apply(lambda x:add_road_tariff_costs(x),axis=1)
-    edges_simple.drop(all_tariffs.columns.values.tolist(),axis=1,inplace=True)
-    edges_simple[["min_tariff","max_tariff"]] = edges_simple["tariff_costs"].apply(pd.Series)
-    edges_simple.drop("tariff_costs",axis=1,inplace=True)
-    edges_simple = edges_simple.drop_duplicates(subset=["edge_id","from_node","to_node"],keep="first")
+    cost_data = pd.read_csv(os.path.join(data_path,"costs","transport_costs.csv"))
+    cost_data = cost_data.loc[cost_data['transport'] == "road"]
+    cost_data.rename(columns = {'cost_km':'tariff_cost'}, inplace = True)
 
-    # edges["min_tariff"] = edges.progress_apply(lambda x:min(x.min_tariff,0.08),axis=1)
-    # edges["max_tariff"] = edges.progress_apply(lambda x:min(x.max_tariff,0.10),axis=1)
-    
+    edges_simple = pd.merge(edges_simple,cost_data[["from_iso3","tariff_cost"]],how="left",left_on=["from_iso"],right_on=["from_iso3"])
+
+    edges_simple["min_tariff"] = edges_simple.progress_apply(lambda x:float(x.tariff_cost) - (float(x.tariff_cost)*0.2),axis=1)
+    edges_simple["max_tariff"] = edges_simple.progress_apply(lambda x:float(x.tariff_cost) + (float(x.tariff_cost)*0.2),axis=1)
+    edges_simple.drop(["tariff_cost","from_iso3"],axis=1,inplace=True)
+    edges_simple["tariff_cost_unit"] = "USD/ton-km"
+
     # Assign flow costs    
     time_cost_factor = 0.49
     edges_simple["min_flow_cost"] = (time_cost_factor*edges["length_m"]/1000)/edges_simple["max_speed"] + (edges_simple["min_tariff"]*edges_simple["length_m"]/1000)

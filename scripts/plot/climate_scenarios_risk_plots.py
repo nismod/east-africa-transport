@@ -21,12 +21,18 @@ def get_asset_total_damage_values(sector,damage_data_path,
     asset_id_column = sector[f"{layer_key}_id_column"]
     asset_filter_column = sector[f"{layer_key}_damage_filter_column"]
     asset_filter_list = sector[f"{layer_key}_damage_categories"]
-    damages = pd.read_csv(
+    # damages = pd.read_csv(
+    #                 os.path.join(
+    #                     damage_data_path,
+    #                     f"{sector['sector_gpkg'].replace('.gpkg','')}_{sector[f'{layer_key}_layer']}_{damage_string}.csv"
+    #                     )
+    #                 )
+    damages = pd.read_parquet(
                     os.path.join(
-                        damage_data_path,
-                        f"{sector['sector_gpkg'].replace('.gpkg','')}_{sector[f'{layer_key}_layer']}_{damage_string}.csv"
+                        damage_data_path,"direct_damages_summary","road_edges_EAD_EAEL.parquet"
                         )
                     )
+    
     for d_filter in damages_filter_columns:
         damages[d_filter] = damages[d_filter].apply(str)
     damages = damages.set_index(damages_filter_columns)
@@ -182,7 +188,7 @@ def main(config):
     output_data_path = config['paths']['results']
     figure_path = config['paths']['figures']
 
-    folder_path = os.path.join(figure_path,"climate_scenarios_risk")
+    folder_path = os.path.join(figure_path,"climate_scenarios_risk_new")
     if os.path.exists(folder_path) == False:
         os.mkdir(folder_path)
 
@@ -207,126 +213,129 @@ def main(config):
 
             
     for sector in sector_details:
-        if sector["sector"] in ["road","rail"]:
-            for map_plot in map_country_codes:
-                edges = gpd.read_file(os.path.join(
-                                        processed_data_path,
-                                        map_plot["country"],
-                                        "networks",
-                                        sector["sector_gpkg"]),
-                                        layer=sector["edge_layer"])
+        if sector["sector"] in ["road"]: #"road","rail"
+            #for map_plot in map_country_codes:
+            map_plot = map_country_codes[4]
+            edges = gpd.read_file(os.path.join(
+                                    processed_data_path,
+                                    #map_plot["country"],
+                                    "networks",
+                                    sector["sector"],
+                                    sector["sector_gpkg"]),
+                                    layer=sector["edge_layer"])
 
-                if len(edges) > 0:
-                        if edges.crs is None:
-                            edges = edges.set_crs(epsg=AFRICA_GRID_EPSG)
-                        else:
-                            edges = edges.to_crs(epsg=AFRICA_GRID_EPSG)
+            if len(edges) > 0:
+                    if edges.crs is None:
+                        edges = edges.set_crs(epsg=AFRICA_GRID_EPSG)
+                    else:
+                        edges = edges.to_crs(epsg=AFRICA_GRID_EPSG)
 
-                        damage_data_path = os.path.join(output_data_path,
-                                                                map_plot["country"],    
-                                                                "direct_damages_summary") 
-                        for h in hazard:
-                            if h == "river":
-                                baseyear = "1980"
-                            if h == "coastal":
-                                baseyear = "hist"
+                    damage_data_path = os.path.join(output_data_path,
+                                                            #map_plot["country"],
+                                                            "risk_results")     
+                                                            #"direct_damages_summary") 
+                    for h in hazard:
+                        if h == "river":
+                            baseyear = "1980"
+                        if h == "coastal":
+                            baseyear = "hist"
 
-                            tot_damages_filter_values = [
-                                                        (h,"baseline",baseyear),
-                                                        (h,"4.5","2030"),
-                                                        (h,"4.5","2050"),
-                                                        (h,"4.5","2080"),
-                                                        (h,"8.5","2030"),
-                                                        (h,"8.5","2050"),
-                                                        (h,"8.5","2080")
+                        tot_damages_filter_values = [
+                                                    (h,"baseline",baseyear),
+                                                    (h,"4.5","2030"),
+                                                    (h,"4.5","2050"),
+                                                    (h,"4.5","2080"),
+                                                    (h,"8.5","2030"),
+                                                    (h,"8.5","2050"),
+                                                    (h,"8.5","2080")
+                                                    ]
+                        tot_edges = get_asset_total_damage_values(sector,
+                                                            damage_data_path,damage_string,
+                                                            edges,
+                                                            damages_filter_columns,
+                                                            tot_damages_filter_values,
+                                                            damage_groupby,damage_columns,"edge")
+                        
+                        
+                        weights = [
+                            getattr(record,"EAD_undefended_mean")
+                            for record in tot_edges.itertuples() if getattr(record,"EAD_undefended_mean") > 0
+                        ]
+
+                        if weights != []:
+                            for r in rcp:
+                                print("* Starting sector: "+sector['sector_label']+", country: "+map_plot['country']+", hazard: "+h+", rcp: "+r+".")
+                                damages_filter_values = [
+                                                            (h,"baseline",baseyear),
+                                                            (h,r,"2030"),
+                                                            (h,r,"2050"),
+                                                            (h,r,"2080")
                                                         ]
-                            tot_edges = get_asset_total_damage_values(sector,
+                                damages_filter_lables = ["Baseline","RCP "+r+" - 2030","RCP "+r+" - 2050","RCP "+r+" - 2080"]
+                            
+                                countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
+                                countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
+                                
+                                lakes = geopandas.read_file(lakes_path).to_crs(AFRICA_GRID_EPSG)
+                                regions = geopandas.read_file(admin_boundaries,layer="level1").to_crs(AFRICA_GRID_EPSG)
+                                regions = regions[regions["GID_0"].isin(map_plot["center_countries"])]
+                                coastal_prov = regions[regions["GID_1"].isin(map_plot["coastal_provinces"])]
+
+                                if h == "river":
+                                    bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
+                                    offset = map_plot["offset_river"]
+                                if h == "coastal":
+                                    bounds = coastal_prov.geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
+                                    offset = map_plot["offset_coastal"]
+                                
+                                bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
+                                ax_proj = get_projection(extent=bounds)
+
+
+                                fig, ax_plots = plt.subplots(1,4,
+                                    subplot_kw={'projection': ax_proj},
+                                    figsize=(24,16),
+                                    dpi=500)
+                                ax_plots = ax_plots.flatten()
+                                                            
+                                for j in range(len(damages_filter_values)):
+                                    edges_damages = get_asset_total_damage_values(sector,
                                                                 damage_data_path,damage_string,
                                                                 edges,
                                                                 damages_filter_columns,
-                                                                tot_damages_filter_values,
+                                                                [damages_filter_values[j]],
                                                                 damage_groupby,damage_columns,"edge")
-                            
-                            
-                            weights = [
-                                getattr(record,"EAD_undefended_mean")
-                                for record in tot_edges.itertuples() if getattr(record,"EAD_undefended_mean") > 0
-                            ]
-
-                            if weights != []:
-                                for r in rcp:
-                                    print("* Starting sector: "+sector['sector_label']+", country: "+map_plot['country']+", hazard: "+h+", rcp: "+r+".")
-                                    damages_filter_values = [
-                                                                (h,"baseline",baseyear),
-                                                                (h,r,"2030"),
-                                                                (h,r,"2050"),
-                                                                (h,r,"2080")
-                                                            ]
-                                    damages_filter_lables = ["Baseline","RCP "+r+" - 2030","RCP "+r+" - 2050","RCP "+r+" - 2080"]
-                                
-                                    countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
-                                    countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
-                                    
-                                    lakes = geopandas.read_file(lakes_path).to_crs(AFRICA_GRID_EPSG)
-                                    regions = geopandas.read_file(admin_boundaries,layer="level1").to_crs(AFRICA_GRID_EPSG)
-                                    regions = regions[regions["GID_0"].isin(map_plot["center_countries"])]
-                                    coastal_prov = regions[regions["GID_1"].isin(map_plot["coastal_provinces"])]
-
-                                    if h == "river":
-                                        bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
-                                        offset = map_plot["offset_river"]
-                                    if h == "coastal":
-                                        bounds = coastal_prov.geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
-                                        offset = map_plot["offset_coastal"]
-                                    
-                                    bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
-                                    ax_proj = get_projection(extent=bounds)
-
-
-                                    fig, ax_plots = plt.subplots(1,4,
-                                        subplot_kw={'projection': ax_proj},
-                                        figsize=(24,16),
-                                        dpi=500)
-                                    ax_plots = ax_plots.flatten()
-                                                                
-                                    for j in range(len(damages_filter_values)):
-                                        edges_damages = get_asset_total_damage_values(sector,
-                                                                    damage_data_path,damage_string,
-                                                                    edges,
-                                                                    damages_filter_columns,
-                                                                    [damages_filter_values[j]],
-                                                                    damage_groupby,damage_columns,"edge")
-                                        ax = get_axes(ax_plots[j],extent=bounds)
-                                        plot_basemap(ax, countries,lakes,
-                                                    regions=regions
-                                                    )
-                                        scale_bar_and_direction(ax,scalebar_distance=50)
-                                        ax = line_map_plotting_colors_width(
-                                                                            ax,edges_damages,weights,"EAD_undefended_mean",
-                                                                            legend_label=legend_title,
-                                                                            no_value_label=no_value_string,
-                                                                            width_step=0.01,
-                                                                            interpolation="fisher-jenks",
-                                                                            plot_title=f"Expected annual damages to {sector['sector_label']} from {h} flooding",
-                                                                            legend_location=map_plot["legend_location"]
-                                                                            )
-                                        ax.text(
-                                                0.05,
-                                                0.95,
-                                                f"{damages_filter_lables[j]}",
-                                                horizontalalignment='left',
-                                                transform=ax.transAxes,
-                                                size=18,
-                                                weight='bold',
-                                                zorder=24)                            
-
-                                    plt.tight_layout()
-                                    save_fig(
-                                            os.path.join(
-                                                folder_path, 
-                                                f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{damage_string}_{h}_climate_scenarios_{r}.png"
+                                    ax = get_axes(ax_plots[j],extent=bounds)
+                                    plot_basemap(ax, countries,lakes,
+                                                regions=regions
                                                 )
+                                    scale_bar_and_direction(ax,scalebar_distance=50)
+                                    ax = line_map_plotting_colors_width(
+                                                                        ax,edges_damages,weights,"EAD_undefended_mean",
+                                                                        legend_label=legend_title,
+                                                                        no_value_label=no_value_string,
+                                                                        width_step=0.01,
+                                                                        interpolation="fisher-jenks",
+                                                                        plot_title=f"Expected annual damages to {sector['sector_label']} from {h} flooding",
+                                                                        legend_location=map_plot["legend_location"]
+                                                                        )
+                                    ax.text(
+                                            0.05,
+                                            0.95,
+                                            f"{damages_filter_lables[j]}",
+                                            horizontalalignment='left',
+                                            transform=ax.transAxes,
+                                            size=18,
+                                            weight='bold',
+                                            zorder=24)                            
+
+                                plt.tight_layout()
+                                save_fig(
+                                        os.path.join(
+                                            folder_path, 
+                                            f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{damage_string}_{h}_climate_scenarios_{r}.png"
                                             )
+                                        )
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings

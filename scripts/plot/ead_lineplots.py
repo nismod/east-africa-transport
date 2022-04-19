@@ -72,15 +72,15 @@ def main(config):
     output_data_path = config['paths']['results']
     figure_path = config['paths']['figures']
 
-    folder_path = os.path.join(figure_path,"exposure_rp")
+    folder_path = os.path.join(figure_path,"ead_epoch")
     if os.path.exists(folder_path) == False:
         os.mkdir(folder_path)
-
-    # map_country_codes = country_risk_basemap_attributes()
-    sector_details = sector_attributes() 
-    damage_string = "direct_damages" 
-    damage_columns = ["exposure_median","exposure_q5","exposure_q95"]
-    damage_groupby = ["hazard","rcp","rp","epoch"]
+        
+    damage_string = "EAD_EAEL" 
+    # damage_string = "EAD" 
+    damage_columns = ["EAD_undefended_mean","EAD_undefended_amin","EAD_undefended_amax"]
+    # damage_columns = ["EAD_undefended_mean","EAD_undefended_min","EAD_undefended_max"]
+    damage_groupby = ["hazard","rcp","epoch"]
     damages_filter_columns = ["hazard","rcp","epoch"]
 
     hazard = ["coastal","river"]
@@ -89,18 +89,21 @@ def main(config):
     rcp_colors = ['#2171b5','#08306b']
     rcp_markers = ['s-','^-']
 
+    sector_details = sector_attributes() 
+
     for sector in sector_details:
         if sector["sector"] in ["road"]: # ["road", "rail"]
-            # for map_plot in map_country_codes:
-            # damage_data_path = os.path.join(output_data_path,
-            #                                         map_plot["country"],    
-            #                                         "direct_damages_summary") 
-            damage_data_path = os.path.join(output_data_path,    
+            damage_data_path = os.path.join(output_data_path,
+                                                    "risk_results",
                                                     "direct_damages_summary") 
             for h in hazard:
+                if h == "river":
+                    baseyear = "1980"
+                if h == "coastal":
+                    baseyear = "hist"
+
                 tot_damages_filter_values = [
-                                            (h,"baseline","1980"),
-                                            (h,"baseline","hist"),
+                                            (h,"baseline",baseyear),
                                             (h,"4.5","2030"),
                                             (h,"4.5","2050"),
                                             (h,"4.5","2080"),
@@ -115,71 +118,67 @@ def main(config):
                                                         tot_damages_filter_values,
                                                         damage_groupby,damage_columns,"edge")
                 if tot_damages.empty == False:
-                    rps = list(set(tot_damages['rp'].values.tolist()))
+                    # rps = list(set(tot_damages['rp'].values.tolist()))
+                    # figure_texts = ['a.','b.','c.']
+                    plot_column = "EAD_undefended"
+                    length_factor = 0.000001 # Convert usd to million usd
+                    fig, ax = plt.subplots(1,1,
+                        figsize=(20,12),
+                        dpi=500)
+                    # ax.plot(tot_damages[tot_damages['epoch'] == baseyear]['epoch'],
+                    #     length_factor*tot_damages[tot_damages['epoch'] == baseyear][f"{plot_column}_mean"],
+                    #     'o-',color='#fd8d3c',markersize=10,linewidth=2.0,
+                    #     label='Baseline')
+                    plt.axhline(y = length_factor*tot_damages[tot_damages['epoch'] == baseyear][f"{plot_column}_mean"].item(), 
+                        color="#fd8d3c",
+                        linestyle = '-',
+                        markersize=10,
+                        linewidth=2.0,
+                        label='Baseline')
+                    for i, (r,m,cl) in enumerate(list(zip(rcp,rcp_markers,rcp_colors))):
+                        exp = tot_damages[(tot_damages['rcp'] == r)]
+                        ax.plot(exp['epoch'],
+                            length_factor*exp[f"{plot_column}_mean"],
+                            m,color=cl,markersize=10,linewidth=2.0,
+                            label=f"RCP {r} - mean")
+                            # label=f"RCP {r} - median")
+                        ax.fill_between(exp['epoch'],
+                            length_factor*exp[f"{plot_column}_amin"],
+                            length_factor*exp[f"{plot_column}_amax"],
+                            # length_factor*exp[f"{plot_column}_min"],
+                            # length_factor*exp[f"{plot_column}_max"],
+                            alpha=0.3,facecolor=cl,
+                            label=f"RCP {r} - min-max")
+                            # label=f"RCP {r} - Q5-Q95")
                     
-                    figure_texts = ['a.','b.','c.']
-                    plot_column = "exposure"
-                    if h == "river":
-                        baseyear = "1980"
-                    if h == "coastal":
-                        baseyear = "hist"
-                    length_factor = 0.001 # Convert length from m to km
-                    fig, ax_plots = plt.subplots(1,3,
-                            figsize=(20,12),
-                            dpi=500)
-                    ax_plots = ax_plots.flatten()
-                    j = 0
-                    for year in years:
-                        ax = ax_plots[j]
-                        ax.plot(tot_damages[tot_damages['epoch'] == baseyear]['rp'],
-                                length_factor*tot_damages[tot_damages['epoch'] == baseyear][f"{plot_column}_median"],
-                                'o-',color='#fd8d3c',markersize=10,linewidth=2.0,
-                                label='Baseline')
-                        for i, (r,m,cl) in enumerate(list(zip(rcp,rcp_markers,rcp_colors))):
-                            exp = tot_damages[(tot_damages['epoch'] == year) & (tot_damages['rcp'] == r)]
-                            ax.plot(exp['rp'],
-                                    length_factor*exp[f"{plot_column}_median"],
-                                    m,color=cl,markersize=10,linewidth=2.0,
-                                    label=f"RCP {r} - median")
-                            ax.fill_between(exp['rp'],length_factor*exp[f"{plot_column}_q5"],
-                                length_factor*exp[f"{plot_column}_q95"],
-                                alpha=0.3,facecolor=cl,
-                                label=f"RCP {r} - Q5-Q95")
-
-
-                                    
-                        ax.set_xlabel('Return period (years)',fontsize=14,fontweight='bold')
-                        ax.set_ylabel('Flooded length (km)',fontsize=14,fontweight='bold')
-                        ax.set_xscale('log')
-                        ax.set_ylim(length_factor*min_limits,length_factor*max_limits)
-                        ax.tick_params(axis='both', labelsize=14)
-                        ax.set_xticks([t for t in rps])
-                        ax.set_xticklabels([str(t) for t in rps])
-                        ax.grid(True)
-                        # ax.set_xticks([t for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))], 
-                        #             [str(t) for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))])
-                        ax.text(
-                            0.05,
-                            0.95,
-                            f"{figure_texts[j]} {year}",
-                            horizontalalignment='left',
-                            transform=ax.transAxes,
-                            size=18,
-                            weight='bold')
-
-                        j+=1            
-
-                    ax_plots[-1].legend(
-                                loc='lower left', 
-                                bbox_to_anchor=(1.05,0.8),
-                                prop={'size':18,'weight':'bold'})
+                    ax.set_xlabel('Year',fontsize=14,fontweight='bold')
+                    ax.set_ylabel('Expected Annual Damage (million USD)',fontsize=14,fontweight='bold')
+                    ax.set_ylim(length_factor*min_limits,length_factor*max_limits)
+                    ax.tick_params(axis='both', labelsize=14)
+                    # ax.set_xticks([t for t in rps])
+                    #a x.set_xticklabels([str(t) for t in rps])
+                    ax.grid(True)
+                    # ax.set_xticks([t for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))], 
+                        # [str(t) for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))])
+                    ax.text(
+                        0.01,
+                        1.015,
+                        f"Expected annual damages (million USD) from {h} flooding",
+                        horizontalalignment='left',
+                        transform=ax.transAxes,
+                        size=18,
+                        weight='bold')
+                    ax.legend(
+                        loc='lower left', 
+                        bbox_to_anchor=(0,0.763),
+                        prop={'size':18,'weight':'bold'})
                     plt.tight_layout()
                     save_fig(
-                            os.path.join(
-                                folder_path, 
-                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_exposures_lineplot.png"
-                                )
-                            )
+                        os.path.join(
+                            folder_path, 
+                            f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_EAD_lineplot.png"
+                        )
+                    )
                     plt.close()
 
 if __name__ == '__main__':
