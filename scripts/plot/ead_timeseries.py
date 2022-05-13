@@ -56,7 +56,7 @@ def main(config):
             for hazard in hazards:
                 length_factor = 0.000001 # Convert usd to million usd
                 fig, ax = plt.subplots(1,1,
-                    figsize=(20,12),
+                    figsize=(15,9),
                     dpi=500)
                 for i, (r,m,cl) in enumerate(list(zip(rcp,rcp_markers,rcp_colors))):
                     mean = read_timeseries(timeseries_path,filename_mean,hazard,r)
@@ -75,23 +75,25 @@ def main(config):
                                     length_factor * amax['ead'],
                                     alpha=0.3,facecolor=cl,
                                     label=f"RCP {r} - min-max")
-                ax.set_xlabel('Year',fontsize=14,fontweight='bold')
-                ax.set_ylabel('Expected Annual Damage (million USD)',fontsize=14,fontweight='bold')
+                ax.set_xlabel('Year',fontsize=16,fontweight='bold')
+                ax.set_ylabel('Expected Annual Damage (million USD)',fontsize=16,fontweight='bold')
+                ax.set_xlim(2020, 2080)
                 ax.set_ylim(0,length_factor*max_limits)
                 ax.tick_params(axis='both', labelsize=14)
-                ax.set_xticks(np.arange(int(mean['year'].min()), int(mean['year'].max())+1, 10))
+                # ax.set_xticks(np.arange(int(mean['year'].min()), int(mean['year'].max())+1, 10))
+                ax.set_xticks(np.arange(int(mean['year'].min()), 2080+1, 10))
                 ax.grid(True)
                 ax.text(
                     0.01,
                     1.015,
-                    f"Expected annual damages (million USD) from {hazard} flooding",
+                    f"Expected annual damages (million USD) to {sector['sector']} networks from {hazard} flooding",
                     horizontalalignment='left',
                     transform=ax.transAxes,
                     size=18,
                     weight='bold')
                 ax.legend(
                     loc='lower left', 
-                    bbox_to_anchor=(0,0.763),
+                    bbox_to_anchor=(0,0.73),
                     prop={'size':18,'weight':'bold'})
                 plt.tight_layout()
                 save_fig(

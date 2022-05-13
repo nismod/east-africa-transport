@@ -159,6 +159,15 @@ def main(config):
     edges["min_speed"] = (1 - speed_uncertainty)*edges["speed_freight"]
     edges["max_speed"] = (1 + speed_uncertainty)*edges["speed_freight"]
 
+    # add a boolean "is_current" column
+    # to mark any past/future lines as not current
+    edges['is_current'] = ~edges['status'].isin((
+        'abandoned',
+        'disused',
+        'construction',
+        'proposed',
+        'rehabilitation'))
+
     print("Done adding rail attributes")
 
     """Assign cost attributes"""

@@ -11,143 +11,102 @@ import matplotlib.pyplot as plt
 from plot_utils import *
 from east_africa_plotting_attributes import *
 
-AFRICA_GRID_EPSG = 4326
-
-def quantiles(dataframe,grouping_by_columns,grouped_columns):
-    quantiles_list = ['median','q5','q95']
-    df_list = []
-    df_columns = []
-    for quant in quantiles_list:
-        if quant == 'median':
-            df = dataframe.groupby(grouping_by_columns)[grouped_columns].quantile(0.5)
-        elif quant == 'q5':
-            df = dataframe.groupby(grouping_by_columns)[grouped_columns].quantile(0.05)
-        elif quant == 'q95':
-            df = dataframe.groupby(grouping_by_columns)[grouped_columns].quantile(0.95)
-
-        df.rename(columns=dict((g,f"{g}_{quant}") for g in grouped_columns),inplace=True)
-        df_columns += [f"{g}_{quant}" for g in grouped_columns]
-        df_list.append(df)
-    return pd.concat(df_list,axis=1).reset_index(), df_columns
-
-def filter_asset_total_damage_values(sector,damage_data_path,
-                            damage_string,
-                            damages_filter_columns,damages_filter_values,
-                            damage_groupby,
-                            damage_sum_columns,layer_key):
-    asset_id_column = sector[f"{layer_key}_id_column"]
-    asset_filter_column = sector[f"{layer_key}_damage_filter_column"]
-    asset_filter_list = sector[f"{layer_key}_damage_categories"]
-    damages = pd.read_csv(
-                    os.path.join(
-                        damage_data_path,
-                        f"{sector['sector_gpkg'].replace('.gpkg','')}_{sector[f'{layer_key}_layer']}_{damage_string}.csv"
-                        )
-                    )
-    for d_filter in damages_filter_columns:
-        damages[d_filter] = damages[d_filter].apply(str)
-    damages = damages.set_index(damages_filter_columns)
-    damages = damages[damages.index.isin(damages_filter_values)].reset_index()
-
-    #damages, damage_sum_columns = quantiles(damages,[asset_id_column] + damage_groupby,damage_sum_columns)
-
-    damages = damages.groupby(
-                    damage_groupby,dropna=False
-                    ).agg(
-                        dict(
-                            zip(
-                                damage_sum_columns,["sum"]*len(damage_sum_columns)
-                                )
-                            )
-                        ).reset_index() 
-    
-    min_damages = min(damages[damage_sum_columns].min())
-    max_damages = max(damages[damage_sum_columns].max())
-
-    return damages, min_damages, max_damages
-
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
     output_data_path = config['paths']['results']
     figure_path = config['paths']['figures']
 
-    folder_path = os.path.join(figure_path,"exposure_rp")
+    folder_path = os.path.join(figure_path,'exposure_rp')
     if os.path.exists(folder_path) == False:
         os.mkdir(folder_path)
 
-    # map_country_codes = country_risk_basemap_attributes()
+    hazard_csv = os.path.join(processed_data_path, 
+        'hazards',
+        'hazard_layers.csv')
+    hazard_data_details = pd.read_csv(hazard_csv,encoding='latin1')
+
+    hazards = hazard_data_details.hazard.unique()
+    epochs = hazard_data_details.epoch.unique()
+    rcps = hazard_data_details.rcp.unique()
+    rps = hazard_data_details.rp.unique()
+
     sector_details = sector_attributes() 
-    damage_string = "direct_damages" 
-    damage_columns = ["exposure_median","exposure_q5","exposure_q95"]
-    damage_groupby = ["hazard","rcp","rp","epoch"]
-    damages_filter_columns = ["hazard","rcp","epoch"]
-
-    hazard = ["coastal","river"]
-    years = ["2030","2050","2080"]
-    rcp = ["4.5","8.5"]
-    rcp_colors = ['#2171b5','#08306b']
-    rcp_markers = ['s-','^-']
-
+    
     for sector in sector_details:
-        if sector["sector"] in ["road"]: # ["road", "rail"]
-            # for map_plot in map_country_codes:
-            # damage_data_path = os.path.join(output_data_path,
-            #                                         map_plot["country"],    
-            #                                         "direct_damages_summary") 
-            damage_data_path = os.path.join(output_data_path,    
-                                                    "direct_damages_summary") 
-            for h in hazard:
-                tot_damages_filter_values = [
-                                            (h,"baseline","1980"),
-                                            (h,"baseline","hist"),
-                                            (h,"4.5","2030"),
-                                            (h,"4.5","2050"),
-                                            (h,"4.5","2080"),
-                                            (h,"8.5","2030"),
-                                            (h,"8.5","2050"),
-                                            (h,"8.5","2080")
-                                            ]
-                
-                tot_damages, min_limits, max_limits = filter_asset_total_damage_values(sector,
-                                                        damage_data_path,damage_string,
-                                                        damages_filter_columns,
-                                                        tot_damages_filter_values,
-                                                        damage_groupby,damage_columns,"edge")
-                if tot_damages.empty == False:
-                    rps = list(set(tot_damages['rp'].values.tolist()))
+        if sector['sector'] in ['road','rail']: # ['road', 'rail']
+            exposure_parquet = os.path.join(output_data_path,
+                'risk_results',
+                'direct_damages_summary',
+                f"{sector['sector']}_{sector['edge_layer']}_exposures.parquet")
+            exposure_results = pd.read_parquet(exposure_parquet)
+
+            for hazard in hazards:
+                data = []
+                for epoch in epochs: 
+                    for rcp in rcps:
+                        for rp in rps:
+                            filtered_df = hazard_data_details[(hazard_data_details.hazard == hazard) & 
+                                                            (hazard_data_details.epoch == epoch) &
+                                                            (hazard_data_details.rcp == rcp) &
+                                                            (hazard_data_details.rp == rp)]
+                            filtered_columns = ['edge_id','exposure_unit'] + list(filtered_df.key)
+                            if(set(filtered_columns)).issubset(exposure_results.columns):
+                                exposure_results_new = exposure_results[filtered_columns]
+                                if len(exposure_results_new.columns) > 2:
+                                    # exposure_results_new.mean = exposure_results_new.iloc[:, 2:].mean(axis=1)
+                                    # exposure_results_new.min = exposure_results_new.iloc[:, 2:].min(axis=1)
+                                    # exposure_results_new.max = exposure_results_new.iloc[:, 2:].max(axis=1)
+
+                                    # data.append([hazard, epoch, rcp, rp,
+                                    #             exposure_results_new.mean.sum(),
+                                    #             exposure_results_new.min.sum(),
+                                    #             exposure_results_new.max.sum()])
+
+                                    exposure_results_sum = exposure_results_new.sum(numeric_only=True, axis=0)
+                                    data.append([hazard, epoch, rcp, rp,
+                                                 exposure_results_sum.mean(),
+                                                 exposure_results_sum.min(),
+                                                 exposure_results_sum.max()])
+
+                df = pd.DataFrame(data, columns=['hazard', 'epoch', 'rcp', 'rp', 'mean', 'min', 'max'])
+                if df.empty != True:
+                    min_limits = min(df[['mean','min','max']].min())
+                    max_limits = max(df[['mean','min','max']].max())
                     
                     figure_texts = ['a.','b.','c.']
-                    plot_column = "exposure"
-                    if h == "river":
-                        baseyear = "1980"
-                    if h == "coastal":
-                        baseyear = "hist"
+                    years = ['2030','2050','2080']
+                    rcp = ['4.5','8.5']
+                    rcp_colors = ['#2171b5','#08306b']
+                    rcp_markers = ['s-','^-']
+                    if hazard == 'river':
+                        baseyear = '1980'
+                    if hazard == 'coastal':
+                        baseyear = 'hist'
                     length_factor = 0.001 # Convert length from m to km
+
                     fig, ax_plots = plt.subplots(1,3,
-                            figsize=(20,12),
-                            dpi=500)
+                        figsize=(20,12),
+                        dpi=500)
                     ax_plots = ax_plots.flatten()
                     j = 0
                     for year in years:
                         ax = ax_plots[j]
-                        ax.plot(tot_damages[tot_damages['epoch'] == baseyear]['rp'],
-                                length_factor*tot_damages[tot_damages['epoch'] == baseyear][f"{plot_column}_median"],
+                        ax.plot(df[df['epoch'] == baseyear]['rp'],
+                                length_factor*df[df['epoch'] == baseyear]['mean'],
                                 'o-',color='#fd8d3c',markersize=10,linewidth=2.0,
                                 label='Baseline')
                         for i, (r,m,cl) in enumerate(list(zip(rcp,rcp_markers,rcp_colors))):
-                            exp = tot_damages[(tot_damages['epoch'] == year) & (tot_damages['rcp'] == r)]
+                            exp = df[(df['epoch'] == year) & (df['rcp'] == r)]
                             ax.plot(exp['rp'],
-                                    length_factor*exp[f"{plot_column}_median"],
+                                    length_factor*exp['mean'],
                                     m,color=cl,markersize=10,linewidth=2.0,
-                                    label=f"RCP {r} - median")
-                            ax.fill_between(exp['rp'],length_factor*exp[f"{plot_column}_q5"],
-                                length_factor*exp[f"{plot_column}_q95"],
+                                    label=f"RCP {r} - mean")
+                            ax.fill_between(exp['rp'],length_factor*exp['min'],
+                                length_factor*exp['max'],
                                 alpha=0.3,facecolor=cl,
-                                label=f"RCP {r} - Q5-Q95")
+                                label=f"RCP {r} - min-max")
 
-
-                                    
                         ax.set_xlabel('Return period (years)',fontsize=14,fontweight='bold')
                         ax.set_ylabel('Flooded length (km)',fontsize=14,fontweight='bold')
                         ax.set_xscale('log')
@@ -156,8 +115,6 @@ def main(config):
                         ax.set_xticks([t for t in rps])
                         ax.set_xticklabels([str(t) for t in rps])
                         ax.grid(True)
-                        # ax.set_xticks([t for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))], 
-                        #             [str(t) for t in list(set(exposures[exposures['year'] == baseyear]['return_period'].values))])
                         ax.text(
                             0.05,
                             0.95,
@@ -170,18 +127,17 @@ def main(config):
                         j+=1            
 
                     ax_plots[-1].legend(
-                                loc='lower left', 
-                                bbox_to_anchor=(1.05,0.8),
-                                prop={'size':18,'weight':'bold'})
+                        loc='lower left', 
+                        bbox_to_anchor=(1.05,0.8),
+                        prop={'size':18,'weight':'bold'})
                     plt.tight_layout()
                     save_fig(
                             os.path.join(
                                 folder_path, 
-                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_exposures_lineplot.png"
+                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{hazard}_exposures_lineplot.png"
                                 )
                             )
                     plt.close()
-
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings
     warnings.filterwarnings('ignore', message='.*Sequential read of iterator was interrupted.*')

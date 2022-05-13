@@ -11,114 +11,75 @@ import matplotlib.pyplot as plt
 from plot_utils import *
 from east_africa_plotting_attributes import *
 
-AFRICA_GRID_EPSG = 4326
-
-def quantiles(dataframe,grouping_by_columns,grouped_columns):
-    quantiles_list = ['median','q5','q95']
-    df_list = []
-    df_columns = []
-    for quant in quantiles_list:
-        if quant == 'median':
-            df = dataframe.groupby(grouping_by_columns)[grouped_columns].quantile(0.5)
-        elif quant == 'q5':
-            df = dataframe.groupby(grouping_by_columns)[grouped_columns].quantile(0.05)
-        elif quant == 'q95':
-            df = dataframe.groupby(grouping_by_columns)[grouped_columns].quantile(0.95)
-
-        df.rename(columns=dict((g,f"{g}_{quant}") for g in grouped_columns),inplace=True)
-        df_columns += [f"{g}_{quant}" for g in grouped_columns]
-        df_list.append(df)
-    return pd.concat(df_list,axis=1).reset_index(), df_columns
-
-def filter_asset_total_damage_values(sector,damage_data_path,
-                            damage_string,
-                            damages_filter_columns,damages_filter_values,
-                            damage_groupby,
-                            damage_sum_columns,layer_key):
-    asset_id_column = sector[f"{layer_key}_id_column"]
-    asset_filter_column = sector[f"{layer_key}_damage_filter_column"]
-    asset_filter_list = sector[f"{layer_key}_damage_categories"]
-    damages = pd.read_csv(
-                    os.path.join(
-                        damage_data_path,
-                        f"{sector['sector_gpkg'].replace('.gpkg','')}_{sector[f'{layer_key}_layer']}_{damage_string}.csv"
-                        )
-                    )
-    for d_filter in damages_filter_columns:
-        damages[d_filter] = damages[d_filter].apply(str)
-    damages = damages.set_index(damages_filter_columns)
-    damages = damages[damages.index.isin(damages_filter_values)].reset_index()
-
-    #damages, damage_sum_columns = quantiles(damages,[asset_id_column] + damage_groupby,damage_sum_columns)
-
-    damages = damages.groupby(
-                    damage_groupby,dropna=False
-                    ).agg(
-                        dict(
-                            zip(
-                                damage_sum_columns,["sum"]*len(damage_sum_columns)
-                                )
-                            )
-                        ).reset_index() 
-    
-    min_damages = min(damages[damage_sum_columns].min())
-    max_damages = max(damages[damage_sum_columns].max())
-
-    return damages, min_damages, max_damages
-
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
-    results_path = config['paths']['results']
-    output_path = config['paths']['output']
+    results_data_path = config['paths']['results']
+    output_data_path = config['paths']['output']
+    figure_path = config['paths']['figures']
 
-    folder_path = os.path.join(output_path,"exposure_table")
+    folder_path = os.path.join(output_data_path,'exposure_table')
     if os.path.exists(folder_path) == False:
         os.mkdir(folder_path)
 
-    map_country_codes = country_risk_basemap_attributes()
+    hazard_csv = os.path.join(processed_data_path, 
+        'hazards',
+        'hazard_layers.csv')
+    hazard_data_details = pd.read_csv(hazard_csv,encoding='latin1')
+
+    hazards = hazard_data_details.hazard.unique()
+    epochs = hazard_data_details.epoch.unique()
+    rcps = hazard_data_details.rcp.unique()
+    rps = hazard_data_details.rp.unique()
+
     sector_details = sector_attributes() 
-    damage_string = "direct_damages" 
-    damage_columns = ["exposure_median","exposure_q5","exposure_q95"]
-    damage_groupby = ["hazard","rcp","rp","epoch"]
-    damages_filter_columns = ["hazard","rcp","epoch"]
-
-    hazard = ["coastal","river"]
-    years = ["2030","2050","2080"]
-    rcp = ["4.5","8.5"]
-    rcp_colors = ['#2171b5','#08306b']
-    rcp_markers = ['s-','^-']
-
+    
     for sector in sector_details:
-        if sector["sector"] in ["road","rail"]:
-            for map_plot in map_country_codes:
-                    damage_data_path = os.path.join(results_path,
-                                                            map_plot["country"],    
-                                                            "direct_damages_summary") 
-                    for h in hazard:
-                        tot_damages_filter_values = [
-                                                    (h,"baseline","1980"),
-                                                    (h,"baseline","hist"),
-                                                    (h,"4.5","2030"),
-                                                    (h,"4.5","2050"),
-                                                    (h,"4.5","2080"),
-                                                    (h,"8.5","2030"),
-                                                    (h,"8.5","2050"),
-                                                    (h,"8.5","2080")
-                                                    ]
-                        
-                        tot_damages, min_limits, max_limits = filter_asset_total_damage_values(sector,
-                                                                damage_data_path,damage_string,
-                                                                damages_filter_columns,
-                                                                tot_damages_filter_values,
-                                                                damage_groupby,damage_columns,"edge")
-                        if tot_damages.empty == False:
-                            tot_damages.to_excel(
-                             os.path.join(
-                                        folder_path, 
-                                        f"{map_plot['country']}_{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_exposures_table.xlsx"
-                                        )
-                                    )
+        if sector['sector'] in ['road','rail']: # ['road', 'rail']
+            exposure_parquet = os.path.join(results_data_path,
+                'risk_results',
+                'direct_damages_summary',
+                f"{sector['sector']}_{sector['edge_layer']}_exposures.parquet")
+            exposure_results = pd.read_parquet(exposure_parquet)
+
+            for hazard in hazards:
+                data = []
+                for epoch in epochs: 
+                    for rcp in rcps:
+                        for rp in rps:
+                            filtered_df = hazard_data_details[(hazard_data_details.hazard == hazard) & 
+                                                            (hazard_data_details.epoch == epoch) &
+                                                            (hazard_data_details.rcp == rcp) &
+                                                            (hazard_data_details.rp == rp)]
+                            filtered_columns = ['edge_id','exposure_unit'] + list(filtered_df.key)
+                            if(set(filtered_columns)).issubset(exposure_results.columns):
+                                exposure_results_new = exposure_results[filtered_columns]
+                                if len(exposure_results_new.columns) > 2:
+                                    # VERSION 1:
+                                    # exposure_results_new.mean = exposure_results_new.iloc[:, 2:].mean(axis=1)
+                                    # exposure_results_new.min = exposure_results_new.iloc[:, 2:].min(axis=1)
+                                    # exposure_results_new.max = exposure_results_new.iloc[:, 2:].max(axis=1)
+
+                                    # data.append([hazard, epoch, rcp, rp,
+                                    #             exposure_results_new.mean.sum(),
+                                    #             exposure_results_new.min.sum(),
+                                    #             exposure_results_new.max.sum()])
+
+                                    # VERSION 2:
+                                    exposure_results_sum = exposure_results_new.sum(numeric_only=True, axis=0)
+                                    data.append([hazard, epoch, rcp, rp,
+                                                 exposure_results_sum.mean(),
+                                                 exposure_results_sum.min(),
+                                                 exposure_results_sum.max()])
+
+                df = pd.DataFrame(data, columns=['hazard', 'epoch', 'rcp', 'rp', 'mean', 'min', 'max'])
+                if df.empty != True:
+                    df.to_excel(
+                     os.path.join(
+                                folder_path, 
+                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{hazard}_exposure_table.xlsx"
+                                )
+                            )
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings

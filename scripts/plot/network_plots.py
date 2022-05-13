@@ -25,7 +25,7 @@ def main(config):
     sector_details = sector_attributes() 
 
     for sector in sector_details:
-        if sector["sector"] in ("road","rail"):
+        if sector["sector"] in ("road"):
             edges = gpd.read_file(os.path.join(
                                 processed_data_path,
                                 "networks",
