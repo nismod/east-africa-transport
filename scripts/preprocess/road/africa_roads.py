@@ -228,8 +228,8 @@ def main(config):
     edges_simple['lanes'] = edges_simple.progress_apply(lambda x:get_road_lanes(x),axis=1)
 
     # Add road width
-    width = 6.5 # Default carriageway width in meters
-    shoulder = 1.5
+    width = 6.5 # Default carriageway width in meters for Africa, needs to be generalizable for global
+    shoulder = 1.5 # Default shoulder width in meters for Africa, needs to be generalizable for global
     edges_simple['width_m'] = edges_simple.progress_apply(lambda x:float(x.lanes)*width + 2.0*shoulder,axis=1)
 
     # Assign min and max road speeds
@@ -273,6 +273,10 @@ def main(config):
     edges = edges_simple.merge(edges[["edge_id","geometry"]],how = "left", on = "edge_id")
     edges = gpd.GeoDataFrame(edges,geometry="geometry",crs="EPSG:4326")
     
+    # Add the component column
+    edges, nodes = components(edges,nodes)
+    print("Done adding components")
+
     print("Ready to export")
     edges.to_file(os.path.join(data_path,"road/africa","africa-roads-modified.gpkg"), layer='edges', driver='GPKG')
     nodes.to_file(os.path.join(data_path,"road/africa","africa-roads-modified.gpkg"), layer='nodes', driver='GPKG')

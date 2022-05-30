@@ -32,7 +32,7 @@ OSM_CONFIG_FILE=scripts/preprocess/road/osmconf_road.ini ogr2ogr -f GPKG \
 # done
 
 # Run script
-#python scripts/preprocess/road/process_road.py
+python scripts/preprocess/road/process_road.py
 
 # Replace gpkg with new one which includes costs 
-#python scripts/preprocess/road/costs_road.py
+python scripts/preprocess/road/costs_road.py

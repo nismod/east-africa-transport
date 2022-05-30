@@ -87,7 +87,7 @@ def create_network_from_nodes_and_edges(nodes,edges,node_edge_prefix,out_fname,b
     print ('* Done with network topology')
 
     if by is not None:
-        network = snkit_network.merge_edges(network,by=by)
+        network = snkit.network.merge_edges(network,by=by)
         print ('* Done with merging network')
 
     network.edges.rename(columns={'from_id':'from_node',
