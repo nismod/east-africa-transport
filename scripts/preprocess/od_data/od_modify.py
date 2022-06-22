@@ -59,6 +59,7 @@ def main(config):
     global_od_data.rename(columns={"NAME":"NAME_D","CONTINENT":"CONTINENT_D"},inplace=True)
 
     global_od_data = global_od_data.groupby(["iso3_O","iso3_D",
+                                            "Industries",
                                             "NAME_O","NAME_D",
                                             "CONTINENT_O","CONTINENT_D"])[flow_columns].sum().reset_index()
     global_od_data = global_od_data[(global_od_data["CONTINENT_O"] == "Africa") | (global_od_data["CONTINENT_D"] == "Africa")]
@@ -79,6 +80,7 @@ def main(config):
     trade_rest_of_world["v_land_predict"] = 0
     trade_rest_of_world["q_land_predict"] = 0
     trade_rest_of_world = trade_rest_of_world.groupby(["iso3_O","iso3_D",
+                                            "Industries",
                                             "NAME_O","NAME_D",
                                             "CONTINENT_O","CONTINENT_D"])[flow_columns].sum().reset_index()
     print (trade_rest_of_world)
