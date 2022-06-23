@@ -1,47 +1,169 @@
-"""Estimate direct damages to physical assets exposed to hazards
-
+""" Assign population to network nodes
 """
-import sys
-import os
-import subprocess
 
-from scipy.spatial import Voronoi
-from shapely.geometry import Point, Polygon
-import pandas as pd
-import geopandas as gpd
+import os
 import fiona
-from shapely.geometry import shape, mapping
+import geopandas as gpd
+import pandas as pd
 import numpy as np
+from shapely.geometry import Point,LineString,Polygon
+from shapely.ops import nearest_points
+from scipy.spatial import Voronoi, cKDTree
 from analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
-
-def extract_gdf_values_containing_nodes(x, input_gdf, column_name):
-    a = input_gdf.loc[list(input_gdf.geometry.contains(x.geometry))]
-    if len(a.index) > 0:
-        return a[column_name].values[0]
-    else:
-        polygon_index = input_gdf.distance(x.geometry).sort_values().index[0]
-        return input_gdf.loc[polygon_index,column_name]
+import datetime
 
 def main(config):
+    # Start timer
+    tic = datetime.datetime.now()
+
+    # Set paths
     incoming_data_path = config['paths']['incoming_data']
     data_path = config['paths']['data']
     results_data_path = config['paths']['results']
 
-    # countries = gpd.read_file(os.path.join(data_path,
-    #                                 "Admin_boundaries",
-    #                                 "gadm36_levels_gpkg",
-    #                                 "gadm36_levels_continents.gpkg"))[["GID_0","CONTINENT","geometry"]]
-    # countries = countries.to_crs(epsg=4326)
-    # countries = countries[countries["CONTINENT"].isin(["Africa"])]
-    # countries = countries.explode(ignore_index=True)
-    # print (countries)
+    # Read in network nodes
+    nodes = gpd.read_file(
+        os.path.join(data_path,"networks","road","road.gpkg"),
+        layer = "nodes")
+
+    print("Done reading network file")
 
 
-    # # population_raster = os.path.join(data_path,"africa/Africa_1km_Population","AFR_PPP_2020_adj_v2.tif")
-    # outCSVName = os.path.join(data_path,"africa/Africa_1km_Population", "population_points.csv")
-    # # subprocess.run(["gdal2xyz.py", '-csv', population_raster, outCSVName])
+
+    # ### Option 1: Finding the shortest distance between the centroid of population clusters and road nodes 
+    # pop_clusters = gpd.read_file(
+    #     os.path.join(data_path,"population","clusters","hvt-clusters.gpkg"))
+    
+    # print("Done reading population file")
+
+    # pop_clusters = pop_clusters.to_crs(3857)
+    # nodes = nodes.to_crs(3857)
+
+    # pop_clusters['centroid'] = pop_clusters.centroid
+    # pop_clusters = pop_clusters.set_geometry("centroid")
+
+    # print("Done preparing clusters")
+
+    # pop_points = ckdnearest(pop_clusters,nodes)
+
+    # print("Done finding nearest points")
+
+    # pop_points = pop_points.groupby(["node_id"])["Population"].sum().reset_index()
+    # pop_points.rename(columns={"Population":"population"},inplace=True)
+
+    # nodes = pd.merge(nodes,pop_points, how = "left", on = ["node_id"]).fillna(0)
+
+    # # Export network nodes
+    # print("Ready to export")
+
+    # nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+    #     layer = nodes,
+    #     driver = "GPKG")
+
+    # toc1 = datetime.datetime.now()
+
+
+    ### Option 2: Intersecting with voronoi polygons of road nodes ...
+
+    # nodes_voronoi = create_voronoi_polygons_from_nodes(nodes,"node_id")
+
+    # print("Done creating voronoi polygons") 
+
+    # ## Note: creating the voronoi polygons took 1.5 hrs for the hvt countries 
+
+    # # Write file and read file for sanity check: 
+    # nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi.gpkg"), 
+    #     layer = 'nodes-voronoi',
+    #     driver = "GPKG")
+
+    # nodes_voronoi = gpd.read_file(
+    #     os.path.join(data_path,"networks","road","road_voronoi.gpkg"),
+    #     layer = "nodes-voronoi")
+
+    # print("Done reading nodes file")
+
+    # # Clip polygons to admin edges
+    # admin = gpd.read_file(
+    #     os.path.join(data_path,"admin_boundaries","gadm36_levels_gpkg","gadm36_levels_continents.gpkg"), 
+    #     layer = "level0")
+
+    # hvt_countries = ["KEN","TZA","UGA","ZMB"]
+    
+    # hvt_admin = admin[admin["ISO_A3"].isin(hvt_countries)]
+
+    # print ("Ready to begin clip")
+    # nodes_voronoi_clipped = gpd.clip(nodes_voronoi, hvt_admin)
+
+    # nodes_voronoi_clipped.to_file(os.path.join(data_path,"networks","road","road_voronoi_clipped.gpkg"), 
+    #     layer = 'nodes-voronoi',
+    #     driver = "GPKG")
+
+
+
+    # # Option 2a: ... with population cluster polygons
+    print("Starting option 2a: "+ str(datetime.datetime.now()))
+
+    nodes_voronoi = gpd.read_file(
+        os.path.join(data_path,"networks","road","road_voronoi_clipped.gpkg"),
+        layer = "nodes-voronoi")
+
+    population = gpd.read_file(
+        os.path.join(data_path,"population","clusters","hvt-clusters.gpkg"))
+    
+    print("Done reading files")
+
+    pop_points = assign_weights_by_area_intersections(nodes_voronoi,population,"node_id","Population")
+
+    nodes_voronoi.rename(columns={"Population":"population"},inplace=True)
+
+    nodes_voronoi["population_density"] =  nodes_voronoi["population"]/(nodes_voronoi["areas"]*1000)
+
+    layername = "pop_clusters"
+
+    # Export voronoi polygons
+    print("Ready to export")
+
+    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"), 
+        layer = layername,
+        driver = "GPKG")
+
+    # Merge back with nodes point network and save
+    nodes_voronoi = gpd.read_file(
+        os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"),
+        layer = layername,
+        ignore_geometry=True)
+
+    nodes = gpd.read_file(
+        os.path.join(data_path,"networks","road","road_modified.gpkg"),
+        layer = "nodes")
+
+    nodes = pd.merge(nodes,nodes_voronoi[["node_id","population","population_density"]], 
+        how = "left", 
+        on = ["node_id"]).fillna(0)
+
+    nodes.rename(columns={"population":"pop_clusters","population_density":"pop_density_clusters"},inplace=True)
+
+    nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+            layer = "nodes",
+            driver = "GPKG")
+
+    toc2a = datetime.datetime.now()
+
+
+
+    ### Option 2b: ... with worldpop raster file 
+    print("Starting option 2b: "+ str(datetime.datetime.now()))
+
+    nodes_voronoi = gpd.read_file(
+        os.path.join(data_path,"networks","road","road_voronoi_clipped.gpkg"),
+        layer = "nodes-voronoi")
+
+    # # Read population raster and convert to csv
+    # population_raster = os.path.join(incoming_data_path,"population/Africa_1km_Population","AFR_PPP_2020_adj_v2.tif")
+    # outCSVName = os.path.join(data_path,"population","worldpop","population_points.csv")
+    # subprocess.run(["gdal2xyz.py", '-csv', population_raster, outCSVName])
 
     # # Load points and convert to geodataframe with coordinates
     # load_points = pd.read_csv(outCSVName, header=None, names=[
@@ -49,76 +171,63 @@ def main(config):
     # load_points = load_points[load_points['population'] > 0]
 
     # load_points["geometry"] = [Point(xy) for xy in zip(load_points.x, load_points.y)]
-    # # load_points = load_points.drop(['x', 'y'], axis=1)
-    # population_points = gpd.GeoDataFrame(load_points, crs="EPSG:4326", geometry="geometry")
-    # del load_points
-    # print (population_points)
-
-    # population_matches = gpd.sjoin(population_points,
-    #                             countries, 
-    #                             how="left", op='within').reset_index()
-    # population_matches = population_matches[~population_matches["GID_0"].isna()]
-    # population_matches.drop("geometry",axis=1,inplace=True)
-    # outCSVName = os.path.join(data_path,"africa/Africa_1km_Population", "population_points_countries.csv")
-    # population_matches.to_csv(outCSVName,index=False)
-    # print (population_matches)
-
-    # outCSVName = os.path.join(data_path,"africa/Africa_1km_Population", "population_points_countries.csv")
-    # load_points = pd.read_csv(outCSVName)
-    # load_points["geometry"] = [Point(xy) for xy in zip(load_points.x, load_points.y)]
+    # load_points = load_points.drop(['x', 'y'], axis=1)
     # population_points = gpd.GeoDataFrame(load_points, crs="EPSG:4326", geometry="geometry")
     # del load_points
 
-    # countries = list(set(population_points["GID_0"].values.tolist()))
-    # print (countries)
-    # for country in countries:
-    #     population_points[population_points["GID_0"] == country].to_file(os.path.join(data_path,
-    #                                         "africa/Africa_1km_Population", 
-    #                                         "population_points_countries.gpkg"),layer=country,driver="GPKG")
-    #     population_points = population_points[population_points["GID_0"] != country]
-    #     print ("* Done with",country)
+    # population_points.to_file(os.path.join(data_path,"population","worldpop","afr-worldpop.gpkg"), 
+    #     layer = 'population',
+    #     driver = "GPKG")
 
-    nodes = gpd.read_file(os.path.join(data_path,"africa/networks",
-                                   "africa_roads_connected.gpkg"), layer='nodes')
-    nodes = nodes.to_crs(epsg=4326)
-    population_file = os.path.join(data_path,
-                                "africa/Africa_1km_Population", 
-                                "population_points_countries.gpkg")
-    population_layers = fiona.listlayers(population_file)
-    print (population_layers)
-    assigned_population = []
-    for layer in population_layers:
-        population_points = gpd.read_file(population_file,layer=layer)
-        population_points = population_points.to_crs(epsg=4326)
-        country_nodes = nodes[nodes["iso_code"] == layer]
-        if len(country_nodes.index) > 0:
-            population_points = ckdnearest(population_points,country_nodes)
-            population_points = population_points.groupby(["node_id"])["population"].sum().reset_index()
-            # print (population_points)
-            assigned_population.append(population_points)
-        del population_points
-        # if layer in ["KEN","TZA","UGA","ZMB"]:
-        #     population_points = gpd.read_file(population_file,layer=layer)
-        #     population_points = population_points.to_crs(epsg=4326)
-        #     country_nodes = nodes[nodes["iso_code"] == layer].reset_index()
-        #     country_nodes = drop_duplicate_geometries(country_nodes)
-        #     country_voronoi = create_voronoi_polygons_from_nodes(country_nodes,"node_id")
-        #     population_voronoi = create_voronoi_polygons_from_nodes(population_points,"population")
-        #     population_points = assign_weights_by_area_intersections(country_voronoi,population_voronoi,"node_id","population")
-        #     assigned_population.append(population_points.groupby(["node_id"])["population"].sum().reset_index())
-        #     del country_nodes,country_voronoi, population_voronoi, population_points
-        # else:
-        #     population_points = ckdnearest(population_points,nodes[nodes["iso_code"] == layer])
-        #     assigned_population.append(population_points.groupby(["node_id"])["population"].sum().reset_index())
-        #     del population_points
+    population_points = gpd.read_file(
+        os.path.join(data_path,"population","worldpop","afr-worldpop.gpkg"), 
+        layer = "population")
 
-        print ("* Done with",layer)
+    print("Done reading files")
 
-    assigned_population = pd.concat(assigned_population,axis=0,ignore_index=True)
-    nodes = pd.merge(nodes,assigned_population,how="left",on=["node_id"]).fillna(0)
+    joined = gpd.sjoin(left_df=population_points, right_df=nodes_voronoi, how='left')
+    
+    joined = joined.groupby(["node_id"])["population"].sum().reset_index()
 
-    nodes.to_file(os.path.join(data_path,"africa/networks",
-                                   "africa_roads_connected.gpkg"), layer='nodes-population',driver="GPKG")
+    nodes_voronoi = pd.merge(nodes_voronoi,joined,how="left",on=["node_id"]).fillna(0)
+
+    nodes_voronoi["population_density"] =  nodes_voronoi["population"]/(nodes_voronoi["areas"]*1000)
+
+    layername = "pop_worldpop"
+
+    # Export voronoi polygons
+    print("Ready to export")
+
+    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"), 
+        layer = layername,
+        driver = "GPKG")
+
+    # Merge back with nodes point network and save
+    nodes_voronoi = gpd.read_file(
+        os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"),
+        layer = layername,
+        ignore_geometry=True)
+
+    nodes = gpd.read_file(
+        os.path.join(data_path,"networks","road","road_modified.gpkg"),
+        layer = "nodes")
+
+    nodes = pd.merge(nodes,nodes_voronoi[["node_id","population","population_density"]], 
+        how = "left", 
+        on = ["node_id"]).fillna(0)
+
+    nodes.rename(columns={"population":"pop_worldpop","population_density":"pop_density_worldpop"},inplace=True)
+
+    nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+            layer = "nodes",
+            driver = "GPKG")
+
+    toc2b = datetime.datetime.now()
+
+    print("Duration option 2a: ")
+    print(toc2a - tic)
+    print("Duration option 2b: ")
+    print(toc2b - toc2a)
 
 if __name__ == '__main__':
     CONFIG = load_config()

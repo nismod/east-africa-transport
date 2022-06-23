@@ -15,6 +15,7 @@ from boltons.iterutils import pairwise
 from tqdm import tqdm
 tqdm.pandas()
 from utils import *
+from pyproj import Geod
 
 def convert_json_geopandas(df,epsg=4326):
     layer_dict = []    
@@ -31,24 +32,25 @@ def convert_json_geopandas(df,epsg=4326):
 
 def match_nodes_edges_to_countries(nodes,edges,countries):
     # assign iso code and continent name to each node
-    nodes_matches = gpd.sjoin(nodes[["node_id","geometry"]],
-                                countries, 
+    nodes_matches = gpd.sjoin(nodes[["node_id","type","name","facility","gauge","geometry"]],
+                                countries[["ISO_A3","CONTINENT","geometry"]], 
                                 how="left", predicate='within').reset_index()
     nodes_matches = nodes_matches[~nodes_matches["ISO_A3"].isna()]
-    nodes_matches = nodes_matches[["node_id","ISO_A3","CONTINENT","geometry"]]
+    #nodes_matches = nodes_matches[["node_id","ISO_A3","CONTINENT","geometry"]]
     nodes_matches.rename(columns={"ISO_A3":"iso_code","CONTINENT":"continent"},inplace=True)
     nodes_matches = nodes_matches.drop_duplicates(subset=["node_id"],keep="first")
     
     nodes_unmatched = nodes[~nodes["node_id"].isin(nodes_matches["node_id"].values.tolist())]
-    nodes_unmatched = gpd.sjoin_nearest(nodes_unmatched[["node_id","geometry"]],
-                                countries, 
+    nodes_unmatched = gpd.sjoin_nearest(nodes_unmatched[["node_id","type","name","facility","gauge","geometry"]],
+                                countries[["ISO_A3","CONTINENT","geometry"]], 
                                 how="left").reset_index()
-    nodes_unmatched = nodes_unmatched[["node_id","ISO_A3","CONTINENT","geometry"]]
+    #nodes_unmatched = nodes_unmatched[["node_id","ISO_A3","CONTINENT","geometry"]]
     nodes_unmatched.rename(columns={"ISO_A3":"iso_code","CONTINENT":"continent"},inplace=True)
     nodes_unmatched = nodes_unmatched.drop_duplicates(subset=["node_id"],keep="first")
 
     nodes = pd.concat([nodes_matches,nodes_unmatched],axis=0,ignore_index=True)
-    nodes = gpd.GeoDataFrame(nodes[["node_id","iso_code","continent","geometry"]],geometry="geometry",crs="EPSG:4326")
+    #nodes = gpd.GeoDataFrame(nodes[["node_id","iso_code","continent","geometry"]],geometry="geometry",crs="EPSG:4326")
+    nodes = gpd.GeoDataFrame(nodes,geometry="geometry",crs="EPSG:4326")
     
     # assign iso code and continent name to each edge
     edges = pd.merge(edges,nodes[["node_id","iso_code","continent"]],how="left",left_on=["from_node"],right_on=["node_id"])
@@ -71,41 +73,50 @@ def match_nodes_edges_to_countries(nodes,edges,countries):
 def main(config):
     data_path = config['paths']['data']
     
-    # Read in raw network geojson files
-    nodes = json.load(open(os.path.join(data_path,
-                            "rail",
-                            "nodes.geojson")))
-    nodes = convert_json_geopandas(nodes)
+    # # Read in raw network geojson files
+    # nodes = json.load(open(os.path.join(data_path,
+    #                         "networks",
+    #                         "rail",
+    #                         "nodes.geojson")))
+    # nodes = convert_json_geopandas(nodes)
     
-    edges = json.load(open(os.path.join(data_path,
-                            "rail",
-                            "network.geojson")))
-    edges = convert_json_geopandas(edges)
+    # edges = json.load(open(os.path.join(data_path,
+    #                         "networks",
+    #                         "rail",
+    #                         "network.geojson")))
+    # edges = convert_json_geopandas(edges)
     
-    # Create network topology
-    network = create_network_from_nodes_and_edges(
-        None,
-        edges,
-        "rail"
-    )
+    # # Create network topology
+    # network = create_network_from_nodes_and_edges(
+    #     nodes,
+    #     edges,
+    #     "rail"
+    # )
 
-    network.edges = network.edges.set_crs(epsg=4326)
-    network.nodes = network.nodes.set_crs(epsg=4326)
+    # network.edges = network.edges.set_crs(epsg=4326)
+    # network.nodes = network.nodes.set_crs(epsg=4326)
         
-    # Store the final road network in geopackage in the processed_path
+    # # Store the final road network in geopackage in the processed_path
+    # out_fname = os.path.join(data_path,
+    #     "networks",
+    #     "rail",
+    #     "africa",
+    #     "africa-rails.gpkg")
+    
+    # network.edges.to_file(out_fname, layer='edges', driver='GPKG')
+    # network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
+
+    # print("Done exporting, ready to add attributes")
+
+
+    """Assign country info"""
+    
     out_fname = os.path.join(data_path,
         "networks",
         "rail",
         "africa",
         "africa-rails.gpkg")
-    
-    network.edges.to_file(out_fname, layer='edges', driver='GPKG')
-    network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
 
-    print("Done exporting, ready to add attributes")
-
-
-    """Assign country info"""
     # Find the countries of the nodes and assign them to the node ID's, accordingly modify the edge ID's as well
     nodes = gpd.read_file(out_fname,layer='nodes')
     edges = gpd.read_file(out_fname,layer='edges')
@@ -118,7 +129,6 @@ def main(config):
     global_country_info = global_country_info.explode(ignore_index=True)
     global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
 
-    nodes = nodes[["node_id","geometry"]]
     nodes["node_id"] = nodes.progress_apply(lambda x:"_".join(x["node_id"].split("_")[1:]),axis=1)
     edges["edge_id"] = edges.progress_apply(lambda x:"_".join(x["edge_id"].split("_")[1:]),axis=1)
     edges["from_node"] = edges.progress_apply(lambda x:"_".join(x["from_node"].split("_")[1:]),axis=1)

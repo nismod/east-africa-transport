@@ -211,12 +211,12 @@ def main(config):
     legend_title = "Expected Annual Damages (US$)"
 
     # hazard = ["river","coastal"]
-    hazard = ["coastal"]
+    hazard = ["river","coastal"]
     rcp = ["4.5","8.5"]
 
             
     for sector in sector_details:
-        if sector["sector"] in ["road","rail"]: #"road","rail"
+        if sector["sector"] in ["road"]: #"road","rail"
             map_plot = map_country_codes[4] # regional
             edges = gpd.read_file(os.path.join(
                                     processed_data_path,
@@ -295,21 +295,22 @@ def main(config):
                                 bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
                                 ax_proj = get_projection(extent=bounds)
 
-
-                                fig, ax_plots = plt.subplots(2,2,
-                                    subplot_kw={'projection': ax_proj},
-                                    figsize=figsize,
-                                    dpi=500)
-                                ax_plots = ax_plots.flatten()
+                                figsize = (12,12)
                                                             
                                 for j in range(len(damages_filter_values)):
+
+                                    fig, ax = plt.subplots(1,1,
+                                        subplot_kw={'projection': ax_proj},
+                                        figsize=figsize,
+                                        dpi=500)
+
                                     edges_damages = get_asset_total_damage_values(sector,
                                                                 damage_data_path,damage_string,
                                                                 edges,
                                                                 damages_filter_columns,
                                                                 [damages_filter_values[j]],
                                                                 damage_groupby,damage_columns,"edge")
-                                    ax = get_axes(ax_plots[j],extent=bounds)
+                                    ax = get_axes(ax,extent=bounds)
                                     plot_basemap(ax, countries,lakes,
                                                 regions=regions
                                                 )
@@ -334,13 +335,13 @@ def main(config):
                                             weight='bold',
                                             zorder=24)                            
 
-                                plt.tight_layout()
-                                save_fig(
-                                        os.path.join(
-                                            folder_path, 
-                                            f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_climate_scenarios_{r}.png"
+                            
+                                    save_fig(
+                                            os.path.join(
+                                                folder_path, 
+                                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_climate_scenarios_{r}_{j}.png"
+                                                )
                                             )
-                                        )
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings
