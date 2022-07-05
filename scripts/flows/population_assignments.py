@@ -18,23 +18,39 @@ def main(config):
     # Start timer
     tic = datetime.datetime.now()
 
-    # Set paths
+    africa = True  # Set this 
+    
+    # Set global paths
     incoming_data_path = config['paths']['incoming_data']
     data_path = config['paths']['data']
     results_data_path = config['paths']['results']
 
+    # Set specific paths 
+    if africa == True:
+        path_nodes = os.path.join(data_path,"networks","road","africa","afr_road.gpkg")
+        path_cluster = os.path.join(data_path,"population","clusters","afr-clusters.gpkg")
+        path_worldpop = os.path.join(data_path,"population","worldpop","afr-worldpop.gpkg")
+        outfile_nodes = os.path.join(data_path,"networks","road","africa","afr_road_weighted.gpkg")
+        # outfile_polygons = os.path.join(data_path,"networks","road","africa","afr_road_voronoi.gpkg")
+        outfile_polygons = os.path.join(data_path,"networks","road","africa","afr_road_voronoi_qgis.gpkg")
+        outfile_polygons_weighted = os.path.join(data_path,"networks","road","africa","afr_road_voronoi_weighted.gpkg")
+    else:
+        path_nodes = os.path.join(data_path,"networks","road","road.gpkg")
+        path_cluster = os.path.join(data_path,"population","clusters","hvt-clusters.gpkg")
+        outfile_nodes = os.path.join(data_path,"networks","road","road_weighted.gpkg")
+        outfile_polygons = os.path.join(data_path,"networks","road","road_voronoi.gpkg")
+        outfile_polygons_weighted = os.path.join(data_path,"networks","road","road_voronoi_weighted.gpkg")
+
+
     # Read in network nodes
-    nodes = gpd.read_file(
-        os.path.join(data_path,"networks","road","road.gpkg"),
-        layer = "nodes")
+    nodes = gpd.read_file(path_nodes, layer = "nodes")
 
     print("Done reading network file")
 
 
 
     # ### Option 1: Finding the shortest distance between the centroid of population clusters and road nodes 
-    # pop_clusters = gpd.read_file(
-    #     os.path.join(data_path,"population","clusters","hvt-clusters.gpkg"))
+    # pop_clusters = gpd.read_file(path_cluster)
     
     # print("Done reading population file")
 
@@ -58,14 +74,14 @@ def main(config):
     # # Export network nodes
     # print("Ready to export")
 
-    # nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+    # nodes.to_file(os.path.join(outfile_nodes, 
     #     layer = nodes,
     #     driver = "GPKG")
 
     # toc1 = datetime.datetime.now()
 
 
-    ### Option 2: Intersecting with voronoi polygons of road nodes ...
+    # ### Option 2: Intersecting with voronoi polygons of road nodes ...
 
     # nodes_voronoi = create_voronoi_polygons_from_nodes(nodes,"node_id")
 
@@ -74,17 +90,18 @@ def main(config):
     # ## Note: creating the voronoi polygons took 1.5 hrs for the hvt countries 
 
     # # Write file and read file for sanity check: 
-    # nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi.gpkg"), 
+    # nodes_voronoi.to_file(outfile_polygons, 
     #     layer = 'nodes-voronoi',
     #     driver = "GPKG")
 
-    # nodes_voronoi = gpd.read_file(
-    #     os.path.join(data_path,"networks","road","road_voronoi.gpkg"),
-    #     layer = "nodes-voronoi")
+    nodes_voronoi = gpd.read_file(
+        outfile_polygons,
+        layer = "nodes-voronoi")
 
-    # print("Done reading nodes file")
+    print("Done reading voronoi file")
 
-    # # Clip polygons to admin edges
+    
+    # # [HVT only] Clip polygons to admin edges
     # admin = gpd.read_file(
     #     os.path.join(data_path,"admin_boundaries","gadm36_levels_gpkg","gadm36_levels_continents.gpkg"), 
     #     layer = "level0")
@@ -102,63 +119,59 @@ def main(config):
 
 
 
-    # # Option 2a: ... with population cluster polygons
-    print("Starting option 2a: "+ str(datetime.datetime.now()))
+    # # # Option 2a: ... with population cluster polygons
+    # print("Starting option 2a: "+ str(datetime.datetime.now()))
 
-    nodes_voronoi = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_voronoi_clipped.gpkg"),
-        layer = "nodes-voronoi")
+    # # nodes_voronoi = gpd.read_file(
+    # #     os.path.join(data_path,"networks","road","road_voronoi_clipped.gpkg"),
+    # #     layer = "nodes-voronoi")
 
-    population = gpd.read_file(
-        os.path.join(data_path,"population","clusters","hvt-clusters.gpkg"))
+    # population = gpd.read_file(path_cluster)
     
-    print("Done reading files")
+    # print("Done reading files")
 
-    pop_points = assign_weights_by_area_intersections(nodes_voronoi,population,"node_id","Population")
+    # pop_points = assign_weights_by_area_intersections(nodes_voronoi,population,"node_id","Population")
 
-    nodes_voronoi.rename(columns={"Population":"population"},inplace=True)
+    # nodes_voronoi.rename(columns={"Population":"population"},inplace=True)
 
-    nodes_voronoi["population_density"] =  nodes_voronoi["population"]/(nodes_voronoi["areas"]*1000)
+    # nodes_voronoi["population_density"] =  nodes_voronoi["population"]/(nodes_voronoi["areas"]*1000)
 
-    layername = "pop_clusters"
+    # layername = "pop_clusters"
 
-    # Export voronoi polygons
-    print("Ready to export")
+    # # Export voronoi polygons
+    # print("Ready to export")
 
-    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"), 
-        layer = layername,
-        driver = "GPKG")
+    # nodes_voronoi.to_file(outfile_polygons_weighted, 
+    #     layer = layername,
+    #     driver = "GPKG")
 
-    # Merge back with nodes point network and save
-    nodes_voronoi = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"),
-        layer = layername,
-        ignore_geometry=True)
+    # # Merge back with nodes point network and save
+    # nodes_voronoi = gpd.read_file(outfile_polygons_weighted,
+    #     layer = layername,
+    #     ignore_geometry=True)
 
-    nodes = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_modified.gpkg"),
-        layer = "nodes")
+    # nodes = gpd.read_file(outfile_nodes,
+    #     layer = "nodes")
 
-    nodes = pd.merge(nodes,nodes_voronoi[["node_id","population","population_density"]], 
-        how = "left", 
-        on = ["node_id"]).fillna(0)
+    # nodes = pd.merge(nodes,nodes_voronoi[["node_id","population","population_density"]], 
+    #     how = "left", 
+    #     on = ["node_id"]).fillna(0)
 
-    nodes.rename(columns={"population":"pop_clusters","population_density":"pop_density_clusters"},inplace=True)
+    # nodes.rename(columns={"population":"pop_clusters","population_density":"pop_density_clusters"},inplace=True)
 
-    nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
-            layer = "nodes",
-            driver = "GPKG")
+    # nodes.to_file(outfile_nodes,
+    #         layer = "nodes",
+    #         driver = "GPKG")
 
-    toc2a = datetime.datetime.now()
+    # toc2a = datetime.datetime.now()
 
 
 
     ### Option 2b: ... with worldpop raster file 
     print("Starting option 2b: "+ str(datetime.datetime.now()))
 
-    nodes_voronoi = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_voronoi_clipped.gpkg"),
-        layer = "nodes-voronoi")
+    # nodes_voronoi = gpd.read_file(outfile_polygons,
+    #     layer = "nodes-voronoi")
 
     # # Read population raster and convert to csv
     # population_raster = os.path.join(incoming_data_path,"population/Africa_1km_Population","AFR_PPP_2020_adj_v2.tif")
@@ -179,8 +192,7 @@ def main(config):
     #     layer = 'population',
     #     driver = "GPKG")
 
-    population_points = gpd.read_file(
-        os.path.join(data_path,"population","worldpop","afr-worldpop.gpkg"), 
+    population_points = gpd.read_file(path_worldpop, 
         layer = "population")
 
     print("Done reading files")
@@ -198,36 +210,38 @@ def main(config):
     # Export voronoi polygons
     print("Ready to export")
 
-    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"), 
+    nodes_voronoi.to_file(outfile_polygons_weighted, 
         layer = layername,
         driver = "GPKG")
 
     # Merge back with nodes point network and save
-    nodes_voronoi = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"),
-        layer = layername,
-        ignore_geometry=True)
+    nodes_voronoi_simple = nodes_voronoi.drop(['geometry'], axis=1)
 
-    nodes = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_modified.gpkg"),
-        layer = "nodes")
+    # nodes_voronoi = gpd.read_file(outfile_polygons_weighted,
+    #     layer = layername,
+    #     ignore_geometry=True)
 
-    nodes = pd.merge(nodes,nodes_voronoi[["node_id","population","population_density"]], 
+    # nodes = gpd.read_file(outfile_nodes,
+    #     layer = "nodes")
+
+    nodes = pd.merge(nodes,nodes_voronoi_simple[["node_id","population","population_density"]], 
         how = "left", 
         on = ["node_id"]).fillna(0)
 
-    nodes.rename(columns={"population":"pop_worldpop","population_density":"pop_density_worldpop"},inplace=True)
+    # nodes.rename(columns={"population":"pop_worldpop","population_density":"pop_density_worldpop"},inplace=True)
 
-    nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+    nodes.to_file(outfile_nodes, 
             layer = "nodes",
             driver = "GPKG")
 
     toc2b = datetime.datetime.now()
 
-    print("Duration option 2a: ")
-    print(toc2a - tic)
-    print("Duration option 2b: ")
-    print(toc2b - toc2a)
+    # print("Duration option 2a: ")
+    # print(toc2a - tic)
+    # print("Duration option 2b: ")
+    # print(toc2b - toc2a)
+
+    print(toc2b - tic)
 
 if __name__ == '__main__':
     CONFIG = load_config()
