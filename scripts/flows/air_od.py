@@ -101,7 +101,7 @@ def main(config):
     # Distribute air freight through road network based on weighted nodes
 
     road_nodes = gpd.read_file(
-        os.path.join(processed_data_path,"networks","road","road_modified.gpkg"),
+        os.path.join(processed_data_path,"networks","road","road_weighted.gpkg"),
         layer = "nodes")
     sector_attributes = pd.read_csv(
         os.path.join(processed_data_path,"flow_od_data","sector_description.csv"),

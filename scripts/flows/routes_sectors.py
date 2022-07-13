@@ -196,7 +196,7 @@ def main(config):
 
     # # HVT countries only
     # road_nodes = gpd.read_file(
-    #     os.path.join(data_path,"networks","road","road_modified.gpkg"),
+    #     os.path.join(data_path,"networks","road","road_weighted.gpkg"),
     #     layer = "nodes")
 
     # # Entire African continent

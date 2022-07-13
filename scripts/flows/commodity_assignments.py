@@ -43,25 +43,25 @@ def main(config):
     # Export voronoi polygons
     print("Ready to export")
 
-    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"), 
+    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_weighted.gpkg"), 
         layer = layername,
         driver = "GPKG")
 
     # Merge back with nodes point network and save
     nodes_voronoi = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"),
+        os.path.join(data_path,"networks","road","road_voronoi_weighted.gpkg"),
         layer = layername,
         ignore_geometry=True)
 
     nodes = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_modified.gpkg"),
+        os.path.join(data_path,"networks","road","road_weighted.gpkg"),
         layer = "nodes")
 
     nodes = pd.merge(nodes,nodes_voronoi[["node_id","mining_area_km2"]], 
         how = "left", 
         on = ["node_id"]).fillna(0)
 
-    nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+    nodes.to_file(os.path.join(data_path,"networks","road","road_weighted.gpkg"), 
             layer = "nodes",
             driver = "GPKG")
 
@@ -112,25 +112,25 @@ def main(config):
     # Export voronoi polygons
     print("Ready to export")
 
-    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"), 
+    nodes_voronoi.to_file(os.path.join(data_path,"networks","road","road_voronoi_weighted.gpkg"), 
         layer = layername,
         driver = "GPKG")
 
     # Merge back with nodes point network and save
     nodes_voronoi = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_voronoi_modified.gpkg"),
+        os.path.join(data_path,"networks","road","road_voronoi_weighted.gpkg"),
         layer = layername,
         ignore_geometry=True)
 
     nodes = gpd.read_file(
-        os.path.join(data_path,"networks","road","road_modified.gpkg"),
+        os.path.join(data_path,"networks","road","road_weighted.gpkg"),
         layer = "nodes")
 
     nodes = pd.merge(nodes,nodes_voronoi[["node_id","ag_prod_mt"]], 
         how = "left", 
         on = ["node_id"]).fillna(0)
 
-    nodes.to_file(os.path.join(data_path,"networks","road","road_modified.gpkg"), 
+    nodes.to_file(os.path.join(data_path,"networks","road","road_weighted.gpkg"), 
             layer = "nodes",
             driver = "GPKG")
 
@@ -141,6 +141,24 @@ def main(config):
     print("Duration agriculture: ")
     print(toc2 - toc1)
 
+
+    ### Add level1 admin data names to nodes
+
+    admin_file = os.path.join(data_path,"admin_boundaries","east_africa_admin_levels","admin_levels.gpkg")
+    admin_data = gpd.read_file(admin_file, layers = "level1")
+
+    countries = ["KEN","TZA","ZMB","UGA"]
+    admin_data = admin_data[admin_data.GID_0.isin(countries)]
+
+    nodes = gpd.read_file(os.path.join(data_path,"networks","road","road_weighted.gpkg"),
+                      layer='nodes')
+
+    joined = gpd.sjoin(left_df=nodes, right_df=admin_data[["GID_1","geometry"]], how='left')
+    joined = joined.drop(columns = "index_right")
+
+    joined.to_file(os.path.join(data_path,"networks","road","africa","afr_road_weighted.gpkg"),
+              layer = "nodes",
+              driver = "GPKG")
 
 if __name__ == '__main__':
     CONFIG = load_config()
