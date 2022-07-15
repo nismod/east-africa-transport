@@ -133,7 +133,7 @@ def main(config):
 
     # Store the final road network in geopackage in the processed_path
     out_fname = os.path.join(scratch_path,"road_africa","africa-roads-filtered.gpkg")
-    
+
     # edges = gpd.read_file((os.path.join(scratch_path,
     #                         "road_africa","africa-road.gpkg")),
     #                         layer="lines",
@@ -170,11 +170,9 @@ def main(config):
     print (network.nodes)
     print("Ready to export file")
 
-    # # Store the final road network in geopackage in the processed_path
-    # out_fname = os.path.join(scratch_path,"road_africa","africa-roads.gpkg")
-
-    # network.edges.to_file(out_fname, layer='edges', driver='GPKG')
-    # network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
+    # Store the final road network in geopackage in the processed_path
+    # network.edges.to_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='edges', driver='GPKG')
+    # network.nodes.to_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='nodes', driver='GPKG')
 
 
     print("Done exporting, ready to add attributes")
@@ -287,8 +285,8 @@ def main(config):
     print("Done adding components")
 
     print("Ready to export")
-    edges.to_file(os.path.join(data_path,"networks/road/africa","road.gpkg"), layer='edges', driver='GPKG')
-    nodes.to_file(os.path.join(data_path,"networks/road/africa","road.gpkg"), layer='nodes', driver='GPKG')
+    edges.to_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='edges', driver='GPKG')
+    nodes.to_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='nodes', driver='GPKG')
 
     print("Done.")
     
@@ -302,7 +300,9 @@ def main(config):
     rest_edges = rest_edges[~rest_edges["edge_id"].isin(border_edges["edge_id"].values.tolist())]
     border_edges = border_edges[border_edges["highway"].isin(["trunk","motorway","primary","secondary"])]
     rest_edges = rest_edges[rest_edges["highway"].isin(["trunk","motorway","primary"])]
-    edges = gpd.GeoDataFrame(pd.concat([eac_edges,border_edges,rest_edges],axis=0,ignore_index=True),geometry="geometry",crs="EPSG:4326")
+    edges = gpd.GeoDataFrame(pd.concat([eac_edges,border_edges,rest_edges],
+                            axis=0,ignore_index=True),
+                            geometry="geometry",crs="EPSG:4326")
     
     print ("Done with extracting smaller road network edges")
 
@@ -316,10 +316,10 @@ def main(config):
     A = sorted(G.clusters().subgraphs(),key=lambda l:len(l.es['edge_id']),reverse=True)
     connected_edges = A[0].es["edge_id"]
     edges[edges["edge_id"].isin(connected_edges)].to_file(os.path.join(data_path,"networks/road",
-                                                                    "roads_connected.gpkg"), layer='edges', driver='GPKG')
+                                                                    "roads.gpkg"), layer='edges', driver='GPKG')
     connected_nodes = [x['name'] for x in A[0].vs]
     nodes[nodes["node_id"].isin(connected_nodes)].to_file(os.path.join(data_path,"networks/road",
-                                                                    "roads_connected.gpkg"), layer='nodes', driver='GPKG')
+                                                                    "roads.gpkg"), layer='nodes', driver='GPKG')
 
     print ("Done.")
     # edges = gpd.read_file(os.path.join(data_path,"africa/networks",
