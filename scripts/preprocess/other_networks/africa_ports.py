@@ -64,41 +64,6 @@ def network_od_path_estimations(graph,
 
     return edge_path_list
 
-def match_edges(edge_dataframe,buffer_dataframe,buffer_id,
-                geom_buffer=10,fraction_intersection=0.95,length_intersected=100,save_buffer_file=False):
-    # print (nwa_edges)
-    buffer_dataframe['geometry'] = buffer_dataframe.geometry.progress_apply(lambda x: x.buffer(geom_buffer))
-    
-    # Save the result to sense check by visual inspection on QGIS. Not a necessary step 
-    if save_buffer_file is not False:
-        buffer_dataframe.to_file(save_buffer_file,layer=f'buffer_{geom_buffer}',driver='GPKG')
-
-    edges_matches = gpd.sjoin(edge_dataframe,buffer_dataframe, how="inner", op='intersects').reset_index()
-    if len(edges_matches.index) > 0:
-        buffer_dataframe.rename(columns={'geometry':'buffer_geometry'},inplace=True)
-        edges_matches = pd.merge(edges_matches,buffer_dataframe[[buffer_id,"buffer_geometry"]],how='left',on=[buffer_id])
-        
-        # Find the length intersected and its percentage as the length of the road segment and the NWA road segment
-        edges_matches['length_intersected'] = edges_matches.progress_apply(
-                                lambda x: (x.geometry.intersection(x.buffer_geometry).length),
-                                axis=1)
-        edges_matches['fraction_intersection'] = edges_matches.progress_apply(
-                                lambda x: (x.geometry.intersection(x.buffer_geometry).length)/x.geometry.length if x.geometry.length > 0 else 1.0,
-                                axis=1)
-        edges_matches['fraction_buffer'] = edges_matches.progress_apply(
-                                lambda x: (x.geometry.intersection(x.buffer_geometry).length)/x['buffer_length'] if x['buffer_length'] > 0 else 0.0,
-                                axis=1)
-
-        edges_matches.drop(['buffer_geometry'],axis=1,inplace=True)
-        
-        # Filter out the roads whose 95%(0.95) or over 100-meters length intersects with the buffer  
-        # return edges_matches[
-        #                 (edges_matches['fraction_intersection']>=fraction_intersection
-        #                 ) | (edges_matches['length_intersected']>=length_intersected)]
-        return edges_matches
-    else:
-        return pd.DataFrame()
-
 def line_length_km(line, ellipsoid='WGS-84'):
     """Length of a line in meters, given in geographic coordinates.
 
@@ -120,99 +85,41 @@ def line_length_km(line, ellipsoid='WGS-84'):
         for a, b in pairwise(line.coords)
     )
 
-def mean_min_max(dataframe,grouping_by_columns,grouped_columns):
-    quantiles_list = ['mean','min','max']
-    df_list = []
-    for quant in quantiles_list:
-        if quant == 'mean':
-            # print (dataframe)
-            df = dataframe.groupby(grouping_by_columns,dropna=False)[grouped_columns].mean()
-        elif quant == 'min':
-            df = dataframe.groupby(grouping_by_columns,dropna=False)[grouped_columns].min()
-        elif quant == 'max':
-            df = dataframe.groupby(grouping_by_columns,dropna=False)[grouped_columns].max()
-
-        df.rename(columns=dict((g,f'{quant}_{g}') for g in grouped_columns),inplace=True)
-        df_list.append(df)
-    return pd.concat(df_list,axis=1).reset_index()
-
-def get_road_condition_material(x):
-    if x.material in [r"^\s+$",'','nan','None','none']:
-        if x.highway in ('motorway','motorway_link','trunk','trunk_link','primary','primary_link'):
-            return 'paved','asphalt'
-        else:
-            return 'unpaved','gravel'
-    elif x.material == 'paved':
-        return x.material, 'asphalt'
-    elif x.material == 'unpaved':
-        return x.material, 'gravel'
-    elif x.material in ('asphalt','concrete'):
-        return 'paved',x.material
-    else:
-        return 'unpaved',x.material
-
-def get_road_width(x,width,shoulder):
-    if x.lanes == 0:
-        if x.highway in ('motorway','motorway_link','trunk','trunk_link','primary','primary_link'):
-            return 2.0*width + 2.0*shoulder
-        else:
-            return 1.0*width + 2.0*shoulder
-    else:
-        return float(x.lanes)*width + 2.0*shoulder
-
-def get_road_lanes(x):
-    if x.lanes == 0:
-        if x.highway in ('motorway','motorway_link','trunk','trunk_link','primary','primary_link'):
-            return 2
-        else:
-            return 1
-    else:
-        return x.lanes
-
-def assign_road_speeds(x):
-    if x.highway in ('motorway','motorway_link','trunk','trunk_link','primary','primary_link'):
-        return x["Highway_min"],x["Highway_max"]
-    elif x.road_cond == "unpaved":
-        return x["Urban_min"],x["Urban_max"]
-    else:
-        return x["Rural_min"],x["Rural_max"]
 
 def match_nodes_edges_to_countries(nodes,edges,countries,epsg=4326):
     old_nodes = nodes.copy()
     old_nodes.drop("geometry",axis=1,inplace=True)
     nodes_matches = gpd.sjoin(nodes[["node_id","geometry"]],
                                 countries, 
-                                how="left", op='within').reset_index()
+                                how="left", predicate='within').reset_index()
+
     nodes_matches = nodes_matches[~nodes_matches["ISO_A3"].isna()]
     nodes_matches = nodes_matches[["node_id","ISO_A3","CONTINENT","geometry"]]
-    nodes_matches.rename(columns={"ISO_A3":"iso_code"},inplace=True)
+    nodes_matches.rename(columns={"ISO_A3":"iso_code","CONTINENT":"continent"},inplace=True)
     nodes_matches = nodes_matches.drop_duplicates(subset=["node_id"],keep="first")
     
     nodes_unmatched = nodes[~nodes["node_id"].isin(nodes_matches["node_id"].values.tolist())]
     if len(nodes_unmatched.index) > 0:
-        nodes_unmatched["iso_code"] = nodes_unmatched.progress_apply(
-                                        lambda x:extract_gdf_values_containing_nodes(x,
-                                                                countries,
-                                                                "ISO_A3"),
-                                        axis=1)
-        nodes_unmatched["CONTINENT"] = nodes_unmatched.progress_apply(
-                                        lambda x:extract_gdf_values_containing_nodes(x,
-                                                                countries,
-                                                                "CONTINENT"),
-                                        axis=1)
+        nodes_unmatched = gpd.sjoin_nearest(nodes_unmatched[["node_id","geometry"]],
+                                countries[["ISO_A3","CONTINENT","geometry"]], 
+                                how="left").reset_index()
+        #nodes_unmatched = nodes_unmatched[["node_id","ISO_A3","CONTINENT","geometry"]]
+        nodes_unmatched.rename(columns={"ISO_A3":"iso_code","CONTINENT":"continent"},inplace=True)
+        nodes_unmatched = nodes_unmatched.drop_duplicates(subset=["node_id"],keep="first")
         nodes = pd.concat([nodes_matches,nodes_unmatched],axis=0,ignore_index=True)
     else:
         nodes = nodes_matches.copy()
+    
     del nodes_matches,nodes_unmatched
-    nodes = pd.merge(nodes[["node_id","iso_code","CONTINENT","geometry"]],old_nodes,how="left",on=["node_id"])
-    nodes["old_node_id"] = nodes["node_id"]
+    nodes = pd.merge(nodes[["node_id","iso_code","continent","geometry"]],old_nodes,how="left",on=["node_id"])
+    # nodes["old_node_id"] = nodes["node_id"]
     nodes = gpd.GeoDataFrame(nodes,geometry="geometry",crs=f"EPSG:{epsg}")
     
-    edges = pd.merge(edges,nodes[["node_id","iso_code","CONTINENT"]],how="left",left_on=["from_node"],right_on=["node_id"])
-    edges.rename(columns={"iso_code":"from_iso","CONTINENT":"from_continent"},inplace=True)
+    edges = pd.merge(edges,nodes[["node_id","iso_code","continent"]],how="left",left_on=["from_node"],right_on=["node_id"])
+    edges.rename(columns={"iso_code":"from_iso","continent":"from_continent"},inplace=True)
     edges.drop("node_id",axis=1,inplace=True)
-    edges = pd.merge(edges,nodes[["node_id","iso_code","CONTINENT"]],how="left",left_on=["to_node"],right_on=["node_id"])
-    edges.rename(columns={"iso_code":"to_iso","CONTINENT":"to_continent"},inplace=True)
+    edges = pd.merge(edges,nodes[["node_id","iso_code","continent"]],how="left",left_on=["to_node"],right_on=["node_id"])
+    edges.rename(columns={"iso_code":"to_iso","continent":"to_continent"},inplace=True)
     edges.drop("node_id",axis=1,inplace=True)
 
     nodes["node_id"] = nodes.progress_apply(lambda x:f"{x.iso_code}_{x.node_id}",axis=1)
@@ -333,25 +240,40 @@ def main(config):
         Accordingly modify the edge ID's as well
     """
     global_country_info = gpd.read_file(os.path.join(data_path,
-                                            "Admin_boundaries",
-                                            "ne_10m_admin_0_countries",
-                                            "ne_10m_admin_0_countries.shp"))[["ADM0_A3","ISO_A3","NAME","CONTINENT","geometry"]]
-    global_country_info["ISO_A3"] = global_country_info.progress_apply(lambda x:correct_iso_code(x),axis=1)
-    global_country_info = global_country_info.to_crs(epsg=4326)
-    global_country_info = global_country_info[global_country_info["CONTINENT"].isin(["Africa"])]
+        "Admin_boundaries",
+        "gadm36_levels_gpkg",
+        "gadm36_levels_continents.gpkg"))
+    global_country_info = global_country_info.to_crs(epsg=3857)
     global_country_info = global_country_info.explode(ignore_index=True)
     global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
-    # print (global_country_info)
-    country_continent_codes = list(set(zip(
-                                        global_country_info["ISO_A3"].values.tolist(),
-                                        global_country_info["NAME"].values.tolist(),
-                                        global_country_info["CONTINENT"].values.tolist()
-                                        )
-                                    )
-                                )
+
+    # global_country_info = gpd.read_file(os.path.join(data_path,
+    #                                         "Admin_boundaries",
+    #                                         "ne_10m_admin_0_countries",
+    #                                         "ne_10m_admin_0_countries.shp"))[["ADM0_A3","ISO_A3","NAME","CONTINENT","geometry"]]
+    # global_country_info["ISO_A3"] = global_country_info.progress_apply(lambda x:correct_iso_code(x),axis=1)
+    # global_country_info = global_country_info.to_crs(epsg=4326)
+    # global_country_info = global_country_info[global_country_info["CONTINENT"].isin(["Africa"])]
+    # global_country_info = global_country_info.explode(ignore_index=True)
+    # global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
+    # # print (global_country_info)
+    # country_continent_codes = list(set(zip(
+    #                                     global_country_info["ISO_A3"].values.tolist(),
+    #                                     global_country_info["NAME"].values.tolist(),
+    #                                     global_country_info["CONTINENT"].values.tolist()
+    #                                     )
+    #                                 )
+    #                             )
+    # Set the crs
+    edges = edges.to_crs(epsg=3857)
+    nodes = nodes.to_crs(epsg=3857)
     nodes, edges = match_nodes_edges_to_countries(nodes,edges,global_country_info)
     print (nodes)
     print (edges)
+
+    # Set the crs
+    edges = edges.to_crs(epsg=4326)
+    nodes = nodes.to_crs(epsg=4326)
 
     edges["min_speed"] = 18.0
     edges["max_speed"] = 22.0
@@ -413,12 +335,12 @@ def main(config):
     new_edge['distance'] = new_edge.progress_apply(lambda x:line_length_km(x.geometry),axis=1)
     africa_edges = gpd.GeoDataFrame(pd.concat([africa_edges,new_edge],axis=0,ignore_index=True),geometry="geometry",crs="EPSG:4326")
 
-    africa_nodes.to_file(os.path.join(data_path,"africa/networks","africa_ports_modified.gpkg"),layer="nodes",driver="GPKG")
-    africa_edges.to_file(os.path.join(data_path,"africa/networks","africa_ports_modified.gpkg"),layer="edges",driver="GPKG")
+    africa_nodes.to_file(os.path.join(data_path,"networks/ports","africa_ports.gpkg"),layer="nodes",driver="GPKG")
+    africa_edges.to_file(os.path.join(data_path,"networks/ports","africa_ports.gpkg"),layer="edges",driver="GPKG")
 
 
-    nodes.to_file(os.path.join(data_path,"africa/networks","ports_modified.gpkg"),layer="nodes",driver="GPKG")
-    edges.to_file(os.path.join(data_path,"africa/networks","ports_modified.gpkg"),layer="edges",driver="GPKG")
+    nodes.to_file(os.path.join(data_path,"networks/ports","port.gpkg"),layer="nodes",driver="GPKG")
+    edges.to_file(os.path.join(data_path,"networks/ports","port.gpkg"),layer="edges",driver="GPKG")
 
     """
     """
