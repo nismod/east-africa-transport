@@ -131,27 +131,28 @@ def main(config):
     data_path = config['paths']['data']
     scratch_path = config['paths']['scratch']
 
-    edges = gpd.read_file((os.path.join(scratch_path,
-                            "road_africa","africa-road.gpkg")),
-                            layer="lines",
-                            ignore_fields=["waterway","aerialway","barrier","man_made","z_order","other_tags"])
-    
-    print(edges)
-    print("Done reading file")
-    
-    # From the geopackage file extract relevant roads
-    highway_list = ['motorway','motorway_link',
-               'trunk','trunk_link',
-               'primary','primary_link',
-               'secondary','secondary_link',
-               'tertiary','tertiary_link']
-    edges = edges[edges.highway.isin(highway_list)]
-    edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
-    
     # Store the final road network in geopackage in the processed_path
     out_fname = os.path.join(scratch_path,"road_africa","africa-roads-filtered.gpkg")
-    edges.to_file(out_fname, layer='edges', driver='GPKG')
-    del edges   # This might free memoery
+    
+    # edges = gpd.read_file((os.path.join(scratch_path,
+    #                         "road_africa","africa-road.gpkg")),
+    #                         layer="lines",
+    #                         ignore_fields=["waterway","aerialway","barrier","man_made","z_order","other_tags"])
+    
+    # print(edges)
+    # print("Done reading file")
+    
+    # # From the geopackage file extract relevant roads
+    # highway_list = ['motorway','motorway_link',
+    #            'trunk','trunk_link',
+    #            'primary','primary_link',
+    #            'secondary','secondary_link',
+    #            'tertiary','tertiary_link']
+    # edges = edges[edges.highway.isin(highway_list)]
+    # edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
+    
+    # edges.to_file(out_fname, layer='edges', driver='GPKG')
+    # del edges   # This might free memory
 
     edges = gpd.read_file(out_fname,layer='edges')
     # Create network topology
