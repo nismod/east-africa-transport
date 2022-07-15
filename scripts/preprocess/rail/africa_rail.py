@@ -60,11 +60,11 @@ def match_nodes_edges_to_countries(nodes,edges,countries):
     edges.rename(columns={"iso_code":"to_iso","continent":"to_continent"},inplace=True)
     edges.drop("node_id",axis=1,inplace=True)
 
-    nodes["old_node_id"] = nodes["node_id"]
+    # nodes["old_node_id"] = nodes["node_id"]
     nodes["node_id"] = nodes.progress_apply(lambda x:f"{x.iso_code}_{x.node_id}",axis=1)
     edges["from_node"] = edges.progress_apply(lambda x:f"{x.from_iso}_{x.from_node}",axis=1)
     edges["to_node"] = edges.progress_apply(lambda x:f"{x.to_iso}_{x.to_node}",axis=1)
-    edges["old_edge_id"] = edges["edge_id"]
+    # edges["old_edge_id"] = edges["edge_id"]
     edges["edge_id"] = edges.progress_apply(lambda x:f"{x.from_iso}_{x.to_iso}_{x.edge_id}",axis=1)
     
     return nodes, edges
@@ -85,6 +85,8 @@ def main(config):
                             "network.geojson")))
     edges = convert_json_geopandas(edges)
     
+    print (nodes)
+    print (edges)
     # Create network topology
     network = create_network_from_nodes_and_edges(
         nodes,
