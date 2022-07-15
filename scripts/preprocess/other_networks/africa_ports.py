@@ -250,7 +250,7 @@ def main(config):
     # Set the crs
     edges = edges.to_crs(epsg=3857)
     nodes = nodes.to_crs(epsg=3857)
-    nodes, edges = match_nodes_edges_to_countries(nodes,edges,global_country_info)
+    nodes, edges = match_nodes_edges_to_countries(nodes,edges,global_country_info,epsg=3857)
     print (nodes)
     print (edges)
 
