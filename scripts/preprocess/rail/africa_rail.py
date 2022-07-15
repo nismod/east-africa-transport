@@ -72,36 +72,34 @@ def match_nodes_edges_to_countries(nodes,edges,countries):
 
 def main(config):
     data_path = config['paths']['data']
-    
-    # # Read in raw network geojson files
-    # nodes = json.load(open(os.path.join(data_path,
-    #                         "networks",
-    #                         "rail",
-    #                         "nodes.geojson")))
-    # nodes = convert_json_geopandas(nodes)
-    
-    # edges = json.load(open(os.path.join(data_path,
-    #                         "networks",
-    #                         "rail",
-    #                         "network.geojson")))
-    # edges = convert_json_geopandas(edges)
-    
-    # # Create network topology
-    # network = create_network_from_nodes_and_edges(
-    #     nodes,
-    #     edges,
-    #     "rail"
-    # )
+    scratch_path = config['paths']['scratch']
 
-    # network.edges = network.edges.set_crs(epsg=4326)
-    # network.nodes = network.nodes.set_crs(epsg=4326)
+    # Read in raw network geojson files
+    nodes = json.load(open(os.path.join(scratch_path,
+                            "rail",
+                            "nodes.geojson")))
+    nodes = convert_json_geopandas(nodes)
+    
+    edges = json.load(open(os.path.join(scratch_path,
+                            "rail",
+                            "network.geojson")))
+    edges = convert_json_geopandas(edges)
+    
+    # Create network topology
+    network = create_network_from_nodes_and_edges(
+        nodes,
+        edges,
+        "rail"
+    )
+
+    network.edges = network.edges.set_crs(epsg=4326)
+    network.nodes = network.nodes.set_crs(epsg=4326)
         
-    # # Store the final road network in geopackage in the processed_path
-    # out_fname = os.path.join(data_path,
-    #     "networks",
-    #     "rail",
-    #     "africa",
-    #     "africa-rails.gpkg")
+    # Store the final road network in geopackage in the processed_path
+    out_fname = os.path.join(data_path,
+        "networks",
+        "rail",
+        "rail.gpkg")
     
     # network.edges.to_file(out_fname, layer='edges', driver='GPKG')
     # network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
@@ -109,17 +107,20 @@ def main(config):
     # print("Done exporting, ready to add attributes")
 
 
-    """Assign country info"""
+    # """Assign country info"""
     
-    out_fname = os.path.join(data_path,
-        "networks",
-        "rail",
-        "africa",
-        "africa-rails.gpkg")
+    # out_fname = os.path.join(data_path,
+    #     "networks",
+    #     "rail",
+    #     "africa",
+    #     "africa-rails.gpkg")
 
-    # Find the countries of the nodes and assign them to the node ID's, accordingly modify the edge ID's as well
-    nodes = gpd.read_file(out_fname,layer='nodes')
-    edges = gpd.read_file(out_fname,layer='edges')
+    # # Find the countries of the nodes and assign them to the node ID's, accordingly modify the edge ID's as well
+    # nodes = gpd.read_file(out_fname,layer='nodes')
+    # edges = gpd.read_file(out_fname,layer='edges')
+
+    edges = network.edges
+    nodes= network.nodes
 
     global_country_info = gpd.read_file(os.path.join(data_path,
         "Admin_boundaries",
@@ -129,10 +130,10 @@ def main(config):
     global_country_info = global_country_info.explode(ignore_index=True)
     global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
 
-    nodes["node_id"] = nodes.progress_apply(lambda x:"_".join(x["node_id"].split("_")[1:]),axis=1)
-    edges["edge_id"] = edges.progress_apply(lambda x:"_".join(x["edge_id"].split("_")[1:]),axis=1)
-    edges["from_node"] = edges.progress_apply(lambda x:"_".join(x["from_node"].split("_")[1:]),axis=1)
-    edges["to_node"] = edges.progress_apply(lambda x:"_".join(x["to_node"].split("_")[1:]),axis=1)
+    # nodes["node_id"] = nodes.progress_apply(lambda x:"_".join(x["node_id"].split("_")[1:]),axis=1)
+    # edges["edge_id"] = edges.progress_apply(lambda x:"_".join(x["edge_id"].split("_")[1:]),axis=1)
+    # edges["from_node"] = edges.progress_apply(lambda x:"_".join(x["from_node"].split("_")[1:]),axis=1)
+    # edges["to_node"] = edges.progress_apply(lambda x:"_".join(x["to_node"].split("_")[1:]),axis=1)
     
     # Set the crs
     edges = edges.to_crs(epsg=3857)
@@ -141,23 +142,23 @@ def main(config):
     nodes, edges = match_nodes_edges_to_countries(nodes,edges,global_country_info)
     print ("Done adding country info attributes")
 
-    # Save as modified gpkg
-    out_fname = os.path.join(data_path,
-                         "networks",
-                         "rail",
-                         "africa",
-                         "africa-rails-modified.gpkg")
-    edges.to_file(out_fname, layer='edges', driver='GPKG')
-    nodes.to_file(out_fname, layer='nodes', driver='GPKG')
+    # # Save as modified gpkg
+    # out_fname = os.path.join(data_path,
+    #                      "networks",
+    #                      "rail",
+    #                      "africa",
+    #                      "africa-rails-modified.gpkg")
+    # edges.to_file(out_fname, layer='edges', driver='GPKG')
+    # nodes.to_file(out_fname, layer='nodes', driver='GPKG')
 
-    """Assign rail attributes"""
+    # """Assign rail attributes"""
 
-    nodes = gpd.read_file(out_fname,layer='nodes')
-    edges = gpd.read_file(out_fname,layer='edges')
+    # nodes = gpd.read_file(out_fname,layer='nodes')
+    # edges = gpd.read_file(out_fname,layer='edges')
 
-    # Set the crs
-    edges = edges.to_crs(epsg=4326)
-    nodes = nodes.to_crs(epsg=4326)
+    # # Set the crs
+    # edges = edges.to_crs(epsg=4326)
+    # nodes = nodes.to_crs(epsg=4326)
 
     # Calculate and add length of line segments 
     geod = Geod(ellps="WGS84")
