@@ -147,7 +147,13 @@ def main(config):
                'tertiary','tertiary_link']
     edges = edges[edges.highway.isin(highway_list)]
     edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
+    
+    # Store the final road network in geopackage in the processed_path
+    out_fname = os.path.join(scratch_path,"road_africa","africa-roads-filtered.gpkg")
+    edges.to_file(out_fname, layer='edges', driver='GPKG')
+    del edges   # This might free memoery
 
+    edges = gpd.read_file(out_fname,layer='edges')
     # Create network topology
     network = create_network_from_nodes_and_edges(
         None,
@@ -163,11 +169,11 @@ def main(config):
     print (network.nodes)
     print("Ready to export file")
 
-    # Store the final road network in geopackage in the processed_path
-    out_fname = os.path.join(scratch_path,"road_africa","africa-roads.gpkg")
+    # # Store the final road network in geopackage in the processed_path
+    # out_fname = os.path.join(scratch_path,"road_africa","africa-roads.gpkg")
 
-    network.edges.to_file(out_fname, layer='edges', driver='GPKG')
-    network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
+    # network.edges.to_file(out_fname, layer='edges', driver='GPKG')
+    # network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
 
 
     print("Done exporting, ready to add attributes")
@@ -176,8 +182,10 @@ def main(config):
 
     #Find the countries of the nodes and assign them to the node ID's, accordingly modify the edge ID's as well
 
-    nodes = gpd.read_file(out_fname,layer='nodes')
-    edges = gpd.read_file(out_fname,layer='edges')
+    # nodes = gpd.read_file(out_fname,layer='nodes')
+    # edges = gpd.read_file(out_fname,layer='edges')
+    nodes = network.nodes
+    edges = network.edges
     print("Done reading files")
 
     global_country_info = gpd.read_file(os.path.join(data_path,
