@@ -125,7 +125,6 @@ def match_nodes_edges_to_countries(nodes,edges,countries,epsg=4326):
     nodes["node_id"] = nodes.progress_apply(lambda x:f"{x.iso_code}_{x.node_id}",axis=1)
     edges["from_node"] = edges.progress_apply(lambda x:f"{x.from_iso}_{x.from_node}",axis=1)
     edges["to_node"] = edges.progress_apply(lambda x:f"{x.to_iso}_{x.to_node}",axis=1)
-    edges["old_edge_id"] = edges["edge_id"]
     edges["edge_id"] = edges.progress_apply(lambda x:f"{x.from_iso}_{x.to_iso}_{x.edge_id}",axis=1)
     
     return nodes, edges
