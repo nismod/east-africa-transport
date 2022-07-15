@@ -37,11 +37,11 @@ def main(config):
     
     """
     """
-    port_nodes = gpd.read_file(os.path.join(data_path,"networks","ports","ports_modified.gpkg"),layer="nodes")
-    airport_nodes = gpd.read_file(os.path.join(data_path,"networks","airports","airports_modified.gpkg"),layer="nodes")
-    rail_nodes = gpd.read_file(os.path.join(data_path,"networks","rail","africa","africa-rails-modified.gpkg"),layer="nodes")
+    port_nodes = gpd.read_file(os.path.join(data_path,"networks","ports","port.gpkg"),layer="nodes")
+    airport_nodes = gpd.read_file(os.path.join(data_path,"networks","airports","air.gpkg"),layer="nodes")
+    rail_nodes = gpd.read_file(os.path.join(data_path,"networks","rail","rail.gpkg"),layer="nodes")
     rail_nodes = rail_nodes[~rail_nodes["facility"].isna()]
-    road_nodes = gpd.read_file(os.path.join(data_path,"networks","road","africa","africa-roads-modified.gpkg"),layer="nodes")
+    road_nodes = gpd.read_file(os.path.join(data_path,"networks","road","roads.gpkg"),layer="nodes")
     road_nodes = road_nodes[road_nodes["iso_code"].isin(["KEN","TZA","UGA","ZMB"])]
 
     port_nodes = port_nodes.to_crs(epsg=4326)
@@ -97,7 +97,7 @@ def main(config):
     edges["min_flow_cost"] = wait_factor*(1 - uncertainty_factor)*edges["wait_time"] + edges["min_handling_costs"]
     edges["max_flow_cost"] = wait_factor*(1 + uncertainty_factor)*edges["wait_time"] + edges["max_handling_costs"]
     edges = gpd.GeoDataFrame(edges,geometry="geometry",crs="EPSG:4326")
-    edges.to_file(os.path.join(data_path,"networks","multimodal","africa_multi_modal.gpkg"),layer="edges",driver="GPKG")
+    edges.to_file(os.path.join(data_path,"networks","multimodal","multi_modal.gpkg"),layer="edges",driver="GPKG")
 
 if __name__ == '__main__':
     CONFIG = load_config()
