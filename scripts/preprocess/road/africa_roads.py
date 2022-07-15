@@ -164,7 +164,7 @@ def main(config):
     print("Ready to export file")
 
     # Store the final road network in geopackage in the processed_path
-    out_fname = os.path.join(data_path,"road/africa","africa-roads.gpkg")
+    out_fname = os.path.join(scratch_path,"road_africa","africa-roads.gpkg")
 
     network.edges.to_file(out_fname, layer='edges', driver='GPKG')
     network.nodes.to_file(out_fname, layer='nodes', driver='GPKG')
