@@ -208,7 +208,7 @@ def main(config):
     incoming_data_path = config['paths']['incoming_data']
     data_path = config['paths']['data']
     
-    nodes = gpd.read_file(os.path.join(data_path,"ports","port.gpkg"),layer="nodes")
+    nodes = gpd.read_file(os.path.join(incoming_data_path,"ports","port.gpkg"),layer="nodes")
     nodes.rename(columns={"id":"node_id"},inplace=True)
     nodes["node_id"] = nodes.apply(lambda x:str(x.node_id).replace(f"\ufeff",''),axis=1)
     nodes = nodes.to_crs(epsg=4326)
@@ -247,23 +247,6 @@ def main(config):
     global_country_info = global_country_info.explode(ignore_index=True)
     global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
 
-    # global_country_info = gpd.read_file(os.path.join(data_path,
-    #                                         "Admin_boundaries",
-    #                                         "ne_10m_admin_0_countries",
-    #                                         "ne_10m_admin_0_countries.shp"))[["ADM0_A3","ISO_A3","NAME","CONTINENT","geometry"]]
-    # global_country_info["ISO_A3"] = global_country_info.progress_apply(lambda x:correct_iso_code(x),axis=1)
-    # global_country_info = global_country_info.to_crs(epsg=4326)
-    # global_country_info = global_country_info[global_country_info["CONTINENT"].isin(["Africa"])]
-    # global_country_info = global_country_info.explode(ignore_index=True)
-    # global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
-    # # print (global_country_info)
-    # country_continent_codes = list(set(zip(
-    #                                     global_country_info["ISO_A3"].values.tolist(),
-    #                                     global_country_info["NAME"].values.tolist(),
-    #                                     global_country_info["CONTINENT"].values.tolist()
-    #                                     )
-    #                                 )
-    #                             )
     # Set the crs
     edges = edges.to_crs(epsg=3857)
     nodes = nodes.to_crs(epsg=3857)
@@ -291,9 +274,7 @@ def main(config):
     global_edges["edge_id"] = global_edges.index.values.tolist()
     max_index = len(global_edges.index)+1
     global_edges["edge_id"] = global_edges.progress_apply(lambda x:f"port_route{x.edge_id}",axis=1)
-    # global_edges.rename(columns={"from_id":"from_node","to_id":"to_node"},inplace=True)
-    # print (global_edges)
-
+    
     G = ig.Graph.TupleList(global_edges.itertuples(index=False), edge_attrs=list(global_edges.columns)[2:])
     # print (G)
 
@@ -341,9 +322,6 @@ def main(config):
 
     nodes.to_file(os.path.join(data_path,"networks/ports","port.gpkg"),layer="nodes",driver="GPKG")
     edges.to_file(os.path.join(data_path,"networks/ports","port.gpkg"),layer="edges",driver="GPKG")
-
-    """
-    """
 
 if __name__ == '__main__':
     CONFIG = load_config()
