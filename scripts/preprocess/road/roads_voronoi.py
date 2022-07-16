@@ -170,7 +170,7 @@ def main(config):
     scratch_path = config['paths']['scratch']
 
     # nodes = gpd.read_file(os.path.join(data_path,"networks/road","roads.gpkg"), layer='nodes')
-    nodes = gpd.read_file(os.path.join(data_path,"networks/road.africa","africa_roads.gpkg"), layer='nodes')
+    nodes = gpd.read_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='nodes')
 
     nodes = nodes[nodes["continent"] == "Africa"]
     nodes = nodes.to_crs(epsg=3857)
