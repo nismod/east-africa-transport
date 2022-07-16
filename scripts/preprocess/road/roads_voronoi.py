@@ -169,7 +169,9 @@ def main(config):
     data_path = config['paths']['data']
     scratch_path = config['paths']['scratch']
 
-    nodes = gpd.read_file(os.path.join(data_path,"networks/road","roads.gpkg"), layer='nodes')
+    # nodes = gpd.read_file(os.path.join(data_path,"networks/road","roads.gpkg"), layer='nodes')
+    nodes = gpd.read_file(os.path.join(data_path,"networks/road.africa","africa_roads.gpkg"), layer='nodes')
+
     nodes = nodes[nodes["continent"] == "Africa"]
     nodes = nodes.to_crs(epsg=3857)
     iso_codes = list(set(nodes["iso_code"].values.tolist()))
@@ -199,8 +201,11 @@ def main(config):
 
     africa_voronoi = gpd.GeoDataFrame(pd.concat(africa_voronoi,axis=0,ignore_index=True),
                     geometry="geometry",crs="EPSG:3857")
+    # africa_voronoi.to_crs(epsg=4326).to_file(os.path.join(data_path,
+    #                     "networks/road","roads_voronoi.gpkg"),
+    #                     layer="areas",driver="GPKG")
     africa_voronoi.to_crs(epsg=4326).to_file(os.path.join(data_path,
-                        "networks/road","roads_voronoi.gpkg"),
+                        "networks/road/africa","africa_roads_voronoi.gpkg"),
                         layer="areas",driver="GPKG")
 
 
