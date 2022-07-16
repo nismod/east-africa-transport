@@ -189,10 +189,11 @@ def main(config):
         print ("Starting with country", iso_code)
         country_nodes = nodes[nodes["iso_code"] == iso_code]
         country_boundary = global_country_info[global_country_info["ISO_A3"] == iso_code]
-        print (country_nodes)
+        # print (country_nodes)
         country_voronoi = create_voronoi_layer(country_nodes,
                                     "node_id",epsg=3857)
         country_voronoi = gpd.clip(country_voronoi, country_boundary)
+        country_voronoi['iso_code'] = iso_code
         africa_voronoi.append(country_voronoi)
         print ("Done with country", iso_code)
 
