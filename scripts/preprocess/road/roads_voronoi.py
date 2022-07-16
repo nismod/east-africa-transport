@@ -15,7 +15,7 @@ import pandas as pd
 from geopy import distance
 from scipy.spatial import Voronoi
 import shapely.geometry
-from shapely.geometry import Point
+from shapely.geometry import Polygon, shape, LineString
 from pyproj import Geod
 from tqdm import tqdm
 tqdm.pandas()
