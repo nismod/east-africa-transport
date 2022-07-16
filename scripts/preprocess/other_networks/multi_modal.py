@@ -37,12 +37,14 @@ def main(config):
     
     """
     """
+    countries = ["KEN","TZA","UGA","ZMB"]
+    border_countires = ["ETH","SSD","SOM","RWA","BDI","MWI","MOZ","COD","ZWE","AGO","NAM","BWA"]
     port_nodes = gpd.read_file(os.path.join(data_path,"networks","ports","port.gpkg"),layer="nodes")
     airport_nodes = gpd.read_file(os.path.join(data_path,"networks","airports","air.gpkg"),layer="nodes")
     rail_nodes = gpd.read_file(os.path.join(data_path,"networks","rail","rail.gpkg"),layer="nodes")
     rail_nodes = rail_nodes[~rail_nodes["facility"].isna()]
     road_nodes = gpd.read_file(os.path.join(data_path,"networks","road","roads.gpkg"),layer="nodes")
-    road_nodes = road_nodes[road_nodes["iso_code"].isin(["KEN","TZA","UGA","ZMB"])]
+    road_nodes = road_nodes[road_nodes["iso_code"].isin(countries + border_countires)]
 
     port_nodes = port_nodes.to_crs(epsg=4326)
     rail_nodes = rail_nodes.to_crs(epsg=4326)
