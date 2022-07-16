@@ -113,22 +113,14 @@ def main(config):
         "Admin_boundaries",
         "gadm36_levels_gpkg",
         "gadm36_levels_continents.gpkg"))
-    global_country_info = global_country_info.to_crs(epsg=3857)
+    global_country_info = global_country_info.to_crs(epsg=4326)
     global_country_info = global_country_info.explode(ignore_index=True)
     global_country_info = global_country_info.sort_values(by="CONTINENT",ascending=True)
     
-    # Set the crs
-    edges = edges.to_crs(epsg=3857)
-    nodes = nodes.to_crs(epsg=3857)
-
     nodes, edges = match_nodes_edges_to_countries(nodes,edges,global_country_info)
     print ("Done adding country info attributes")
 
     """Assign rail attributes"""
-
-    # Set the crs
-    edges = edges.to_crs(epsg=4326)
-    nodes = nodes.to_crs(epsg=4326)
 
     # Calculate and add length of line segments 
     geod = Geod(ellps="WGS84")
