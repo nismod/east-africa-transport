@@ -146,7 +146,7 @@ def create_voronoi_layer(nodes_dataframe,
     for region in regions:
         polygon = vertices[region]
         # Clipping polygon
-        poly = Polygon(polygon)
+        poly = Polygon(polygon).buffer(0)
         poly = poly.intersection(box)
         poly_list.append(poly)
 
