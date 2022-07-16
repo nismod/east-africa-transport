@@ -14,14 +14,14 @@ from shapely.geometry import Point
 from pyproj import Geod
 from boltons.iterutils import pairwise
 import igraph as ig
-#import networkx
+import networkx
 from tqdm import tqdm
 tqdm.pandas()
 from utils import *
 
 from pyproj import Geod
 
-def components(edges,nodes):
+def components(edges,nodes,node_id_col):
     G = networkx.Graph()
     G.add_nodes_from(
         (getattr(n, node_id_col), {"geometry": n.geometry}) for n in nodes.itertuples()
@@ -134,25 +134,25 @@ def main(config):
     # Store the final road network in geopackage in the processed_path
     out_fname = os.path.join(scratch_path,"road_africa","africa-roads-filtered.gpkg")
 
-    # edges = gpd.read_file((os.path.join(scratch_path,
-    #                         "road_africa","africa-road.gpkg")),
-    #                         layer="lines",
-    #                         ignore_fields=["waterway","aerialway","barrier","man_made","z_order","other_tags"])
+    edges = gpd.read_file((os.path.join(scratch_path,
+                            "road_africa","africa-road.gpkg")),
+                            layer="lines",
+                            ignore_fields=["waterway","aerialway","barrier","man_made","z_order","other_tags"])
     
-    # print(edges)
-    # print("Done reading file")
+    print(edges)
+    print("Done reading file")
     
-    # # From the geopackage file extract relevant roads
-    # highway_list = ['motorway','motorway_link',
-    #            'trunk','trunk_link',
-    #            'primary','primary_link',
-    #            'secondary','secondary_link',
-    #            'tertiary','tertiary_link']
-    # edges = edges[edges.highway.isin(highway_list)]
-    # edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
+    # From the geopackage file extract relevant roads
+    highway_list = ['motorway','motorway_link',
+               'trunk','trunk_link',
+               'primary','primary_link',
+               'secondary','secondary_link',
+               'tertiary','tertiary_link']
+    edges = edges[edges.highway.isin(highway_list)]
+    edges['highway'] = edges.progress_apply(lambda x: x.highway.replace('_link',''),axis=1)
     
-    # edges.to_file(out_fname, layer='edges', driver='GPKG')
-    # del edges   # This might free memory
+    edges.to_file(out_fname, layer='edges', driver='GPKG')
+    del edges   # This might free memory
 
     edges = gpd.read_file(out_fname,layer='edges')
     # Create network topology
@@ -171,8 +171,8 @@ def main(config):
     print("Ready to export file")
 
     # Store the final road network in geopackage in the processed_path
-    # network.edges.to_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='edges', driver='GPKG')
-    # network.nodes.to_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='nodes', driver='GPKG')
+    # network.edges.to_file(os.path.join(data_path,"networks/road/africa","africa-roads.gpkg"), layer='edges', driver='GPKG')
+    # network.nodes.to_file(os.path.join(data_path,"networks/road/africa","africa-roads.gpkg"), layer='nodes', driver='GPKG')
 
 
     print("Done exporting, ready to add attributes")
@@ -197,12 +197,7 @@ def main(config):
     # print (global_country_info)
 
     
-    # nodes["node_id"] = nodes.progress_apply(lambda x:"_".join(x["node_id"].split("_")[1:]),axis=1)
     nodes = nodes[["node_id","geometry"]]
-
-    # edges["edge_id"] = edges.progress_apply(lambda x:"_".join(x["edge_id"].split("_")[1:]),axis=1)
-    # edges["from_node"] = edges.progress_apply(lambda x:"_".join(x["from_node"].split("_")[1:]),axis=1)
-    # edges["to_node"] = edges.progress_apply(lambda x:"_".join(x["to_node"].split("_")[1:]),axis=1)
     edges = edges[["edge_id","from_node","to_node","highway","surface","maxspeed","lanes","bridge","length_km","geometry"]]
 
     # Set the crs
@@ -213,10 +208,12 @@ def main(config):
 
     print ("Done adding country info attributes")
 
-    #edges.to_file(os.path.join(data_path,"road/africa","africa-roads.gpkg"), layer='edges', driver='GPKG')
-    #nodes.to_file(os.path.join(data_path,"road/africa","africa-roads.gpkg"), layer='nodes', driver='GPKG')
+    # edges.to_file(os.path.join(data_path,"networks/road/africa","africa-roads.gpkg"), layer='edges', driver='GPKG')
+    # nodes.to_file(os.path.join(data_path,"networks/road/africa","africa-roads.gpkg"), layer='nodes', driver='GPKG')
 
     """Assign road attributes"""
+    # edges = gdp.read_file(os.path.join(data_path,"networks/road/africa","africa-roads.gpkg"), layer='edges')
+    # nodes = gpd.read_file(os.path.join(data_path,"networks/road/africa","africa-roads.gpkg"), layer='nodes')
 
     # Calculate and add length of line segments 
     geod = Geod(ellps="WGS84")
@@ -281,7 +278,7 @@ def main(config):
     edges = gpd.GeoDataFrame(edges,geometry="geometry",crs="EPSG:4326")
     
     # Add the component column
-    edges, nodes = components(edges,nodes)
+    edges, nodes = components(edges,nodes,"node_id")
     print("Done adding components")
 
     print("Ready to export")
@@ -291,6 +288,11 @@ def main(config):
     print("Done.")
     
     ############################################################################################################
+    """Create a smaller connected network for flow allocations
+    """
+    # edges = gpd.read_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='edges')
+    # nodes = gpd.read_file(os.path.join(data_path,"networks/road/africa","africa_roads.gpkg"), layer='nodes')
+
     print ("Start creating the network with fewer roads for surrounding countries")
     countries = ["KEN","TZA","UGA","ZMB"]
     border_countires = ["ETH","SSD","SOM","RWA","BDI","MWI","MOZ","COD","ZWE","AGO","NAM","BWA"]
@@ -306,11 +308,8 @@ def main(config):
     
     print ("Done with extracting smaller road network edges")
 
-    # nodes = gpd.read_file(os.path.join(data_path,"africa/networks","africa_roads_modified.gpkg"), layer='nodes', driver='GPKG')
-    # print (nodes)
     edges, nodes = components(edges,nodes)
 
-    # edges = edges[["from_node","to_node","edge_id","from_iso","to_iso","highway","min_flow_cost","max_flow_cost","geometry"]]
     network_edges = edges[["from_node","to_node","edge_id"]]
     G = ig.Graph.TupleList(network_edges.itertuples(index=False), edge_attrs=list(network_edges.columns)[2:])
     A = sorted(G.clusters().subgraphs(),key=lambda l:len(l.es['edge_id']),reverse=True)
@@ -322,14 +321,6 @@ def main(config):
                                                                     "roads.gpkg"), layer='nodes', driver='GPKG')
 
     print ("Done.")
-    # edges = gpd.read_file(os.path.join(data_path,"africa/networks",
-    #                                 "africa_roads_connected.gpkg"), layer='edges')
-    # time_cost_factor = 0.49
-    # edges["min_flow_cost"] = time_cost_factor*edges["length_km"]/edges["max_speed"] + edges["min_tariff"]*edges["length_km"]
-    # edges["max_flow_cost"] = time_cost_factor*edges["length_km"]/edges["min_speed"] + edges["max_tariff"]*edges["length_km"]
-    # # edges["flow_cost_unit"] = "USD/ton"
-    # edges.to_file(os.path.join(data_path,"africa/networks",
-    #                            "africa_roads_connected.gpkg"), layer='edges', driver='GPKG')
 
 
 if __name__ == '__main__':
