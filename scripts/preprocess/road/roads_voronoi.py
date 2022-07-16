@@ -196,7 +196,7 @@ def main(config):
         africa_voronoi.append(country_voronoi)
         print ("Done with country", iso_code)
 
-    africa_voronoi = gpd.Geodataframe(pd.concat(africa_voronoi,axis=0,ignore_index=True),
+    africa_voronoi = gpd.GeoDataFrame(pd.concat(africa_voronoi,axis=0,ignore_index=True),
                     geometry="geometry",crs="EPSG:3857")
     africa_voronoi.to_crs(epsg=4326).to_file(os.path.join(data_path,
                         "networks/road","roads_voronoi.gpkg"),
