@@ -170,6 +170,7 @@ def main(config):
     scratch_path = config['paths']['scratch']
 
     nodes = gpd.read_file(os.path.join(data_path,"networks/road","roads.gpkg"), layer='nodes')
+    nodes = nodes[nodes["continent"] == "Africa"]
     nodes = nodes.to_crs(epsg=3857)
     iso_codes = list(set(nodes["iso_code"].values.tolist()))
 
