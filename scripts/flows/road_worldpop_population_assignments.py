@@ -41,7 +41,7 @@ def main(data_path, networks_csv, hazards_csv):
     for network_path in networks.path:
         fname = os.path.join(data_path, network_path)
         out_fname = os.path.join(
-            data_path, "..", "results", "road_raster_intersections",
+            data_path, "networks", "road", "road_raster_intersections",
             os.path.basename(network_path).replace(".gpkg", f"_splits__{hazard_slug}.gpkg")
         )
         pq_fname_nodes = out_fname.replace(".gpkg","__nodes.geoparquet")
