@@ -28,7 +28,7 @@ def find_areas_of_intersections(polygon_1,polygon_2,polygon_1_id,polygon_2_id,va
     matches = pd.merge(matches, 
                     polygon_2[[polygon_2_id,'geometry']],
                     how="left",on=[polygon_2_id])
-    matches["areas_m2"] = matches.progress_apply(lambda x:x["polygon_1_geometry"].intersection(x["polygon_2_geometry"].buffer(0)).area,
+    matches["areas_m2"] = matches.progress_apply(lambda x:x["polygon_1_geometry"].intersection(x["geometry"].buffer(0)).area,
                             axis=1)
     if values_per_area is not None:
         matches[values_per_area] = matches["areas_m2"]*matches[values_per_area]
