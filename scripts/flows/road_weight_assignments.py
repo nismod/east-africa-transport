@@ -13,6 +13,7 @@ import numpy as np
 from shapely.geometry import Point,LineString,Polygon
 from shapely.ops import nearest_points
 from scipy.spatial import Voronoi, cKDTree
+import subprocess
 from analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
@@ -50,6 +51,7 @@ def main(config):
         print (args)
         subprocess.run(args)
 
+    print ("* Done with the processing of Roads voronoi and population raster intersections")
 
     """Post-processing the road population intersection result
         The Worldpop raster layer gives the population-per-pixel (PPP) values
@@ -59,8 +61,8 @@ def main(config):
     road_pop_column = "pop_2020" # Name of the Worldpop population column in geoparquet
     road_id_column = "node_id" # Road ID column
     # Read in intersection geoparquet
-    road_pop_intersections = gpd.read_parquet(road_pop_intersections_path, 
-                                "roads_voronoi_splits__pop_layer__areas.geoparquet")
+    road_pop_intersections = gpd.read_parquet(os.path.join(road_pop_intersections_path, 
+                                "roads_voronoi_splits__pop_layer__areas.geoparquet"))
     road_pop_intersections = road_pop_intersections.to_crs(epsg=3857)
     road_pop_intersections['pop_areas'] = road_pop_intersections.geometry.area
     road_pop_intersections.drop("geometry",axis=1,inplace=True)
