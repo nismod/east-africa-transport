@@ -28,7 +28,7 @@ def load_config():
     return config
 
 
-def main(data_path, networks_csv, hazards_csv):
+def main(data_path, networks_csv, hazards_csv,output_path):
     # read transforms, record with hazards
     hazards = pandas.read_csv(hazards_csv)
     hazard_slug = os.path.basename(hazards_csv).replace(".csv", "")
@@ -41,7 +41,7 @@ def main(data_path, networks_csv, hazards_csv):
     for network_path in networks.path:
         fname = os.path.join(data_path, network_path)
         out_fname = os.path.join(
-            data_path, "networks", "road", "road_raster_intersections",
+            output_path,
             os.path.basename(network_path).replace(".gpkg", f"_splits__{hazard_slug}.gpkg")
         )
         pq_fname_nodes = out_fname.replace(".gpkg","__nodes.geoparquet")
@@ -333,10 +333,11 @@ if __name__ == '__main__':
     try:
         networks_csv = sys.argv[1]
         hazards_csv = sys.argv[2]
+        output_path = sys.argv[3]
     except IndexError:
         logging.error(
-            "Error. Please provide networks and hazards as CSV.\n",
-            f"Usage: python {__file__} networks/network_files.csv hazards/hazard_layers.csv")
+            "Error. Please provide networks and hazards as CSV and an output path for results.\n",
+            f"Usage: python {__file__} networks/network_files.csv hazards/hazard_layers.csv output_path/")
 
     # Ignore writing-to-parquet warnings
     warnings.filterwarnings('ignore', message='.*initial implementation of Parquet.*')
