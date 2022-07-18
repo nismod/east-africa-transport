@@ -63,6 +63,7 @@ def main(config):
     # Read in intersection geoparquet
     road_pop_intersections = gpd.read_parquet(os.path.join(road_pop_intersections_path, 
                                 "roads_voronoi_splits__pop_layer__areas.geoparquet"))
+    road_pop_intersections = road_pop_intersections[road_pop_intersections[road_pop_column] > 0]
     road_pop_intersections = road_pop_intersections.to_crs(epsg=3857)
     road_pop_intersections['pop_areas'] = road_pop_intersections.geometry.area
     road_pop_intersections.drop("geometry",axis=1,inplace=True)
@@ -70,7 +71,10 @@ def main(config):
     road_pop_intersections = road_pop_intersections.groupby(road_id_column)[road_pop_column].sum().reset_index()
 
     print (road_pop_intersections)
+    roads_voronoi = gpd.read_file(os.path.join(data_path,"networks","road","roads_voronoi.gpkg"))
+    roads_voronoi = pd.merge(roads_voronoi,road_pop_intersections,how="left",on=[road_id_column]).fillna(0)
     print("* Done with estimating Worldpop population assinged to each voronoi area in road network")
+
 
 
 
