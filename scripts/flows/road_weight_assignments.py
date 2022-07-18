@@ -79,7 +79,7 @@ def main(config):
     #     The population assigned to the Road Voronoi is (Intersection Area)*PPP/1.0e6
     # """
     # road_pop_column = "pop_2020" # Name of the Worldpop population column in geoparquet
-    # road_id_column = "node_id" # Road ID column
+    road_id_column = "node_id" # Road ID column
     # # Read in intersection geoparquet
     # road_pop_intersections = gpd.read_parquet(os.path.join(road_pop_intersections_path, 
     #                             "roads_voronoi_splits__pop_layer__areas.geoparquet"))
