@@ -79,7 +79,7 @@ def main(config):
 
     print("* Start mining sector")
 
-    roads_voronoi = gdp.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
+    roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
     mines = gpd.read_file(
         os.path.join(incoming_data_path,"mining","global_mining","global_mining_polygons_v1.gpkg"))
     mines = mines.to_crs(epsg=3857)
@@ -103,7 +103,7 @@ def main(config):
     print("* Done with agriculture sector")
 
     print (roads_voronoi)
-    
+
 
 if __name__ == '__main__':
     CONFIG = load_config()
