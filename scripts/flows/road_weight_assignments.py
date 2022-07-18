@@ -28,6 +28,7 @@ def find_areas_of_intersections(polygon_1,polygon_2,polygon_1_id,polygon_2_id,va
     matches = pd.merge(matches, 
                     polygon_2[[polygon_2_id,'geometry']],
                     how="left",on=[polygon_2_id])
+    print (matches)
     matches["areas_m2"] = matches.progress_apply(lambda x:x["polygon_1_geometry"].intersection(x["geometry"].buffer(0)).area,
                             axis=1)
     if values_per_area is not None:
@@ -43,57 +44,59 @@ def main(config):
     data_path = config['paths']['data']
     results_data_path = config['paths']['results']
 
-    """We run the intersections of Road Voronoi polygons with the Worldpop 1-km raster grid layer
-        This done by calling the script road_raster_intersections.py, which is adapted from:
-            https://github.com/nismod/east-africa-transport/blob/main/scripts/exposure/split_networks.py
-        The result of this script will give us a geoparquet file with population counts over geometries of Voronoi polygons   
-    """
+    # """We run the intersections of Road Voronoi polygons with the Worldpop 1-km raster grid layer
+    #     This done by calling the script road_raster_intersections.py, which is adapted from:
+    #         https://github.com/nismod/east-africa-transport/blob/main/scripts/exposure/split_networks.py
+    #     The result of this script will give us a geoparquet file with population counts over geometries of Voronoi polygons   
+    # """
 
-    road_details_csv = os.path.join(data_path,"road_layer.csv")
-    population_details_csv = os.path.join(data_path,"pop_layer.csv")
-    road_pop_intersections_path = os.path.join(data_path,"networks","road","road_raster_intersections")
-    if os.path.exists(road_pop_intersections_path) == False:
-        os.mkdir(road_pop_intersections_path)
+    # road_details_csv = os.path.join(data_path,"road_layer.csv")
+    # population_details_csv = os.path.join(data_path,"pop_layer.csv")
+    # road_pop_intersections_path = os.path.join(data_path,"networks","road","road_raster_intersections")
+    # if os.path.exists(road_pop_intersections_path) == False:
+    #     os.mkdir(road_pop_intersections_path)
 
-    run_road_pop_intersections = False  # Set to True is you want to run this process
-    # Did a run earlier and it takes ~ 224 minutes (nearly 4 hours) to run for the whole of Africa!
-    # And generated a geoparquet with > 24 million rows! 
-    if run_road_pop_intersections is True:
-        args = [
-                "python",
-                "road_raster_intersections.py",
-                f"{road_details_csv}",
-                f"{population_details_csv}",
-                f"{road_pop_intersections_path}"
-                ]
-        print ("* Start the processing of Roads voronoi and population raster intersections")
-        print (args)
-        subprocess.run(args)
+    # run_road_pop_intersections = False  # Set to True is you want to run this process
+    # # Did a run earlier and it takes ~ 224 minutes (nearly 4 hours) to run for the whole of Africa!
+    # # And generated a geoparquet with > 24 million rows! 
+    # if run_road_pop_intersections is True:
+    #     args = [
+    #             "python",
+    #             "road_raster_intersections.py",
+    #             f"{road_details_csv}",
+    #             f"{population_details_csv}",
+    #             f"{road_pop_intersections_path}"
+    #             ]
+    #     print ("* Start the processing of Roads voronoi and population raster intersections")
+    #     print (args)
+    #     subprocess.run(args)
 
-    print ("* Done with the processing of Roads voronoi and population raster intersections")
+    # print ("* Done with the processing of Roads voronoi and population raster intersections")
 
-    """Post-processing the road population intersection result
-        The Worldpop raster layer gives the population-per-pixel (PPP) values
-        Assuming each pixel is 1km2, the population denisty in PPP/m2 per pixel is PPP/1.0e6
-        The population assigned to the Road Voronoi is (Intersection Area)*PPP/1.0e6
-    """
-    road_pop_column = "pop_2020" # Name of the Worldpop population column in geoparquet
-    road_id_column = "node_id" # Road ID column
-    # Read in intersection geoparquet
-    road_pop_intersections = gpd.read_parquet(os.path.join(road_pop_intersections_path, 
-                                "roads_voronoi_splits__pop_layer__areas.geoparquet"))
-    road_pop_intersections = road_pop_intersections[road_pop_intersections[road_pop_column] > 0]
-    road_pop_intersections = road_pop_intersections.to_crs(epsg=3857)
-    road_pop_intersections['pop_areas'] = road_pop_intersections.geometry.area
-    road_pop_intersections.drop("geometry",axis=1,inplace=True)
-    road_pop_intersections[road_pop_column] = road_pop_intersections['pop_areas']*road_pop_intersections[road_pop_column]/1.0e6
-    road_pop_intersections = road_pop_intersections.groupby(road_id_column)[road_pop_column].sum().reset_index()
+    # """Post-processing the road population intersection result
+    #     The Worldpop raster layer gives the population-per-pixel (PPP) values
+    #     Assuming each pixel is 1km2, the population denisty in PPP/m2 per pixel is PPP/1.0e6
+    #     The population assigned to the Road Voronoi is (Intersection Area)*PPP/1.0e6
+    # """
+    # road_pop_column = "pop_2020" # Name of the Worldpop population column in geoparquet
+    # road_id_column = "node_id" # Road ID column
+    # # Read in intersection geoparquet
+    # road_pop_intersections = gpd.read_parquet(os.path.join(road_pop_intersections_path, 
+    #                             "roads_voronoi_splits__pop_layer__areas.geoparquet"))
+    # road_pop_intersections = road_pop_intersections[road_pop_intersections[road_pop_column] > 0]
+    # road_pop_intersections = road_pop_intersections.to_crs(epsg=3857)
+    # road_pop_intersections['pop_areas'] = road_pop_intersections.geometry.area
+    # road_pop_intersections.drop("geometry",axis=1,inplace=True)
+    # road_pop_intersections[road_pop_column] = road_pop_intersections['pop_areas']*road_pop_intersections[road_pop_column]/1.0e6
+    # road_pop_intersections = road_pop_intersections.groupby(road_id_column)[road_pop_column].sum().reset_index()
 
-    print (road_pop_intersections)
+    # print (road_pop_intersections)
+    # roads_voronoi = gpd.read_file(os.path.join(data_path,"networks","road","roads_voronoi.gpkg"))
+    # roads_voronoi = pd.merge(roads_voronoi,road_pop_intersections,how="left",on=[road_id_column]).fillna(0)
+    # print("* Done with estimating Worldpop population assinged to each voronoi area in road network")
+
+
     roads_voronoi = gpd.read_file(os.path.join(data_path,"networks","road","roads_voronoi.gpkg"))
-    roads_voronoi = pd.merge(roads_voronoi,road_pop_intersections,how="left",on=[road_id_column]).fillna(0)
-    print("* Done with estimating Worldpop population assinged to each voronoi area in road network")
-
     roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
     roads_iso_codes = list(set(roads_voronoi["iso_code"].values.tolist()))
 
