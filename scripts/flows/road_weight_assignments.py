@@ -84,11 +84,11 @@ def main(config):
     mines = gpd.read_file(
         os.path.join(incoming_data_path,"mining","global_mining","global_mining_polygons_v1.gpkg"))
     # Extract only the mines for the countries with the road voronoi areas
-    mines = mines[mines["ISO3_code"].isin(roads_iso_codes)]
+    mines = mines[mines["ISO3_CODE"].isin(roads_iso_codes)]
     mines = mines.to_crs(epsg=3857)
 
     # Extract only the countries that have mines inorder to reduce the size of computation
-    roads_reduced =  roads_voronoi[roads_voronoi["iso_code"].isin(list(set(mines["ISO3_code"].values.tolist())))] 
+    roads_reduced =  roads_voronoi[roads_voronoi["iso_code"].isin(list(set(mines["ISO3_CODE"].values.tolist())))] 
     assign_weights_by_area_intersections(roads_reduced,mines,road_id_column,"AREA")
     roads_reduced.rename(columns={"AREA":"mining_area_km2"},inplace=True)
 
