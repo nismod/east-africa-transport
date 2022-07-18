@@ -18,6 +18,25 @@ from analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 
+def find_areas_of_intersections(polygon_1,polygon_2,polygon_1_id,polygon_2_id,values_per_area=None):
+    Intersect two area dataframe and find the common area of intersection
+    Add up all the area of intersection to first area dataframe
+    matches = gpd.sjoin(polygon_1,
+                        polygon_2, 
+                        how="inner", predicate='intersects').reset_index()
+    matches.rename(columns={"geometry":"polygon_1_geometry"},inplace=True)
+    matches = pd.merge(matches, 
+                    polygon_2[[polygon_2_id,'geometry']],
+                    how="left",on=[polygon_2_id])
+    matches["areas_m2"] = matches.progress_apply(lambda x:x["polygon_1_geometry"].intersection(x["polygon_2_geometry"].buffer(0)).area,
+                            axis=1)
+    if values_per_area is not None:
+        matches[values_per_area] = matches["areas_m2"]*matches[values_per_area]
+        return matches.groupby([polygon_1_id])[values_per_area].sum().reset_index()
+    else:
+        return matches.groupby([polygon_1_id])["areas_m2"].sum().reset_index()
+    
+
 def main(config):
     # Set global paths
     incoming_data_path = config['paths']['incoming_data']
@@ -84,23 +103,27 @@ def main(config):
     mines = gpd.read_file(
         os.path.join(incoming_data_path,"mining","global_mining","global_mining_polygons_v1.gpkg"))
     # Extract only the mines for the countries with the road voronoi areas
+    mines["mine_id"] = mines.index.values.tolist()   # Not sure if the mines layer has an ID column, so created one
     mines = mines[mines["ISO3_CODE"].isin(roads_iso_codes)]
     mines = mines.to_crs(epsg=3857)
 
     # Extract only the countries that have mines inorder to reduce the size of computation
     roads_reduced =  roads_voronoi[roads_voronoi["iso_code"].isin(list(set(mines["ISO3_CODE"].values.tolist())))] 
-    assign_weights_by_area_intersections(roads_reduced,mines,road_id_column,"AREA")
-    roads_reduced.rename(columns={"AREA":"mining_area_km2"},inplace=True)
+    # assign_weights_by_area_intersections(roads_reduced,mines,road_id_column,"AREA")
+    # roads_reduced.rename(columns={"AREA":"mining_area_km2"},inplace=True)
+
+    roads_reduced = find_areas_of_intersections(roads_reduced,mines,road_id_column,"mine_id")
+    roads_reduced.rename(columns={"areas_m2":"mining_area_m2"},inplace=True)
 
     roads_voronoi = pd.merge(roads_voronoi,
-                            roads_reduced[[road_id_column,"mining_area_km2"]],
+                            roads_reduced[[road_id_column,"mining_area_m2"]],
                             how="left",on=[road_id_column]).fillna(0)
     roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
     print("* Done with mining sector")
 
     # Add AGRICULTURE data
     print("* Start agriculture sector")
-    ag_points.to_file(os.path.join(data_path,"agriculture","agriculture.gpkg"), 
+    ag_points = gpd.read_file(os.path.join(data_path,"agriculture","agriculture.gpkg"), 
         layer = 'agriculture',
         driver = "GPKG")
     # Extract only the agriculture points for the countries with the road voronoi areas
