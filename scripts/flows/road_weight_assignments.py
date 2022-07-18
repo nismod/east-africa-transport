@@ -75,24 +75,36 @@ def main(config):
     roads_voronoi = pd.merge(roads_voronoi,road_pop_intersections,how="left",on=[road_id_column]).fillna(0)
     print("* Done with estimating Worldpop population assinged to each voronoi area in road network")
 
+    roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
+    roads_iso_codes = list(set(roads_voronoi["iso_code"].values.tolist()))
+
     # Add MINING data
 
     print("* Start mining sector")
-
-    roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
     mines = gpd.read_file(
         os.path.join(incoming_data_path,"mining","global_mining","global_mining_polygons_v1.gpkg"))
+    # Extract only the mines for the countries with the road voronoi areas
+    mines = mines[mines["ISO3_code"].isin(roads_iso_codes)]
     mines = mines.to_crs(epsg=3857)
 
-    assign_weights_by_area_intersections(roads_voronoi,mines,road_id_column,"AREA")
-    roads_voronoi.rename(columns={"AREA":"mining_area_m2"},inplace=True)
+    # Extract only the countries that have mines inorder to reduce the size of computation
+    roads_reduced =  roads_voronoi[roads_voronoi["iso_code"].isin(list(set(mines["ISO3_code"].values.tolist())))] 
+    assign_weights_by_area_intersections(roads_reduced,mines,road_id_column,"AREA")
+    roads_reduced.rename(columns={"AREA":"mining_area_km2"},inplace=True)
 
+    roads_voronoi = pd.merge(roads_voronoi,
+                            roads_reduced[[road_id_column,"mining_area_km2"]],
+                            how="left",on=[road_id_column]).fillna(0)
+    roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
     print("* Done with mining sector")
+
     # Add AGRICULTURE data
     print("* Start agriculture sector")
     ag_points.to_file(os.path.join(data_path,"agriculture","agriculture.gpkg"), 
         layer = 'agriculture',
         driver = "GPKG")
+    # Extract only the agriculture points for the countries with the road voronoi areas
+    ag_points = ag_points[ag_points["iso3"].isin(roads_iso_codes)]
     ag_points = ag_points.to_crs(epsg=3857)
     joined = gpd.sjoin(left_df=ag_points, right_df=roads_voronoi, how='left')
     joined = joined.groupby([road_id_column])["total_mt"].sum().reset_index()
