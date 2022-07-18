@@ -19,8 +19,8 @@ from tqdm import tqdm
 tqdm.pandas()
 
 def find_areas_of_intersections(polygon_1,polygon_2,polygon_1_id,polygon_2_id,values_per_area=None):
-    Intersect two area dataframe and find the common area of intersection
-    Add up all the area of intersection to first area dataframe
+    # Intersect two area dataframe and find the common area of intersection
+    # Add up all the area of intersection to first area dataframe
     matches = gpd.sjoin(polygon_1,
                         polygon_2, 
                         how="inner", predicate='intersects').reset_index()
