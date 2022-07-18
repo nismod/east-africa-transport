@@ -75,8 +75,35 @@ def main(config):
     roads_voronoi = pd.merge(roads_voronoi,road_pop_intersections,how="left",on=[road_id_column]).fillna(0)
     print("* Done with estimating Worldpop population assinged to each voronoi area in road network")
 
+    # Add MINING data
 
+    print("* Start mining sector")
 
+    roads_voronoi = gdp.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
+    mines = gpd.read_file(
+        os.path.join(incoming_data_path,"mining","global_mining","global_mining_polygons_v1.gpkg"))
+    mines = mines.to_crs(epsg=3857)
+
+    assign_weights_by_area_intersections(roads_voronoi,mines,road_id_column,"AREA")
+    roads_voronoi.rename(columns={"AREA":"mining_area_m2"},inplace=True)
+
+    print("* Done with mining sector")
+    # Add AGRICULTURE data
+    print("* Start agriculture sector")
+    ag_points.to_file(os.path.join(data_path,"agriculture","agriculture.gpkg"), 
+        layer = 'agriculture',
+        driver = "GPKG")
+    ag_points = ag_points.to_crs(epsg=3857)
+    joined = gpd.sjoin(left_df=ag_points, right_df=roads_voronoi, how='left')
+    joined = joined.groupby([road_id_column])["total_mt"].sum().reset_index()
+
+    roads_voronoi = pd.merge(roads_voronoi,joined,how="left",on=[road_id_column]).fillna(0)
+    roads_voronoi.rename(columns={"total_mt":"ag_prod_mt"},inplace=True)
+
+    print("* Done with agriculture sector")
+
+    print (roads_voronoi)
+    
 
 if __name__ == '__main__':
     CONFIG = load_config()
