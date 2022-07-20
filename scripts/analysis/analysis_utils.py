@@ -284,7 +284,8 @@ def create_voronoi_polygons_from_nodes(nodes_dataframe,node_id_column,epsg=4326,
     poly_df = pd.DataFrame(list(zip(poly_index, poly_list)),
                                    columns=['gid', 'geometry'])
     gdf_voronoi = gpd.GeoDataFrame(poly_df, geometry = 'geometry',crs=f'epsg:{epsg}')
-    gdf_voronoi['areas'] = gdf_voronoi.progress_apply(lambda x:x.geometry.area,axis=1)
+    # gdf_voronoi['areas'] = gdf_voronoi.progress_apply(lambda x:x.geometry.area,axis=1)
+    gdf_voronoi['areas'] = gdf_voronoi.geometry.area
     gdf_voronoi[node_id_column] = gdf_voronoi.progress_apply(
         lambda x: extract_nodes_within_gdf(x, nodes_dataframe, node_id_column), axis=1)
     if not kwargs.get('save',False):
