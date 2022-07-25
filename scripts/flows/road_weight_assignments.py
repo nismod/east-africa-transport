@@ -157,11 +157,12 @@ def main(config):
     gdp_assign = ["A","B","C","G"] # The sectors for which we want to disaggreagte GDP fraction values
     sector_gdps["gdp_areas_m2"] = sector_gdps.geometry.area
     sector_gdps[gdp_assign] = sector_gdps[gdp_assign].multiply(1.0/sector_gdps["gdp_areas_m2"],axis="index")
-    roads_gdp = find_areas_of_intersections(roads_voronoi,
-                                        sector_gdps,
-                                        road_id_column,
-                                        "GID_1",
-                                        column_values_per_area=gdp_assign)
+    roads_gdp = find_areas_of_intersections(
+                roads_voronoi[roads_voronoi["iso_code"].isin(list(set(sector_gdps["GID_0"].values.tolist())))],
+                sector_gdps,
+                road_id_column,
+                "GID_1",
+                column_values_per_area=gdp_assign)
     
     roads_voronoi = pd.merge(roads_voronoi,
                             roads_gdp[[road_id_column] + gdp_assign],
