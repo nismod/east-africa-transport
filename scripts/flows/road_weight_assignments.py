@@ -33,7 +33,16 @@ def find_areas_of_intersections(polygon_1,polygon_2,polygon_1_id,polygon_2_id,co
                             axis=1)
     if column_values_per_area is not None:
         # matches[values_per_area] = matches["areas_m2"]*matches[column_values_per_area]
-        matches[column_values_per_area] = matches[column_values_per_area].multiply(matches["areas_m2"],axis="index")
+        # matches[column_values_per_area] = matches[column_values_per_area].multiply(matches["areas_m2"],axis="index")
+        matches["population_over_area"] = matches["population_perm2"]*matches["areas_m2"]
+        polygon_2_populations = matches.groupby(polygon_2_id)["population_over_area"].sum().reset_index()
+        polygon_2_populations.rename(columns={"population_over_area":"total_pop"},inplace=True)
+        matches = pd.merge(matches, 
+                    polygon_2_populations[[polygon_2_id,'total_pop']],
+                    how="left",on=[polygon_2_id])
+        matches[column_values_per_area] = matches[column_values_per_area].multiply(
+                                                    matches["population_over_area"]/matches["total_pop"],
+                                                    axis="index")
         return matches.groupby([polygon_1_id])[column_values_per_area].sum().reset_index()
     else:
         return matches.groupby([polygon_1_id])["areas_m2"].sum().reset_index()
@@ -99,6 +108,7 @@ def main(config):
 
 
     roads_voronoi = gpd.GeoDataFrame(roads_voronoi,geometry="geometry",crs="EPSG:3857")
+    roads_voronoi["population_perm2"] = roads_voronoi[road_pop_column]/roads_voronoi["area_m2"]
     roads_iso_codes = list(set(roads_voronoi["iso_code"].values.tolist()))
 
     # Add MINING data
@@ -155,8 +165,8 @@ def main(config):
                         layer="level1")
     sector_gdps = sector_gdps.to_crs(epsg=3857)
     gdp_assign = ["A","B","C","G"] # The sectors for which we want to disaggreagte GDP fraction values
-    sector_gdps["gdp_areas_m2"] = sector_gdps.geometry.area
-    sector_gdps[gdp_assign] = sector_gdps[gdp_assign].multiply(1.0/sector_gdps["gdp_areas_m2"],axis="index")
+    # sector_gdps["gdp_areas_m2"] = sector_gdps.geometry.area
+    # sector_gdps[gdp_assign] = sector_gdps[gdp_assign].multiply(1.0/sector_gdps["gdp_areas_m2"],axis="index")
     roads_gdp = find_areas_of_intersections(
                 roads_voronoi[roads_voronoi["iso_code"].isin(list(set(sector_gdps["GID_0"].values.tolist())))],
                 sector_gdps,
