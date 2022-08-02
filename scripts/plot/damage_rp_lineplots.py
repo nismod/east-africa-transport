@@ -69,12 +69,12 @@ def main(config):
                                     #             damage_results_new.max.sum()])
 
                                     # VERSION 2:
-                                    # damage_results_sum = damage_results_new.sum(numeric_only=True, axis=0)
+                                    damage_results_sum = damage_results_new.sum(numeric_only=True, axis=0)
                     
-                                    # data.append([hazard, epoch, rcp, rp,
-                                    #             damage_results_sum.loc[damage_results_sum.index.str.contains('_mean')].mean(),
-                                    #             damage_results_sum.loc[damage_results_sum.index.str.contains('_amin')].min(),
-                                    #             damage_results_sum.loc[damage_results_sum.index.str.contains('_amax')].max()])
+                                    data.append([hazard, epoch, rcp, rp,
+                                                damage_results_sum.loc[damage_results_sum.index.str.contains('_mean')].mean(),
+                                                damage_results_sum.loc[damage_results_sum.index.str.contains('_amin')].min(),
+                                                damage_results_sum.loc[damage_results_sum.index.str.contains('_amax')].max()])
 
                                     # VERSION 3:
                                     # damage_results_sum = damage_results_new.sum(numeric_only=True, axis=0)
