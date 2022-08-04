@@ -385,8 +385,19 @@ def main(config):
                     destinations = destinations[destinations["weight"] > 0][["destination_id","iso3_D","weight"]]
                     if len(origins.index) > 0 and len(destinations.index) > 0:
                         ods = (origins.assign(dummy=1).merge(destinations.assign(dummy=1), on='dummy').drop('dummy', axis=1))
+                        ods = ods[["origin_id","destination_id",
+                        			"iso3_O","iso3_D","sector",
+                        			"from_tonnage","from_value","weight"]]
                         ods[["tonnage","value_usd"]] = ods[["from_tonnage","from_value"]].multiply(ods["weight"],axis="index")
-                        ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
+                        if len(origins.index) < len(destinations.index):
+                        	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
+                        else:
+                        	od_cols = ods.columns.values.tolist()
+                        	ods.columns = ["destination_id","origin_id"] + od_cols[2:]
+                        	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
+                        	od_cols = ods.columns.values.tolist()
+                        	ods.columns = ["origin_id","destination_id"] + od_cols[2:]
+
                         ods["hvt_pass"] = ods.apply(
                                                 lambda x:len(
                                                             hvt_network[
