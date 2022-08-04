@@ -9,8 +9,10 @@ import geopandas as gpd
 from scipy.spatial import Voronoi
 from shapely.geometry import Polygon, shape
 from scipy.interpolate import interp1d
+from collections import defaultdict
 from scipy import integrate
 from scipy.spatial import cKDTree
+import igraph as ig
 import fiona
 import math
 import numpy as np
@@ -24,66 +26,6 @@ def load_config():
         config = json.load(config_fh)
     return config
 
-
-def geopandas_read_file_type(file_path, file_layer, file_database=None):
-    if file_database is not None:
-        return gpd.read_file(os.path.join(file_path, file_database), layer=file_layer)
-    else:
-        return gpd.read_file(os.path.join(file_path, file_layer))
-
-def curve_interpolation(x_curve,y_curve,x_new):
-    if x_new <= x_curve[0]:
-        return y_curve[0]
-    elif x_new >= x_curve[-1]:
-        return y_curve[-1]
-    else:
-        interpolate_values = interp1d(x_curve, y_curve)
-        return interpolate_values(x_new)
-
-
-def expected_risks_pivot(v,probabilites,probability_threshold,flood_protection_column):
-    """Calculate expected risks
-    """
-    prob_risk = sorted([(p,getattr(v,str(p))) for p in probabilites],key=lambda x: x[0])
-    if probability_threshold != 1:
-        probability_threshold = getattr(v,flood_protection_column)
-        if probability_threshold > 0:
-            prob_risk = [pr for pr in prob_risk if pr[0] <= 1.0/probability_threshold]
-    
-    if len(prob_risk) > 1:
-        risks = integrate.trapz(np.array([x[1] for x in prob_risk]), np.array([x[0] for x in prob_risk]))
-    elif len(prob_risk) == 1:
-        risks = 0.5*prob_risk[0][0]*prob_risk[0][1]
-    else:
-        risks = 0
-    return risks
-
-def risks_pivot(dataframe,index_columns,probability_column,
-            risk_column,flood_protection_column,expected_risk_column,
-            flood_protection=None,flood_protection_name=None):
-    
-    """
-    Organise the dataframe to pivot with respect to index columns
-    Find the expected risks
-    """
-    if flood_protection is None:
-        # When there is no flood protection at all
-        expected_risk_column = '{}_undefended'.format(expected_risk_column) 
-        probability_threshold = 1 
-    else:
-        expected_risk_column = '{}_{}'.format(expected_risk_column,flood_protection_name)
-        probability_threshold = 0 
-        
-    probabilites = list(set(dataframe[probability_column].values.tolist()))
-    df = (dataframe.set_index(index_columns).pivot(
-                                    columns=probability_column
-                                    )[risk_column].reset_index().rename_axis(None, axis=1)).fillna(0)
-    df.columns = df.columns.astype(str)
-    df[expected_risk_column] = df.progress_apply(lambda x: expected_risks_pivot(x,probabilites,
-                                                        probability_threshold,
-                                                        flood_protection_column),axis=1)
-    
-    return df[index_columns + [expected_risk_column]]
 
 def gdf_geom_clip(gdf_in, clip_geom):
     """Filter a dataframe to contain only features within a clipping geometry
@@ -417,3 +359,234 @@ def split_multigeometry(dataframe,split_geometry_type="GeometryCollection"):
     dataframe = pd.concat([dataframe, simple_geom_geoms], axis=1)
 
     return dataframe
+
+def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
+    if mode == "road":
+        capacity_data = pd.read_csv(os.path.join(
+                                        load_config()["paths"]["data"],
+                                            "networks",
+                                            "road",
+                                            "roads_capacity_attributes.csv"))
+        edges = pd.merge(edges,capacity_data[["highway",
+                                        "lane_capacity_tons_per_day"]],
+                            how="left",
+                            on=["highway"])
+        edges["capacity"] = edges["lanes"]*edges["lane_capacity_tons_per_day"]
+    elif mode == "rail":
+        capacity_data = pd.read_csv(os.path.join(
+                                        load_config()["paths"]["data"],
+                                            "networks",
+                                            "rail",
+                                            "rail_capacity_attributes.csv"),encoding="latin1")
+        edges = pd.merge(edges,capacity_data[["country","line","status","gauge",
+                                        "design_capacity_tons_per_year",
+                                        "usage_design_ratio"]],
+                            how="left",
+                            on=["country","line","status","gauge"])
+        edges["capacity"] = 1.0/365*edges["design_capacity_tons_per_year"]*edges["usage_design_ratio"]
+    else:
+        edges["capacity"] = capacity_upper_limit
+
+    return edges
+
+def create_multi_modal_network_africa(modes=["road","rail","port","multi"],rail_status=["open"]):
+    network_columns = ["from_node","to_node","edge_id","min_flow_cost","max_flow_cost","capacity"]
+    road_edges = gpd.read_file(os.path.join(
+                        load_config()["paths"]["data"],
+                        "networks",
+                        "road",
+                        "roads.gpkg"), layer='edges')
+    road_edges["mode"] = "road"
+    road_edges = add_link_capacity(road_edges,mode="road")
+    rail_edges = gpd.read_file(os.path.join(
+                        load_config()["paths"]["data"],
+                        "networks",
+                        "rail",
+                        "rail.gpkg"),layer="edges")
+    rail_edges = rail_edges[rail_edges["status"].isin(rail_status)]
+    rail_edges["mode"] = "rail"
+    rail_edges = add_link_capacity(rail_edges,mode="rail")
+    port_edges = gpd.read_file(os.path.join(
+                        load_config()["paths"]["data"],
+                        "networks",
+                        "ports",
+                        "port.gpkg"),layer="edges")
+    port_edges["mode"] = "port"
+    multi_modal_edges = gpd.read_file(os.path.join(
+                        load_config()["paths"]["data"],
+                        "networks",
+                        "multimodal",
+                        "multi_modal.gpkg"),layer="edges")
+    multi_modal_edges["mode"] = "multi"
+    multi_modal_edges = add_link_capacity(multi_modal_edges)
+    network_edges = pd.concat([road_edges,rail_edges,
+                        port_edges,multi_modal_edges],
+                        axis=0,ignore_index=True)
+    network_edges = network_edges[network_edges["mode"].isin(modes)][network_columns]
+    G = ig.Graph.TupleList(network_edges.itertuples(index=False), edge_attrs=list(network_edges.columns)[2:])
+
+    return G
+
+def get_flow_on_edges(save_paths_df,edge_id_column,edge_path_column,
+    flow_column):
+    """Write results to Shapefiles
+
+    Outputs ``gdf_edges`` - a shapefile with minimum and maximum tonnage flows of all
+    commodities/industries for each edge of network.
+
+    Parameters
+    ---------
+    save_paths_df
+        Pandas DataFrame of OD flow paths and their tonnages
+    industry_columns
+        List of string names of all OD commodities/industries indentified
+    min_max_exist
+        List of string names of commodity/industry columns for which min-max tonnage column names already exist
+    gdf_edges
+        GeoDataFrame of network edge set
+    save_csv
+        Boolean condition to tell code to save created edge csv file
+    save_shapes
+        Boolean condition to tell code to save created edge shapefile
+    shape_output_path
+        Path where the output shapefile will be stored
+    csv_output_path
+        Path where the output csv file will be stored
+
+    """
+    edge_flows = defaultdict(float)
+    for row in save_paths_df.itertuples():
+        for item in getattr(row,edge_path_column):
+            edge_flows[item] += getattr(row,flow_column)
+
+    return pd.DataFrame([(k,v) for k,v in edge_flows.items()],columns=[edge_id_column,flow_column])
+
+
+def get_flow_paths_indexes_of_edges(flow_dataframe,path_criteria):
+    edge_path_index = defaultdict(list)
+    for k,v in zip(chain.from_iterable(flow_dataframe[path_criteria].ravel()), flow_dataframe.index.repeat(flow_dataframe[path_criteria].str.len()).tolist()):
+        edge_path_index[k].append(v)
+
+    del flow_dataframe
+    return edge_path_index
+
+def network_od_path_estimations(graph,
+    source, target, cost_criteria):
+    """Estimate the paths, distances, times, and costs for given OD pair
+
+    Parameters
+    ---------
+    graph
+        igraph network structure
+    source
+        String/Float/Integer name of Origin node ID
+    source
+        String/Float/Integer name of Destination node ID
+    tonnage : float
+        value of tonnage
+    vehicle_weight : float
+        unit weight of vehicle
+    cost_criteria : str
+        name of generalised cost criteria to be used: min_gcost or max_gcost
+    time_criteria : str
+        name of time criteria to be used: min_time or max_time
+    fixed_cost : bool
+
+    Returns
+    -------
+    edge_path_list : list[list]
+        nested lists of Strings/Floats/Integers of edge ID's in routes
+    path_dist_list : list[float]
+        estimated distances of routes
+    path_time_list : list[float]
+        estimated times of routes
+    path_gcost_list : list[float]
+        estimated generalised costs of routes
+
+    """
+    paths = graph.get_shortest_paths(source, target, weights=cost_criteria, output="epath")
+
+
+    edge_path_list = []
+    path_gcost_list = []
+    # for p in range(len(paths)):
+    for path in paths:
+        edge_path = []
+        path_gcost = 0
+        if path:
+            for n in path:
+                edge_path.append(graph.es[n]['edge_id'])
+                path_gcost += graph.es[n][cost_criteria]
+
+        edge_path_list.append(edge_path)
+        path_gcost_list.append(path_gcost)
+
+    
+    return edge_path_list, path_gcost_list
+
+def network_od_paths_assembly(points_dataframe, graph,
+                                cost_criteria):
+    """Assemble estimates of OD paths, distances, times, costs and tonnages on networks
+
+    Parameters
+    ----------
+    points_dataframe : pandas.DataFrame
+        OD nodes and their tonnages
+    graph
+        igraph network structure
+    region_name : str
+        name of Province
+    excel_writer
+        Name of the excel writer to save Pandas dataframe to Excel file
+
+    Returns
+    -------
+    save_paths_df : pandas.DataFrame
+        - origin - String node ID of Origin
+        - destination - String node ID of Destination
+        - min_edge_path - List of string of edge ID's for paths with minimum generalised cost flows
+        - max_edge_path - List of string of edge ID's for paths with maximum generalised cost flows
+        - min_netrev - Float values of estimated netrevenue for paths with minimum generalised cost flows
+        - max_netrev - Float values of estimated netrevenue for paths with maximum generalised cost flows
+        - min_croptons - Float values of estimated crop tons for paths with minimum generalised cost flows
+        - max_croptons - Float values of estimated crop tons for paths with maximum generalised cost flows
+        - min_distance - Float values of estimated distance for paths with minimum generalised cost flows
+        - max_distance - Float values of estimated distance for paths with maximum generalised cost flows
+        - min_time - Float values of estimated time for paths with minimum generalised cost flows
+        - max_time - Float values of estimated time for paths with maximum generalised cost flows
+        - min_gcost - Float values of estimated generalised cost for paths with minimum generalised cost flows
+        - max_gcost - Float values of estimated generalised cost for paths with maximum generalised cost flows
+
+    """
+    save_paths = []
+    points_dataframe = points_dataframe.set_index('origin_id')
+    origins = list(set(points_dataframe.index.values.tolist()))
+    for origin in origins:
+        try:
+            destinations = points_dataframe.loc[[origin], 'destination_id'].values.tolist()
+
+            get_path, get_gcost = network_od_path_estimations(
+                graph, origin, destinations, cost_criteria)
+
+            # tons = points_dataframe.loc[[origin], tonnage_column].values
+            save_paths += list(zip([origin]*len(destinations),
+                                destinations, get_path,
+                                get_gcost))
+
+            # print(f"done with {origin}")
+        except:
+            print(f"* no path between {origin}-{destinations}")
+    
+    cols = [
+        'origin_id', 'destination_id', 'edge_path','gcost'
+    ]
+    save_paths_df = pd.DataFrame(save_paths, columns=cols)
+    points_dataframe = points_dataframe.reset_index()
+    save_paths_df = pd.merge(save_paths_df, points_dataframe, how='left', on=[
+                             'origin_id', 'destination_id']).fillna(0)
+
+    # save_paths_df = save_paths_df[(save_paths_df[tonnage_column] > 0)
+    #                               & (save_paths_df['origin_id'] != 0)]
+    save_paths_df = save_paths_df[save_paths_df['origin_id'] != 0]
+
+    return save_paths_df
