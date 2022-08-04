@@ -191,7 +191,7 @@ def main(config):
                                                             trade_od,
                                                             airport_countries,
                                                             "export","air")
-
+    del air_import_exports
     """Step 2: Partition the flows to the maritime ports in HVT countries 
     """
     port_import_exports = pd.read_excel(os.path.join(processed_data_path,
@@ -213,6 +213,7 @@ def main(config):
                                                             trade_od,
                                                             port_countries,
                                                             "export","port")
+    del port_import_exports
     trade_node_od = pd.concat(trade_node_od,axis=0,ignore_index=True).fillna(0)
 
     index_columns = ["iso3_O","iso3_D", "node_id","trade_type","mode_type"]
