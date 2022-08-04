@@ -28,7 +28,7 @@ def load_config():
     return config
 
 
-def main(data_path, networks_csv, hazards_csv, country):
+def main(data_path, networks_csv, hazards_csv):
     # read transforms, record with hazards
     hazards = pandas.read_csv(hazards_csv)
     hazard_slug = os.path.basename(hazards_csv).replace(".csv", "")
@@ -41,7 +41,7 @@ def main(data_path, networks_csv, hazards_csv, country):
     for network_path in networks.path:
         fname = os.path.join(data_path, network_path)
         out_fname = os.path.join(
-            data_path, "..","..", "results", country, "hazard_asset_intersection",
+            data_path, "..", "results", "hazard_asset_intersection",
             os.path.basename(network_path).replace(".gpkg", f"_splits__{hazard_slug}.gpkg")
         )
         pq_fname_nodes = out_fname.replace(".gpkg","__nodes.geoparquet")
@@ -111,7 +111,7 @@ def read_transforms(hazards, data_path):
     hazard_transforms = []
     for hazard in hazards.itertuples():
         hazard_path = hazard.path
-        with rasterio.open(os.path.join(data_path, hazard_path)) as dataset:
+        with rasterio.open(os.path.join(data_path, 'hazards', hazard_path)) as dataset:
             crs = dataset.crs
             width = dataset.width
             height = dataset.height
@@ -154,7 +154,7 @@ def process_nodes(nodes, transforms, hazard_transforms, data_path):
     # associate hazard values
     for hazard in hazard_transforms.itertuples():
         logging.info("Hazard %s transform %s", hazard.key, hazard.transform_id)
-        fname = os.path.join(data_path, hazard.path)
+        fname = os.path.join(data_path,'hazards',hazard.path)
         cell_index_col = f'cell_index_{hazard.transform_id}'
         associate_raster(nodes, hazard.key, fname, cell_index_col)
 
@@ -191,7 +191,7 @@ def process_edges(edges, transforms, hazard_transforms, data_path):
     # associate hazard values
     for hazard in hazard_transforms.itertuples():
         logging.info("Hazard %s transform %s", hazard.key, hazard.transform_id)
-        fname = os.path.join(data_path, hazard.path)
+        fname = os.path.join(data_path,'hazards',hazard.path)
         cell_index_col = f'cell_index_{hazard.transform_id}'
         associate_raster(edges, hazard.key, fname, cell_index_col)
 
@@ -239,7 +239,7 @@ def process_areas(areas, transforms, hazard_transforms, data_path):
     # associate hazard values
     for hazard in hazard_transforms.itertuples():
         logging.info("Hazard %s transform %s", hazard.key, hazard.transform_id)
-        fname = os.path.join(data_path, hazard.path)
+        fname = os.path.join(data_path,'hazards',hazard.path)
         cell_index_col = f'cell_index_{hazard.transform_id}'
         associate_raster(areas, hazard.key, fname, cell_index_col)
 
@@ -322,39 +322,33 @@ def split_index_column(df, prefix):
 if __name__ == '__main__':
     # Load config
     CONFIG = load_config()
+
+    data_path = CONFIG["paths"]["data"]
+
+    networks_csv = os.path.join(data_path,'networks','network_layers.csv')
+
+    # Create a list of all layer file paths
+    chunks_path = os.path.join(data_path,'hazards','hazard_layers_chunks.csv')
+    chunks_csv = open(chunks_path, "r")
+
+    chunks = [(line.strip()) for line in chunks_csv]
+
+    chunks_csv.close()  
+
+    for i in chunks:
+        hazards_csv = os.path.join(data_path,'hazards',i)
+        print(networks_csv, hazards_csv)
         
-    countries = ["kenya", "tanzania", "uganda", "zambia"]
-    
-    for country in countries: 
-        path = CONFIG["paths"]["data"]
-        data_path = os.path.join(path, country)
+        # Ignore writing-to-parquet warnings
+        warnings.filterwarnings('ignore', message='.*initial implementation of Parquet.*')
+        # Ignore reading-geopackage warnings
+        warnings.filterwarnings('ignore', message='.*Sequential read of iterator was interrupted.*')
 
-        print (data_path)
+        # Enable progress_apply
+        tqdm.pandas()
 
-        networks_csv = os.path.join(data_path, 'network_layers.csv')
-
-        # Create a list of all layer file paths
-        chunks_path = os.path.join(data_path, 'hazard_layers_chunks.csv')
-        chunks_csv = open(chunks_path, "r")
-
-        chunks = [(line.strip()) for line in chunks_csv]
-
-        chunks_csv.close()  
-
-        for i in chunks:
-            hazards_csv = os.path.join(data_path,i)
-            print(networks_csv, hazards_csv)
-            
-            # Ignore writing-to-parquet warnings
-            warnings.filterwarnings('ignore', message='.*initial implementation of Parquet.*')
-            # Ignore reading-geopackage warnings
-            warnings.filterwarnings('ignore', message='.*Sequential read of iterator was interrupted.*')
-
-            # Enable progress_apply
-            tqdm.pandas()
-
-            # Enable info logging
-            logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
-            logging.info("Start.")
-            main(data_path, networks_csv, hazards_csv, country)
-            logging.info("Done.")
+        # Enable info logging
+        logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+        logging.info("Start.")
+        main(data_path, networks_csv, hazards_csv)
+        logging.info("Done.")

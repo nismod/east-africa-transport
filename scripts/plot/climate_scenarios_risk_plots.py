@@ -61,14 +61,14 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         ax_crs=4326,
                         edge_classify_column=None,
                         edge_categories=["1","2","3","4","5"],
-                        edge_colors=['#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026'],
+                        edge_colors=['#fd8d3c','#fc4e2a','#e31a1c','#bd0026', '#800026'], #'#feb24c',
                         edge_labels=[None,None,None,None,None],
                         edge_zorder=[6,7,8,9,10],
                         divisor=1.0,legend_label="Legend",
                         no_value_label="No value",
                         no_value_color="#969696",
                         line_steps=6,
-                        width_step=0.02,
+                        width_step=0.01,
                         interpolation="linear",
                         legend_size=8,
                         plot_title=False,
@@ -196,7 +196,7 @@ def main(config):
 
 
     admin_boundaries = os.path.join(processed_data_path,
-                                    "Admin_boundaries",
+                                    "admin_boundaries",
                                     "east_africa_admin_levels",
                                     "admin_levels.gpkg")
     lakes_path = os.path.join(processed_data_path,"naturalearth","ne_10m_lakes.shp")
@@ -216,7 +216,7 @@ def main(config):
 
             
     for sector in sector_details:
-        if sector["sector"] in ["road"]: #"road","rail"
+        if sector["sector"] in ["rail","road"]: #"road","rail"
             map_plot = map_country_codes[4] # regional
             edges = gpd.read_file(os.path.join(
                                     processed_data_path,
@@ -293,24 +293,24 @@ def main(config):
                                     arrow_location=(0.83,0.1)
                                     scalebar_location=(0.87,0.07)
                                 bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
-                                ax_proj = get_projection(extent=bounds)
+                                ax_proj = get_projection(extent=bounds)                                                            
+                                
+                                fig, ax_plots = plt.subplots(2,2,
+                                    subplot_kw={'projection': ax_proj},
+                                    figsize=figsize,
+                                    dpi=500)
 
-                                figsize = (12,12)
-                                                            
+                                ax_plots = ax_plots.flatten()
+
                                 for j in range(len(damages_filter_values)):
-
-                                    fig, ax = plt.subplots(1,1,
-                                        subplot_kw={'projection': ax_proj},
-                                        figsize=figsize,
-                                        dpi=500)
-
                                     edges_damages = get_asset_total_damage_values(sector,
                                                                 damage_data_path,damage_string,
                                                                 edges,
                                                                 damages_filter_columns,
                                                                 [damages_filter_values[j]],
                                                                 damage_groupby,damage_columns,"edge")
-                                    ax = get_axes(ax,extent=bounds)
+                                    ax = get_axes(ax_plots[j],extent=bounds)
+
                                     plot_basemap(ax, countries,lakes,
                                                 regions=regions
                                                 )
@@ -335,13 +335,13 @@ def main(config):
                                             weight='bold',
                                             zorder=24)                            
 
-                            
-                                    save_fig(
-                                            os.path.join(
-                                                folder_path, 
-                                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_climate_scenarios_{r}_{j}.png"
-                                                )
+                                plt.tight_layout()
+                                save_fig(
+                                        os.path.join(
+                                            folder_path, 
+                                            f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{h}_climate_scenarios_{r}.png"
                                             )
+                                        )
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings

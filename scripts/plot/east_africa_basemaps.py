@@ -25,7 +25,7 @@ def main(config):
 
 def make_basemap(config):
     processed_data_path = config['paths']['data']
-    admin_boundaries = os.path.join(processed_data_path,"Admin_boundaries","east_africa_admin_levels","admin_levels.gpkg")
+    admin_boundaries = os.path.join(processed_data_path,"admin_boundaries","east_africa_admin_levels","admin_levels.gpkg")
     lakes_path = os.path.join(processed_data_path,"naturalearth","ne_10m_lakes.shp")
 
     map_country_codes = [
