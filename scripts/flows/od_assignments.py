@@ -355,7 +355,7 @@ def main(config):
                                 )
                             )
     road_node_od_pairs = []
-    land_ods = land_ods[land_ods["iso3_O"].isin(["TZA"])]
+    # land_ods = land_ods[land_ods["iso3_O"].isin(["TZA"])]
     for i, (s,iwc,ewc,dic,dec) in enumerate(column_combinations):
         road_ods = land_ods[land_ods["sector"] == s]
         for row in road_ods.itertuples():
