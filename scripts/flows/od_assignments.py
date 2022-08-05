@@ -390,31 +390,32 @@ def main(config):
                         			"iso3_O","iso3_D","sector",
                         			"from_tonnage","from_value","weight"]]
                         ods[["tonnage","value_usd"]] = ods[["from_tonnage","from_value"]].multiply(ods["weight"],axis="index")
-                        ods = ods[ods["tonnage"] > tonnage_threshold]
-                        if len(origins.index) < len(destinations.index):
-                        	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
-                        else:
-                        	od_cols = ods.columns.values.tolist()
-                        	ods.columns = ["destination_id","origin_id"] + od_cols[2:]
-                        	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
-                        	od_cols = ods.columns.values.tolist()
-                        	ods.columns = ["origin_id","destination_id"] + od_cols[2:]
+                        ods = ods[ods["tonnage"] >= tonnage_threshold]
+                        if len(ods.index) > 0:
+                            if len(origins.index) < len(destinations.index):
+                            	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
+                            else:
+                            	od_cols = ods.columns.values.tolist()
+                            	ods.columns = ["destination_id","origin_id"] + od_cols[2:]
+                            	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
+                            	od_cols = ods.columns.values.tolist()
+                            	ods.columns = ["origin_id","destination_id"] + od_cols[2:]
 
-                        ods["hvt_pass"] = ods.apply(
-                                                lambda x:len(
-                                                            hvt_network[
-                                                                    hvt_network["edge_id"].isin(x.edge_path)
-                                                                    ].index
-                                                            ),axis=1)
-                        # ods = pd.merge(ods,ods_paths,how="left",on=["origin_id","destination_id"])
-                        # print (ods)
-                        # del ods_paths
-                        road_node_od_pairs.append(ods[ods["hvt_pass"] > 0][["origin_id",
-                                                        "destination_id",
-                                                        "iso3_O","iso3_D",
-                                                        "sector",
-                                                        "tonnage","value_usd"]])
-                        del ods
+                            ods["hvt_pass"] = ods.apply(
+                                                    lambda x:len(
+                                                                hvt_network[
+                                                                        hvt_network["edge_id"].isin(x.edge_path)
+                                                                        ].index
+                                                                ),axis=1)
+                            # ods = pd.merge(ods,ods_paths,how="left",on=["origin_id","destination_id"])
+                            # print (ods)
+                            # del ods_paths
+                            road_node_od_pairs.append(ods[ods["hvt_pass"] > 0][["origin_id",
+                                                            "destination_id",
+                                                            "iso3_O","iso3_D",
+                                                            "sector",
+                                                            "tonnage","value_usd"]])
+                            del ods
 
             print (f"* Done with {row.iso3_O}-{row.iso3_D} for sector {s}")
 
@@ -451,7 +452,7 @@ def main(config):
                         "total_value_usd",
                         "total_tonnage"]]
 
-    od_pairs[od_pairs["total_tonnage"] > tonnage_threshold].to_csv(os.path.join(results_data_path,
+    od_pairs[od_pairs["total_tonnage"] >= tonnage_threshold].to_csv(os.path.join(results_data_path,
                                                             "flow_paths",
                                                             "od_matrix_nodes.csv"),index=False)
 
