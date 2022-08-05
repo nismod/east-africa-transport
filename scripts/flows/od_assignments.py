@@ -144,6 +144,7 @@ def main(config):
     processed_data_path = config['paths']['data']
     results_data_path = config['paths']['results']
 
+    tonnage_threshold = 0.1
     trade_od = pd.read_csv(os.path.join(processed_data_path,
                                         "flow_od_data",
                                         "hvt_trade_2015_modified.csv"))  
@@ -389,6 +390,7 @@ def main(config):
                         			"iso3_O","iso3_D","sector",
                         			"from_tonnage","from_value","weight"]]
                         ods[["tonnage","value_usd"]] = ods[["from_tonnage","from_value"]].multiply(ods["weight"],axis="index")
+                        ods = ods[ods["tonnage"] > tonnage_threshold]
                         if len(origins.index) < len(destinations.index):
                         	ods = network_od_paths_assembly(ods,network_graph,"max_flow_cost")
                         else:
@@ -449,7 +451,6 @@ def main(config):
                         "total_value_usd",
                         "total_tonnage"]]
 
-    tonnage_threshold = 0.1
     od_pairs[od_pairs["total_tonnage"] > tonnage_threshold].to_csv(os.path.join(results_data_path,
                                                             "flow_paths",
                                                             "od_matrix_nodes.csv"),index=False)
