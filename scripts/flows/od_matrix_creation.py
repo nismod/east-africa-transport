@@ -441,7 +441,7 @@ def main(config):
     print (od_pairs)
 
     sector_value_columns = [f"{s}_value_usd" for s in sector_columns]
-    sector_tonnage_columns = [f"{s}_value_usd" for s in sector_columns]
+    sector_tonnage_columns = [f"{s}_tonnage" for s in sector_columns]
     od_pairs["total_value_usd"] = od_pairs[sector_value_columns].sum(axis=1)
     od_pairs["total_tonnage"] = od_pairs[sector_tonnage_columns].sum(axis=1)
 
