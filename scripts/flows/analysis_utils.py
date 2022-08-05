@@ -371,6 +371,8 @@ def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
                                         "lane_capacity_tons_per_day"]],
                             how="left",
                             on=["highway"])
+        # No idea why some edges have lanes = 0
+        edges["lanes"] = np.where(edges["lanes"] == 0,1,edges["lanes"])
         edges["capacity"] = edges["lanes"]*edges["lane_capacity_tons_per_day"]
     elif mode == "rail":
         capacity_data = pd.read_csv(os.path.join(
@@ -389,7 +391,9 @@ def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
 
     return edges
 
-def create_multi_modal_network_africa(modes=["road","rail","port","multi"],rail_status=["open"]):
+def create_multi_modal_network_africa(modes=["road","rail","port","multi"],
+                                rail_status=["open"],
+                                return_network=True):
     network_columns = ["from_node","to_node","edge_id","min_flow_cost","max_flow_cost","capacity"]
     road_edges = gpd.read_file(os.path.join(
                         load_config()["paths"]["data"],
@@ -423,9 +427,11 @@ def create_multi_modal_network_africa(modes=["road","rail","port","multi"],rail_
                         port_edges,multi_modal_edges],
                         axis=0,ignore_index=True)
     network_edges = network_edges[network_edges["mode"].isin(modes)][network_columns]
-    G = ig.Graph.TupleList(network_edges.itertuples(index=False), edge_attrs=list(network_edges.columns)[2:])
-
-    return G
+    if return_network is True:
+        G = ig.Graph.TupleList(network_edges.itertuples(index=False), edge_attrs=list(network_edges.columns)[2:])
+        return G
+    else:
+        return network_edges
 
 def get_flow_on_edges(save_paths_df,edge_id_column,edge_path_column,
     flow_column):
@@ -590,3 +596,89 @@ def network_od_paths_assembly(points_dataframe, graph,
     save_paths_df = save_paths_df[save_paths_df['origin_id'] != 0]
 
     return save_paths_df
+
+def od_assignment_capacity_constrained(od_dataframe,net_df,
+                network_id_column,
+                cost_column,
+                flow_column,capacity_column,
+                assigned_flow_columns=['od_index','origin_id', 'destination_id', 'edge_path',
+                    'distance', 'time', 'gcost', 'tons']):
+    """
+    Starting assumption is that we have an OD matrix and a network
+    The network edge capacities are assigned to begin with
+    """
+    save_paths = []
+    unassigned_paths = []
+    od_len = len(od_dataframe.index)
+    minimum_capacity = min(net_df[capacity_column])
+    for row in od_dataframe.itertuples():
+        od_index = getattr(row,'od_index')
+        origin = getattr(row,'origin_id')
+        destination = getattr(row,'destination_id')
+        tons = getattr(row,flow_column)
+        a = min(tons,minimum_capacity)
+        while a > 0:
+            # net_df = add_dataframe_generalised_costs(net_df, np.ceil(
+            #             a/vehicle_weight), a)
+            net_df['over_cap'] = net_df[flow_column] - net_df[capacity_column]
+            # print (net_df)
+            graph = ig.Graph.TupleList(net_df[net_df['over_cap'] < 0].itertuples(index=False), 
+                                edge_attrs=list(net_df[net_df['over_cap'] < 0].columns)[2:])
+            graph_nodes = [x['name'] for x in graph.vs]
+            if (origin in graph_nodes) and (destination in graph_nodes): 
+                # get_path, get_dist, get_time, get_gcost = network_od_path_estimation_new(
+                #     graph, origin, [destination],cost_column, time_column)
+
+                path = graph.get_shortest_paths(origin, [destination], weights=cost_column, output="epath")[0]
+                if path:
+                    # get_dist = sum([x for x in graph.es[path]['length']])
+                    # get_time = sum([x for x in graph.es[path][time_column]])
+                    get_gcost = sum([x for x in graph.es[path][cost_column]])
+                    get_path = [x for x in graph.es[path]['edge_id']]
+                    # save_paths.append((od_index,origin, destination,
+                    #                 get_path, get_dist, 
+                    #                 get_time, get_gcost,a))
+                    save_paths.append((od_index,origin, destination,
+                                    get_path, get_gcost,a))
+                    get_flows = pd.DataFrame(list(zip(get_path,[a]*len(get_path))),columns=[network_id_column,'flows'])
+                    # print (list(zip(get_path,[a]*len(get_path))))
+                    # print (get_flows)
+                    net_df = pd.merge(net_df,get_flows,how='left',on=[network_id_column])
+                    net_df['flows'].fillna(0,inplace=True)
+                    net_df[flow_column] = net_df[flow_column] + net_df['flows']
+                    net_df.drop('flows',axis=1,inplace=True)
+                else:
+                    # unassigned_paths.append((od_index,origin, destination,[],0,0,0,a))
+                    unassigned_paths.append((od_index,origin, destination,[],0,a))
+            else:
+                # unassigned_paths.append((od_index,origin, destination,[],0,0,0,a))
+                unassigned_paths.append((od_index,origin, destination,[],0,a))
+
+            tons = tons - minimum_capacity
+            cap = net_df[capacity_column] - net_df[flow_column]
+            # print (cap)
+            minimum_capacity = min(cap[cap > 1.0e-3])
+            del cap
+            a = min(tons,minimum_capacity)
+            # print (tons,minimum_capacity,a)
+        print("done with {} out of {}".format(row.Index,od_len))
+        
+    net_df['over_cap'] = net_df['over_cap'].mask(net_df['over_cap'] >= 0, 1)
+    net_df['over_cap'] = net_df['over_cap'].mask(net_df['over_cap'] < 0, 0)
+
+    # cols = ['origin', 'destination', 'edge_path',
+    #         'distance', 'time', 'gcost', 'tons']
+    save_paths_df = pd.DataFrame(save_paths, columns=assigned_flow_columns)
+    del save_paths
+    unassigned_df = pd.DataFrame(unassigned_paths,columns=assigned_flow_columns)
+    # points_dataframe = points_dataframe.reset_index()
+    # save_paths_df = pd.merge(save_paths_df, points_dataframe, how='left', on=[
+    #                          'origin_id', 'destination_id']).fillna(0)
+
+    # save_paths_df = save_paths_df[(save_paths_df[max_tons_column] > 0)
+    #                               & (save_paths_df['origin_id'] != 0)]
+    # if csv_output_path:
+    #     save_paths_df.to_csv(csv_output_path, index=False, encoding='utf-8-sig')
+    # del save_paths
+
+    return save_paths_df, unassigned_df, net_df
