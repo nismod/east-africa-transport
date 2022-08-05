@@ -10,6 +10,7 @@ from scipy.spatial import Voronoi
 from shapely.geometry import Polygon, shape
 from scipy.interpolate import interp1d
 from collections import defaultdict
+from itertools import chain
 from scipy import integrate
 from scipy.spatial import cKDTree
 import igraph as ig
@@ -416,6 +417,7 @@ def create_multi_modal_network_africa(modes=["road","rail","port","multi"],
                         "ports",
                         "port.gpkg"),layer="edges")
     port_edges["mode"] = "port"
+    port_edges = add_link_capacity(port_edges)
     multi_modal_edges = gpd.read_file(os.path.join(
                         load_config()["paths"]["data"],
                         "networks",
