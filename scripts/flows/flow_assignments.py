@@ -50,7 +50,7 @@ def main(config):
                         f"edge_flows_capacity_constrained_{t_eph}.csv")
         
         ods_df = ods_data_df.copy()
-        ods[ods_values_columns] = ((1+1.0*gdp_growth_rate/100.0)**(t_eph - baseline_od_year))*ods[ods_values_columns]
+        ods_df[ods_values_columns] = ((1+1.0*gdp_growth_rate/100.0)**(t_eph - baseline_od_year))*ods_df[ods_values_columns]
         all_ods = ods_df[["origin_id","destination_id",tonnage_column]]
         if t_eph > time_epochs[0]:
             rail_status = ["open"]
