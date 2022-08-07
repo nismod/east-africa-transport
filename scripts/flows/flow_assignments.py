@@ -46,7 +46,7 @@ def main(config):
     unassigned_paths = []
     itr = 0
     # while len(net_df[net_df["over_capacity"] < -1.0e-3].index) > 0:
-    while len(all_ods.index) > 0 or itr < 5:
+    while len(all_ods.index) > 0 and itr < 5:
         itr+= 1
         graph = ig.Graph.TupleList(
                         net_df[
