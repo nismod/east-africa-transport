@@ -418,7 +418,7 @@ def create_multi_modal_network_africa(modes=["road","rail","port","multi"],
                         "rail.gpkg"),layer="edges")
     rail_edges = rail_edges[rail_edges["status"].isin(rail_status)]
     rail_edges["mode"] = "rail"
-    rail_edges = add_link_capacity(rail_edges,rail_future_usage=rail_future_usage,,mode="rail")
+    rail_edges = add_link_capacity(rail_edges,rail_future_usage=rail_future_usage,mode="rail")
     port_edges = gpd.read_file(os.path.join(
                         load_config()["paths"]["data"],
                         "networks",
