@@ -581,7 +581,7 @@ def network_od_paths_assembly(points_dataframe, graph,
                                 destinations, get_path,
                                 get_gcost))
 
-            # print(f"done with {origin}")
+            print(f"done with {origin}")
         except:
             print(f"* no path between {origin}-{destinations}")
     
