@@ -361,7 +361,7 @@ def split_multigeometry(dataframe,split_geometry_type="GeometryCollection"):
 
     return dataframe
 
-def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
+def add_link_capacity(edges,road_future_usage=None,rail_future_usage=None,mode=None,capacity_upper_limit=1e10):
     if mode == "road":
         capacity_data = pd.read_csv(os.path.join(
                                         load_config()["paths"]["data"],
@@ -375,6 +375,9 @@ def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
         # No idea why some edges have lanes = 0
         edges["lanes"] = np.where(edges["lanes"] == 0,1,edges["lanes"])
         edges["capacity"] = edges["lanes"]*edges["lane_capacity_tons_per_day"]
+        if road_future_usage is not None:
+            edges["capacity"] = (1+road_future_usage)*edges["capacity"]
+
     elif mode == "rail":
         capacity_data = pd.read_csv(os.path.join(
                                         load_config()["paths"]["data"],
@@ -386,7 +389,10 @@ def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
                                         "usage_design_ratio"]],
                             how="left",
                             on=["country","line","status","gauge"])
-        edges["capacity"] = 1.0/365*edges["design_capacity_tons_per_year"]*edges["usage_design_ratio"]
+        if rail_future_usage is not None:
+            edges["capacity"] = 1.0/365*rail_future_usage*edges["design_capacity_tons_per_year"]
+        else:
+            edges["capacity"] = 1.0/365*edges["design_capacity_tons_per_year"]*edges["usage_design_ratio"]
     else:
         edges["capacity"] = capacity_upper_limit
 
@@ -394,6 +400,8 @@ def add_link_capacity(edges,mode=None,capacity_upper_limit=1e10):
 
 def create_multi_modal_network_africa(modes=["road","rail","port","multi"],
                                 rail_status=["open"],
+                                road_future_usage=None,
+                                rail_future_usage=None,
                                 return_network=True):
     network_columns = ["from_node","to_node","edge_id","min_flow_cost","max_flow_cost","capacity"]
     road_edges = gpd.read_file(os.path.join(
@@ -402,7 +410,7 @@ def create_multi_modal_network_africa(modes=["road","rail","port","multi"],
                         "road",
                         "roads.gpkg"), layer='edges')
     road_edges["mode"] = "road"
-    road_edges = add_link_capacity(road_edges,mode="road")
+    road_edges = add_link_capacity(road_edges,road_future_usage=road_future_usage,mode="road")
     rail_edges = gpd.read_file(os.path.join(
                         load_config()["paths"]["data"],
                         "networks",
@@ -410,7 +418,7 @@ def create_multi_modal_network_africa(modes=["road","rail","port","multi"],
                         "rail.gpkg"),layer="edges")
     rail_edges = rail_edges[rail_edges["status"].isin(rail_status)]
     rail_edges["mode"] = "rail"
-    rail_edges = add_link_capacity(rail_edges,mode="rail")
+    rail_edges = add_link_capacity(rail_edges,rail_future_usage=rail_future_usage,,mode="rail")
     port_edges = gpd.read_file(os.path.join(
                         load_config()["paths"]["data"],
                         "networks",
@@ -581,7 +589,7 @@ def network_od_paths_assembly(points_dataframe, graph,
                                 destinations, get_path,
                                 get_gcost))
 
-            print(f"done with {origin}")
+            # print(f"done with {origin}")
         except:
             print(f"* no path between {origin}-{destinations}")
     
