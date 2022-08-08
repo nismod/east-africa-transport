@@ -54,9 +54,10 @@ def main(config):
     connecting_pairs = [(rail_nodes,port_nodes,"rail","port"),
                     (port_nodes,road_nodes,"port","road"),
                     (airport_nodes,road_nodes,"airport","road"),
-                    (rail_nodes,road_nodes,"rail","road")]
+                    (rail_nodes[~rail_nodes["facility"].isna()],road_nodes,"rail","road")]
+
     edges = []
-    distance_threshold = 100.0
+    distance_threshold = 20  # This is 20 km which is very big. Unfortunately we have to take such a big limit as the locations of assets are not exact
     for i, (df_0,df_2,from_mode,to_mode) in enumerate(connecting_pairs):
         df_1 = df_0.copy()
         df_1["from_node"] = df_1["node_id"]

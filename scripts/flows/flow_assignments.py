@@ -26,19 +26,19 @@ def main(config):
     results_data_path = config['paths']['results']
 
     time_epochs = [2019,2030,2050,2080]
-    # Assumption that all road link capacities in the future will increase by 10%,20%,30%
-    road_capacity_factors = [None,0.1,0.2,0.3]
+    # Assumption that all road link capacities in the future will increase by 10%,30%,50%
+    road_capacity_factors = [None,0.1,0.3,0.5]
     # Assumption that all rail line capacities in the future will be at 30%, 50% and 80% of design capacity
     rail_capacity_factors = [None,0.3,0.5,0.8]
     baseline_od_year = 2015
-    gdp_growth_rate = 6  # 6% growth rate assumed for the EAC region
+    gdp_growth_rate = 5  # 4% growth rate assumed for the EAC region
 
     tonnage_column = "total_tonnage"
     cost_column = "max_flow_cost"
-    od_columns = ["origin_id","destination_id","iso3_O","iso3_D"]
+    od_columns = ["origin_id","destination_id"]
     ods_data_df = pd.read_csv(os.path.join(results_data_path,
                                         "flow_paths",
-                                        "od_matrix_nodes.csv"))
+                                        "od_matrix_nodes_unique_pairs.csv"))
     ods_values_columns = [c for c in ods_data_df.columns.values.tolist() if c not in od_columns] 
     flow_combinations = list(zip(time_epochs,road_capacity_factors,rail_capacity_factors))
     for f_idx,(t_eph,road_cf,rail_cf) in enumerate(flow_combinations):   
@@ -178,7 +178,6 @@ def main(config):
                                                 capacity_ods["assigned_tonnage"]/capacity_ods[tonnage_column],
                                                 axis="index")
             capacity_ods.drop("assigned_tonnage",axis=1,inplace=True)
-            capacity_ods.to_csv(assigned_output_path,index=False)
             # print (capacity_ods)
 
             net_df = network_df.copy()
@@ -188,6 +187,11 @@ def main(config):
                 del edge_tonnages
 
             net_df.to_csv(edge_flows_path,index=False)
+
+            capacity_ods["edge_path"] = capacity_ods["edge_path"].astype(str)
+            vc = [c for c in capacity_ods.columns.values.tolist() if c not in ["origin_id","destination_id","edge_path"]]
+            capacity_ods.groupby(["origin_id","destination_id","edge_path"])[vc].sum().reset_index()
+            capacity_ods.to_csv(assigned_output_path,index=False)
 
         if len(unassigned_paths) > 0:
             unassigned_paths = pd.concat(unassigned_paths,axis=0,ignore_index=True)

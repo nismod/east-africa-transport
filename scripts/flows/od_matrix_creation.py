@@ -461,6 +461,37 @@ def main(config):
                             "od_matrix_nodes_detailed.csv"),index=False)
 
 
+    """Get the smallest combination unique OD-pairs to eliminate bi-directional flow assignments
+    """
+
+    od_pairs.drop(["iso3_O","iso3_D"],axis=1,inplace=True)
+    value_columns = [c for c in od_pairs.columns.values.tolist() if c not in ["origin_id","destination_id"]]
+    od_pairs = od_pairs[["origin_id","destination_id"] + value_columns]
+    od_freq = od_pairs[["origin_id","destination_id"]].apply(pd.Series.value_counts).astype(float).fillna(0)
+    od_freq["total"] = od_freq["origin_id"] + od_freq["destination_id"]
+    
+    od_freq = od_freq.reset_index().sort_values(by="total",ascending=False)
+    od_pairs_unique = []
+    for od in od_freq.itertuples():
+    	if len(od_pairs) == 0:
+    		break
+    	else:
+    		origins = od_pairs[od_pairs["origin_id"] == od.index]
+    		destinations = od_pairs[od_pairs["destination_id"] == od.index]
+    		destinations.columns = ["destination_id","origin_id"] + value_columns
+    		od_pairs_unique.append(origins)
+    		od_pairs_unique.append(destinations)
+    		indexes = origins.index.values.tolist() + destinations.index.values.tolist()
+    		od_pairs = od_pairs[~od_pairs.index.isin(indexes)]
+
+    od_pairs_unique = pd.concat(od_pairs_unique,axis=0,ignore_index=True)
+    od_pairs_unique = od_pairs_unique.groupby(["origin_id","destination_id"])[value_columns].sum().reset_index()
+    od_pairs_unique.to_csv(os.path.join(results_data_path,
+                            "flow_paths",
+                            "od_matrix_nodes_unique_pairs.csv"),index=False)
+
+
+
 if __name__ == '__main__':
     CONFIG = load_config()
     main(CONFIG)
