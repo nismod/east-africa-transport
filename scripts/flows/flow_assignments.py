@@ -31,7 +31,7 @@ def main(config):
     # Assumption that all rail line capacities in the future will be at 30%, 50% and 80% of design capacity
     rail_capacity_factors = [None,0.3,0.5,0.8]
     baseline_od_year = 2015
-    gdp_growth_rate = 5  # 4% growth rate assumed for the EAC region
+    gdp_growth_rate = 5  # 5% growth rate assumed for the EAC region
 
     flow_column = "total_tonnage"
     cost_column = "max_flow_cost"
