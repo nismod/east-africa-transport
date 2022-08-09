@@ -486,6 +486,18 @@ def get_flow_paths_indexes_of_edges(flow_dataframe,path_criteria):
     del flow_dataframe
     return edge_path_index
 
+def get_path_indexes_for_edges(edge_ids_with_paths,selected_edge_list):
+    return list(
+            set(
+                list(
+                    chain.from_iterable([
+                        path_idx for path_key,path_idx in edge_ids_with_paths.items() if path_key in selected_edge_list
+                                        ]
+                                        )
+                    )
+                )
+            )
+
 def network_od_path_estimations(graph,
     source, target, cost_criteria):
     """Estimate the paths, distances, times, and costs for given OD pair
@@ -607,7 +619,113 @@ def network_od_paths_assembly(points_dataframe, graph,
 
     return save_paths_df
 
-def od_assignment_capacity_constrained(od_dataframe,net_df,
+def update_flow_and_overcapacity(od_dataframe,network_dataframe,flow_column,edge_id_column="edge_id"):
+    edge_flows = get_flow_on_edges(od_dataframe,edge_id_column,"edge_path",flow_column)
+    edge_flows.rename(columns={flow_column:"added_flow"},inplace=True)
+    network_dataframe = pd.merge(network_dataframe,edge_flows,how="left",on=[edge_id_column]).fillna(0)
+    del edge_flows
+    network_dataframe[flow_column] += network_dataframe["added_flow"]
+    network_dataframe["over_capacity"] = network_dataframe["capacity"] - network_dataframe[flow_column]
+
+    return network_dataframe
+
+def find_minimal_flows_along_overcapacity_paths(over_capacity_ods,network_dataframe,over_capacity_edges,edge_id_paths,flow_column):
+    over_capacity_edges_df = pd.DataFrame([
+                                (
+                                    path_key,path_idx
+                                ) for path_key,path_idx in edge_id_paths.items() if path_key in over_capacity_edges
+                            ],columns = ["edge_id","path_indexes"]
+                                )
+    over_capacity_edges_df = pd.merge(over_capacity_edges_df,
+                                network_dataframe[["edge_id","residual_capacity","added_flow"]],
+                                how="left",
+                                on=["edge_id"])
+    over_capacity_edges_df["edge_path_flow"] = over_capacity_edges_df.progress_apply(
+                                        lambda x:over_capacity_ods[
+                                            over_capacity_ods.path_indexes.isin(x.path_indexes)
+                                            ][flow_column].values,
+                                        axis=1
+                                        )
+    over_capacity_edges_df["edge_path_flow_cor"] = over_capacity_edges_df.progress_apply(
+                                        lambda x:list(
+                                            1.0*x.residual_capacity*x.edge_path_flow/x.added_flow),
+                                        axis=1
+                                        )
+    over_capacity_edges_df["path_flow_tuples"] = over_capacity_edges_df.progress_apply(
+                                        lambda x:list(zip(x.path_indexes,x.edge_path_flow_cor)),axis=1)
+
+    min_flows = []
+    for r in over_capacity_edges_df.itertuples():
+        min_flows += r.path_flow_tuples
+
+    min_flows = pd.DataFrame(min_flows,columns=["path_indexes","min_flows"])
+    min_flows = min_flows.sort_values(by=["min_flows"],ascending=True)
+    min_flows = min_flows.drop_duplicates(subset=["path_indexes"],keep="first")
+
+    over_capacity_ods = pd.merge(over_capacity_ods,min_flows,how="left",on=["path_indexes"])
+    del min_flows, over_capacity_edges_df
+    over_capacity_ods["residual_flows"] = over_capacity_ods[flow_column] - over_capacity_ods["min_flows"]
+
+    return over_capacity_ods
+
+def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_column,cost_column):
+    network_dataframe["over_capacity"] = network_dataframe["capacity"] - network_dataframe[flow_column]
+    capacity_ods = []
+    unassigned_paths = []
+    while len(flow_ods.index) > 0:
+        graph = ig.Graph.TupleList(network_dataframe[network_dataframe["over_capacity"] > 1e-3].itertuples(index=False), 
+                        edge_attrs=list(network_dataframe[network_dataframe["over_capacity"] > 1e-3].columns)[2:])
+        graph_nodes = [x['name'] for x in graph.vs]
+        unassigned_paths.append(flow_ods[~((flow_ods["origin_id"].isin(graph_nodes)) & (flow_ods["destination_id"].isin(graph_nodes)))])
+        flow_ods = flow_ods[(flow_ods["origin_id"].isin(graph_nodes)) & (flow_ods["destination_id"].isin(graph_nodes))]
+        if len(flow_ods.index) > 0:
+            flow_ods = network_od_paths_assembly(flow_ods,graph,cost_column)
+            unassigned_paths.append(flow_ods[flow_ods["edge_path"].astype(str) == '[]'])
+            flow_ods = flow_ods[flow_ods["edge_path"].astype(str) != '[]']
+            if len(flow_ods.index) > 0:
+                # print (flow_ods)
+                network_dataframe["residual_capacity"] = network_dataframe["over_capacity"]
+                network_dataframe = update_flow_and_overcapacity(flow_ods,network_dataframe,flow_column)
+                over_capacity_edges = network_dataframe[network_dataframe["over_capacity"] < -1.0e-3]["edge_id"].values.tolist()
+                if len(over_capacity_edges) > 0:
+                    network_dataframe[flow_column] = network_dataframe[flow_column] - network_dataframe["added_flow"] 
+                    edge_id_paths = get_flow_paths_indexes_of_edges(flow_ods,"edge_path")
+                    edge_paths_overcapacity = get_path_indexes_for_edges(edge_id_paths,over_capacity_edges)
+                    capacity_ods.append(flow_ods[~flow_ods.index.isin(edge_paths_overcapacity)])
+
+                    over_capacity_ods = flow_ods[flow_ods.index.isin(edge_paths_overcapacity)]
+                    over_capacity_ods["path_indexes"] = over_capacity_ods.index.values.tolist()
+                    over_capacity_ods = find_minimal_flows_along_overcapacity_paths(over_capacity_ods,network_dataframe,
+                                                                over_capacity_edges,edge_id_paths,flow_column)
+                    cap_ods = over_capacity_ods.copy() 
+                    cap_ods.drop(["path_indexes",flow_column,"residual_flows"],axis=1,inplace=True)
+                    cap_ods.rename(columns={"min_flows":flow_column},inplace=True)
+                    capacity_ods.append(cap_ods)
+                    # del cap_ods
+
+                    network_dataframe.drop("added_flow",axis=1,inplace=True)
+                    network_dataframe = update_flow_and_overcapacity(cap_ods,network_dataframe,flow_column)
+                    network_dataframe.drop("added_flow",axis=1,inplace=True)
+                    del cap_ods
+
+                    over_capacity_ods = over_capacity_ods[over_capacity_ods["residual_flows"]/over_capacity_ods[flow_column] > 0.01]
+                    over_capacity_ods.drop(["path_indexes","edge_path","gcost",flow_column,"min_flows"],axis=1,inplace=True)
+                    over_capacity_ods.rename(columns={"residual_flows":flow_column},inplace=True)
+                    flow_ods = over_capacity_ods.copy()
+
+                    # cap_ods = pd.concat(capacity_ods,axis=0,ignore_index=True)
+                    # edge_flows = get_flow_on_edges(cap_ods,"edge_id","edge_path",flow_column)
+                    # network_dataframe = pd.merge(network_df.copy(),edge_flows,how="left",on=["edge_id"]).fillna(0)
+                    # network_dataframe["over_capacity"] = network_dataframe["capacity"] - network_dataframe[flow_column]
+                    # del cap_ods
+                else:
+                    capacity_ods.append(flow_ods)
+                    network_dataframe.drop(["residual_capacity","added_flow"],axis=1,inplace=True)
+                    flow_ods = pd.DataFrame()
+
+    return capacity_ods, unassigned_paths
+
+def od_assignment_capacity_constrained_slow(od_dataframe,network_dataframe,
                 network_id_column,
                 cost_column,
                 flow_column,capacity_column,
@@ -620,7 +738,7 @@ def od_assignment_capacity_constrained(od_dataframe,net_df,
     save_paths = []
     unassigned_paths = []
     od_len = len(od_dataframe.index)
-    minimum_capacity = min(net_df[capacity_column])
+    minimum_capacity = min(network_dataframe[capacity_column])
     for row in od_dataframe.itertuples():
         od_index = getattr(row,'od_index')
         origin = getattr(row,'origin_id')
@@ -628,67 +746,40 @@ def od_assignment_capacity_constrained(od_dataframe,net_df,
         tons = getattr(row,flow_column)
         a = min(tons,minimum_capacity)
         while a > 0:
-            # net_df = add_dataframe_generalised_costs(net_df, np.ceil(
-            #             a/vehicle_weight), a)
-            net_df['over_cap'] = net_df[flow_column] - net_df[capacity_column]
-            # print (net_df)
-            graph = ig.Graph.TupleList(net_df[net_df['over_cap'] < 0].itertuples(index=False), 
-                                edge_attrs=list(net_df[net_df['over_cap'] < 0].columns)[2:])
+            network_dataframe['over_cap'] = network_dataframe[flow_column] - network_dataframe[capacity_column]
+            graph = ig.Graph.TupleList(network_dataframe[network_dataframe['over_cap'] < 0].itertuples(index=False), 
+                                edge_attrs=list(network_dataframe[network_dataframe['over_cap'] < 0].columns)[2:])
             graph_nodes = [x['name'] for x in graph.vs]
             if (origin in graph_nodes) and (destination in graph_nodes): 
-                # get_path, get_dist, get_time, get_gcost = network_od_path_estimation_new(
-                #     graph, origin, [destination],cost_column, time_column)
-
                 path = graph.get_shortest_paths(origin, [destination], weights=cost_column, output="epath")[0]
                 if path:
-                    # get_dist = sum([x for x in graph.es[path]['length']])
-                    # get_time = sum([x for x in graph.es[path][time_column]])
                     get_gcost = sum([x for x in graph.es[path][cost_column]])
                     get_path = [x for x in graph.es[path]['edge_id']]
-                    # save_paths.append((od_index,origin, destination,
-                    #                 get_path, get_dist, 
-                    #                 get_time, get_gcost,a))
                     save_paths.append((od_index,origin, destination,
                                     get_path, get_gcost,a))
                     get_flows = pd.DataFrame(list(zip(get_path,[a]*len(get_path))),columns=[network_id_column,'flows'])
-                    # print (list(zip(get_path,[a]*len(get_path))))
-                    # print (get_flows)
-                    net_df = pd.merge(net_df,get_flows,how='left',on=[network_id_column])
-                    net_df['flows'].fillna(0,inplace=True)
-                    net_df[flow_column] = net_df[flow_column] + net_df['flows']
-                    net_df.drop('flows',axis=1,inplace=True)
+                    network_dataframe = pd.merge(network_dataframe,get_flows,how='left',on=[network_id_column])
+                    network_dataframe['flows'].fillna(0,inplace=True)
+                    network_dataframe[flow_column] = network_dataframe[flow_column] + network_dataframe['flows']
+                    network_dataframe.drop('flows',axis=1,inplace=True)
                 else:
-                    # unassigned_paths.append((od_index,origin, destination,[],0,0,0,a))
                     unassigned_paths.append((od_index,origin, destination,[],0,a))
             else:
-                # unassigned_paths.append((od_index,origin, destination,[],0,0,0,a))
                 unassigned_paths.append((od_index,origin, destination,[],0,a))
 
             tons = tons - minimum_capacity
-            cap = net_df[capacity_column] - net_df[flow_column]
-            # print (cap)
+            cap = network_dataframe[capacity_column] - network_dataframe[flow_column]
             minimum_capacity = min(cap[cap > 1.0e-3])
             del cap
             a = min(tons,minimum_capacity)
-            # print (tons,minimum_capacity,a)
         print("done with {} out of {}".format(row.Index,od_len))
         
-    net_df['over_cap'] = net_df['over_cap'].mask(net_df['over_cap'] >= 0, 1)
-    net_df['over_cap'] = net_df['over_cap'].mask(net_df['over_cap'] < 0, 0)
+    network_dataframe['over_cap'] = network_dataframe['over_cap'].mask(network_dataframe['over_cap'] >= 0, 1)
+    network_dataframe['over_cap'] = network_dataframe['over_cap'].mask(network_dataframe['over_cap'] < 0, 0)
 
-    # cols = ['origin', 'destination', 'edge_path',
-    #         'distance', 'time', 'gcost', 'tons']
     save_paths_df = pd.DataFrame(save_paths, columns=assigned_flow_columns)
     del save_paths
     unassigned_df = pd.DataFrame(unassigned_paths,columns=assigned_flow_columns)
-    # points_dataframe = points_dataframe.reset_index()
-    # save_paths_df = pd.merge(save_paths_df, points_dataframe, how='left', on=[
-    #                          'origin_id', 'destination_id']).fillna(0)
 
-    # save_paths_df = save_paths_df[(save_paths_df[max_tons_column] > 0)
-    #                               & (save_paths_df['origin_id'] != 0)]
-    # if csv_output_path:
-    #     save_paths_df.to_csv(csv_output_path, index=False, encoding='utf-8-sig')
-    # del save_paths
 
-    return save_paths_df, unassigned_df, net_df
+    return save_paths_df, unassigned_df, network_dataframe

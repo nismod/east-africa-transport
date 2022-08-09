@@ -88,13 +88,13 @@ def match_nodes_edges_to_countries(nodes,edges,countries):
     
     return nodes, edges
 
-def assign_rail_speeds(x):
+def assign_rail_speeds(x,minimum_speed=70):
     if x.status in ["proposed","construction","rehabilitation"]:
         return 120
     elif x.time_freight > 0:
-        return max(round(0.001*x["length"]/(x["time_freight"]/60.0),0),30)
+        return max(round(0.001*x["length"]/(x["time_freight"]/60.0),0),minimum_speed)
     else:
-        return 30
+        return minimum_speed
 
 def main(config):
     data_path = config['paths']['data']
