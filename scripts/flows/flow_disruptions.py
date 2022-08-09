@@ -74,24 +74,19 @@ def flow_disruption_estimation(network_dataframe, edge_failure_set,
 
     return reassinged_flows, no_flows
 
-def main(config):
+def main(config,year,failure_results,min_node_number,max_node_number):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
     results_data_path = config['paths']['results']
 
-    failure_results = os.path.join(results_data_path,"flow_disruptions")
-    if os.path.exists(failure_results) == False:
-        os.mkdir(failure_results)
-
     flow_column = "total_tonnage"
     flow_value_usd = "total_value_usd"
     cost_column = "max_flow_cost"
-    od_columns = ["origin_id","destination_id","edge_path"]
-    t_eph = 2019
+    od_columns = ["origin_id","destination_id","edge_path","gcost"]
     od_flows_file = os.path.join(results_data_path,"flow_paths",
-                    f"flow_paths_assigned_{t_eph}.csv")
+                    f"flow_paths_assigned_{year}.csv")
     edge_flows_file = os.path.join(results_data_path,"flow_paths",
-                    f"edge_flows_capacity_constrained_{t_eph}.csv")
+                    f"edge_flows_capacity_constrained_{year}.csv")
     
     flow_df = pd.read_csv(od_flows_file)
     ods_values_columns = [c for c in flow_df.columns.values.tolist() if c not in od_columns] 
@@ -101,46 +96,65 @@ def main(config):
 
     # Perform failure analysis
     # Generate a failure sample. We will update this later
-    road_rail_edges = [e for e in network_df["edge_id"].values.tolist() if "roade" in e or "raile" in e]
-    fail_sample = network_df[network_df["edge_id"].isin(road_rail_edges)].sort_values(by=flow_column,ascending=False)
-    fail_sample = fail_sample["edge_id"].values.tolist()
 
-    ef_list = []
-    for fail_edges in fail_sample[:20]:
-        if isinstance(fail_edges,list) == False:
-            fail_edges = [fail_edges]
+    # Get the list of nodes of the initiating sector to fail
+    damages_results_path = os.path.join(results_data_path,"risk_results","direct_damages_summary")
 
-        if network_df[network_df["edge_id"].isin(fail_edges)][flow_column].sum() > 0: 
-            rerouted_flows, isolated_flows = flow_disruption_estimation(network_df,fail_edges,
-                                                flow_df,edge_path_idx,"edge_id",flow_column,
-                                                cost_column)
+    rail_failure_edges = pd.read_csv(os.path.join(damages_results_path,"rail_edges_damages.csv"))
+    road_failure_edges = pd.read_csv(os.path.join(damages_results_path,"road_edges_damages.csv"))
 
-            rerouting_loss = 0
-            isolation_loss = 0
-            if len(rerouted_flows) > 0:
-                for rf in rerouted_flows:
-                    rf["rerouting_loss"] = (rf["gcost"]  - rf["old_cost"])*rf[flow_column]
-                    rerouting_loss += rf["rerouting_loss"].sum()
-            if len(isolated_flows) > 0:
-                for is_fl in isolated_flows:
-                    isolation_loss += is_fl[flow_value_usd].sum()
-            
-            if len(fail_edges) == 1:
-                ef_list.append((fail_edges[0],rerouting_loss,isolation_loss,rerouting_loss + isolation_loss))
+    all_failures = rail_failure_edges["edge_id"].values.tolist() + road_failure_edges["edge_id"].values.tolist()
+    
+    if max_node_number > len(all_failures):
+        max_node_number = len(all_failures)
+    #  Start the failure simiulations by looping over each failure scenario corresponding to an inidviual failed edge
+    if min_node_number < len(all_failures):
+        ef_list = []
+        for nd in range(min_node_number,max_node_number):
+            fail_edges = all_failures[nd]
+            if isinstance(fail_edges,list) == False:
+                fail_edges = [fail_edges]
+
+            if network_df[network_df["edge_id"].isin(fail_edges)][flow_column].sum() > 0: 
+                rerouted_flows, isolated_flows = flow_disruption_estimation(network_df,fail_edges,
+                                                    flow_df,edge_path_idx,"edge_id",flow_column,
+                                                    cost_column)
+
+                rerouting_loss = 0
+                isolation_loss = 0
+                if len(rerouted_flows) > 0:
+                    for rf in rerouted_flows:
+                        rf["rerouting_loss"] = (rf["gcost"]  - rf["old_cost"])*rf[flow_column]
+                        rerouting_loss += rf["rerouting_loss"].sum()
+                if len(isolated_flows) > 0:
+                    for is_fl in isolated_flows:
+                        isolation_loss += is_fl[flow_value_usd].sum()
+                
+                if len(fail_edges) == 1:
+                    ef_list.append((fail_edges[0],rerouting_loss,isolation_loss,rerouting_loss + isolation_loss))
+                else:
+                    ef_list.append((fail_edges,rerouting_loss,isolation_loss,rerouting_loss + isolation_loss))
             else:
-                ef_list.append((fail_edges,rerouting_loss,isolation_loss,rerouting_loss + isolation_loss))
-        else:
-            if len(fail_edges) == 1:
-                ef_list.append((fail_edges[0],0,0,0))
-            else:
-                ef_list.append((fail_edges,0,0,0))
+                if len(fail_edges) == 1:
+                    ef_list.append((fail_edges[0],0,0,0))
+                else:
+                    ef_list.append((fail_edges,0,0,0))
 
-        print (f"* Done with failure scenario {fail_edges}")
+            print (f"* Done with failure scenario {fail_edges}")
 
-    ef_list = pd.DataFrame(ef_list,columns=["edge_id","rerouting_loss","isolation_loss","economic_loss"])
-    ef_list.to_csv(os.path.join(failure_results,
-                    "flow_disruption_losses.csv"),index=False)
+        ef_list = pd.DataFrame(ef_list,columns=["edge_id","rerouting_loss","isolation_loss","economic_loss"])
+        ef_list.to_csv(os.path.join(failure_results,
+                        f"flow_disruption_losses_{min_node_number}_{max_node_number}.csv"),index=False)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     CONFIG = load_config()
-    main(CONFIG)
+    try:
+        year = sys.argv[1]
+        failure_results = sys.argv[2]
+        min_node_number = int(sys.argv[3])
+        max_node_number = int(sys.argv[4])
+    except IndexError:
+        print("Got arguments", sys.argv)
+        exit()
+        
+    main(CONFIG,year,failure_results,min_node_number, max_node_number)
