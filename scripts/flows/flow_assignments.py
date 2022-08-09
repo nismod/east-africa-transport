@@ -26,13 +26,10 @@ def main(config):
     results_data_path = config['paths']['results']
 
     time_epochs = [2019,2030,2050,2080]
-    time_epochs = [2019,2030]
     # Assumption that all road link capacities in the future will increase by 10%,30%,50%
     road_capacity_factors = [None,0.1,0.3,0.5]
-    road_capacity_factors = [None,0.1]
     # Assumption that all rail line capacities in the future will be at 30%, 50% and 80% of design capacity
     rail_capacity_factors = [None,0.3,0.5,0.8]
-    rail_capacity_factors = [None,0.3]
     baseline_od_year = 2015
     gdp_growth_rate = 5  # 4% growth rate assumed for the EAC region
 
