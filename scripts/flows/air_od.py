@@ -39,12 +39,21 @@ def main(config):
     processed_data_path = config['paths']['data']
     results_data_path = config['paths']['results']
 
-    trade_od = pd.read_csv(os.path.join(processed_data_path,"flow_od_data","africa_trade_2015_modified.csv"))
+    iso_codes = ["KEN","TZA","UGA","ZMB"]
+    trade_od = pd.read_csv(os.path.join(processed_data_path,
+                                        "flow_od_data",
+                                        "hvt_trade_2015_modified.csv"))
+    air_imports = trade_od[trade_od["iso3_D"].isin(iso_codes)].groupby(["iso3_D"])[["q_sea_predict","v_sea_predict"]].sum().reset_index() 
+    print (air_imports)
+
+    air_exports = trade_od[trade_od["iso3_O"].isin(iso_codes)].groupby(["iso3_O"])[["q_sea_predict","v_sea_predict"]].sum().reset_index()
+    print (air_exports)    
+
     trade_node_od = []
     airport_nodes = gpd.read_file(os.path.join(processed_data_path,
                                     "networks",
                                     "airports",
-                                    "airports_modified.gpkg"),layer="nodes")
+                                    "air.gpkg"),layer="nodes")
     airport_nodes["Freight"] = airport_nodes.progress_apply(lambda x:float(str(x["Freight"]).replace(",",'')),axis=1)
     trade_columns = ["node_id","iso3_O","iso3_D","Industries","trade_type",
                 "q_air_predict_road","v_air_predict_road","freight_fraction"]

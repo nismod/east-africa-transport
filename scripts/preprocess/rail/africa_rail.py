@@ -10,12 +10,31 @@ import geopandas as gpd
 import pandas as pd
 from geopy import distance
 import shapely.geometry
+import igraph as ig
+import networkx
 from shapely.geometry import Point, shape, mapping
 from boltons.iterutils import pairwise
 from tqdm import tqdm
 tqdm.pandas()
 from utils import *
 from pyproj import Geod
+
+def components(edges,nodes,node_id_col):
+    G = networkx.Graph()
+    G.add_nodes_from(
+        (getattr(n, node_id_col), {"geometry": n.geometry}) for n in nodes.itertuples()
+    )
+    G.add_edges_from(
+        (e.from_node, e.to_node, {"edge_id": e.edge_id, "geometry": e.geometry})
+        for e in edges.itertuples()
+    )
+    components = networkx.connected_components(G)
+    for num, c in enumerate(components):
+        print(f"Component {num} has {len(c)} nodes")
+        edges.loc[(edges.from_node.isin(c) | edges.to_node.isin(c)), "component"] = num
+        nodes.loc[nodes[node_id_col].isin(c), "component"] = num
+
+    return edges, nodes
 
 def convert_json_geopandas(df,epsg=4326):
     layer_dict = []    
@@ -69,6 +88,13 @@ def match_nodes_edges_to_countries(nodes,edges,countries):
     
     return nodes, edges
 
+def assign_rail_speeds(x,minimum_speed=70):
+    if x.status in ["proposed","construction","rehabilitation"]:
+        return 120
+    elif x.time_freight > 0:
+        return max(round(0.001*x["length"]/(x["time_freight"]/60.0),0),minimum_speed)
+    else:
+        return minimum_speed
 
 def main(config):
     data_path = config['paths']['data']
@@ -127,7 +153,7 @@ def main(config):
     edges['length_m'] = edges.progress_apply(lambda x:float(geod.geometry_length(x.geometry)),axis=1)
     
     # Add speeds
-    edges["speed_freight"] = edges.progress_apply(lambda x:round(0.001*x["length"]/(x["time_freight"]/60.0),2) if x["time_freight"] > 0 else 30.0,axis=1)
+    edges["speed_freight"] = edges.progress_apply(lambda x:assign_rail_speeds(x),axis=1)
     speed_uncertainty = 0.1
     edges["min_speed"] = (1 - speed_uncertainty)*edges["speed_freight"]
     edges["max_speed"] = (1 + speed_uncertainty)*edges["speed_freight"]
@@ -173,12 +199,20 @@ def main(config):
 
     # Prepare for export and finish
     edges = gpd.GeoDataFrame(edges,geometry="geometry",crs="EPSG:4326")
-    
+    edges, nodes = components(edges,nodes,"node_id")
     print("Ready to export")
     edges.to_file(out_fname, layer='edges', driver='GPKG')
     nodes.to_file(out_fname, layer='nodes', driver='GPKG')
     
     print("Done.")
+
+    # pd.DataFrame(list(set(zip(edges["country"].values.tolist(),
+    #                     edges["line"].values.tolist(),
+    #                     edges["status"].values.tolist(),
+    #                     edges["gauge"].values.tolist()))),
+    #                     columns=["country","line","status","gauge"]).to_csv(os.path.join(data_path,
+    #                                     "networks","rail",
+    #                                     "rail_line_attributes.csv"),index=False)
 
 if __name__ == '__main__':
     CONFIG = load_config()
