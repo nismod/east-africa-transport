@@ -51,10 +51,11 @@ def main(config):
 
     all_failures = rail_failure_edges["edge_id"].values.tolist() + road_failure_edges["edge_id"].values.tolist()
 
-    num_blocks = 200 # Number of partitions of the networks edges created for parallel processing
+    num_partitions = 200 # Number of partitions of the networks edges created for parallel processing
+    num_blocks = 20
     scenarios = [2019,2030,2050,2080]
     for sc in scenarios:    
-        num_values = np.linspace(0,len(all_failures)-1,num_blocks)
+        num_values = np.linspace(0,len(all_failures)-1,num_partitions)
         fp = os.path.join(failure_results,str(sc))
         if os.path.exists(fp) == False:
             os.mkdir(fp)
