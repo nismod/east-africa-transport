@@ -553,7 +553,7 @@ def network_od_path_estimations(graph,
     return edge_path_list, path_gcost_list
 
 def network_od_paths_assembly(points_dataframe, graph,
-                                cost_criteria):
+                                cost_criteria,store_edge_path=True):
     """Assemble estimates of OD paths, distances, times, costs and tonnages on networks
 
     Parameters
@@ -609,6 +609,9 @@ def network_od_paths_assembly(points_dataframe, graph,
         'origin_id', 'destination_id', 'edge_path','gcost'
     ]
     save_paths_df = pd.DataFrame(save_paths, columns=cols)
+    if store_edge_path is False:
+        save_paths_df.drop("edge_path",axis=1,inplace=True)
+
     points_dataframe = points_dataframe.reset_index()
     save_paths_df = pd.merge(save_paths_df, points_dataframe, how='left', on=[
                              'origin_id', 'destination_id']).fillna(0)
@@ -668,7 +671,7 @@ def find_minimal_flows_along_overcapacity_paths(over_capacity_ods,network_datafr
 
     return over_capacity_ods
 
-def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_column,cost_column):
+def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_column,cost_column,store_edge_path=True):
     network_dataframe["over_capacity"] = network_dataframe["capacity"] - network_dataframe[flow_column]
     capacity_ods = []
     unassigned_paths = []
@@ -679,9 +682,9 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
         unassigned_paths.append(flow_ods[~((flow_ods["origin_id"].isin(graph_nodes)) & (flow_ods["destination_id"].isin(graph_nodes)))])
         flow_ods = flow_ods[(flow_ods["origin_id"].isin(graph_nodes)) & (flow_ods["destination_id"].isin(graph_nodes))]
         if len(flow_ods.index) > 0:
-            flow_ods = network_od_paths_assembly(flow_ods,graph,cost_column)
-            unassigned_paths.append(flow_ods[flow_ods["edge_path"].astype(str) == '[]'])
-            flow_ods = flow_ods[flow_ods["edge_path"].astype(str) != '[]']
+            flow_ods = network_od_paths_assembly(flow_ods,graph,cost_column,store_edge_path=store_edge_path)
+            unassigned_paths.append(flow_ods[flow_ods["gcost"] == 0])
+            flow_ods = flow_ods[flow_ods["gcost"] > 0]
             if len(flow_ods.index) > 0:
                 # print (flow_ods)
                 network_dataframe["residual_capacity"] = network_dataframe["over_capacity"]

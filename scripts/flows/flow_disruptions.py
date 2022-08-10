@@ -71,7 +71,8 @@ def flow_disruption_estimation(network_dataframe, edge_failure_set,
     reassinged_flows, no_flows = od_flow_allocation_capacity_constrained(affected_flows,
                                     network_df_in[~network_df_in[edge_id_column].isin(edge_failure_set)],
                                     flow_column,cost_column)
-
+    del network_df_in, affected_flows
+    
     return reassinged_flows, no_flows
 
 def main(config,year,failure_results,min_node_number,max_node_number):
@@ -130,6 +131,8 @@ def main(config,year,failure_results,min_node_number,max_node_number):
                     for is_fl in isolated_flows:
                         isolation_loss += is_fl[flow_value_usd].sum()
                 
+                del rerouted_flows, isolated_flows
+
                 if len(fail_edges) == 1:
                     ef_list.append((fail_edges[0],rerouting_loss,isolation_loss,rerouting_loss + isolation_loss))
                 else:
