@@ -85,13 +85,17 @@ def main(config,year,failure_results,min_node_number,max_node_number):
     cost_column = "max_flow_cost"
     od_columns = ["origin_id","destination_id","edge_path","gcost"]
     od_flows_file = os.path.join(results_data_path,"flow_paths",
-                    f"flow_paths_assigned_{year}.csv")
+                    f"flow_paths_assigned_{year}.parquet")
     edge_flows_file = os.path.join(results_data_path,"flow_paths",
                     f"edge_flows_capacity_constrained_{year}.csv")
     
-    flow_df = pd.read_csv(od_flows_file)
+    # flow_df = pd.read_csv(od_flows_file)
+    # ods_values_columns = [c for c in flow_df.columns.values.tolist() if c not in od_columns] 
+    # flow_df['edge_path'] = flow_df.progress_apply(lambda x:ast.literal_eval(x['edge_path']),axis=1)
+
+
+    flow_df = pd.read_parquet(od_flows_file)
     ods_values_columns = [c for c in flow_df.columns.values.tolist() if c not in od_columns] 
-    flow_df['edge_path'] = flow_df.progress_apply(lambda x:ast.literal_eval(x['edge_path']),axis=1)
     edge_path_idx = get_flow_paths_indexes_of_edges(flow_df,'edge_path')
     network_df = pd.read_csv(edge_flows_file)
 

@@ -622,12 +622,15 @@ def network_od_paths_assembly(points_dataframe, graph,
 
     return save_paths_df
 
-def update_flow_and_overcapacity(od_dataframe,network_dataframe,flow_column,edge_id_column="edge_id"):
+def update_flow_and_overcapacity(od_dataframe,network_dataframe,flow_column,edge_id_column="edge_id",subtract=False):
     edge_flows = get_flow_on_edges(od_dataframe,edge_id_column,"edge_path",flow_column)
     edge_flows.rename(columns={flow_column:"added_flow"},inplace=True)
     network_dataframe = pd.merge(network_dataframe,edge_flows,how="left",on=[edge_id_column]).fillna(0)
     del edge_flows
-    network_dataframe[flow_column] += network_dataframe["added_flow"]
+    if subtract is True:
+        network_dataframe[flow_column] = network_dataframe[flow_column] - network_dataframe["added_flow"]
+    else:
+        network_dataframe[flow_column] += network_dataframe["added_flow"]
     network_dataframe["over_capacity"] = network_dataframe["capacity"] - network_dataframe[flow_column]
 
     return network_dataframe
@@ -643,6 +646,8 @@ def find_minimal_flows_along_overcapacity_paths(over_capacity_ods,network_datafr
                                 network_dataframe[["edge_id","residual_capacity","added_flow"]],
                                 how="left",
                                 on=["edge_id"])
+    # print (over_capacity_edges_df)
+    # print (over_capacity_ods)
     over_capacity_edges_df["edge_path_flow"] = over_capacity_edges_df.progress_apply(
                                         lambda x:over_capacity_ods[
                                             over_capacity_ods.path_indexes.isin(x.path_indexes)
@@ -691,7 +696,6 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
                 network_dataframe = update_flow_and_overcapacity(flow_ods,network_dataframe,flow_column)
                 over_capacity_edges = network_dataframe[network_dataframe["over_capacity"] < -1.0e-3]["edge_id"].values.tolist()
                 if len(over_capacity_edges) > 0:
-                    network_dataframe[flow_column] = network_dataframe[flow_column] - network_dataframe["added_flow"] 
                     edge_id_paths = get_flow_paths_indexes_of_edges(flow_ods,"edge_path")
                     edge_paths_overcapacity = get_path_indexes_for_edges(edge_id_paths,over_capacity_edges)
                     capacity_ods.append(flow_ods[~flow_ods.index.isin(edge_paths_overcapacity)])
@@ -704,23 +708,19 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
                     cap_ods.drop(["path_indexes",flow_column,"residual_flows"],axis=1,inplace=True)
                     cap_ods.rename(columns={"min_flows":flow_column},inplace=True)
                     capacity_ods.append(cap_ods)
-                    # del cap_ods
-
-                    network_dataframe.drop("added_flow",axis=1,inplace=True)
-                    network_dataframe = update_flow_and_overcapacity(cap_ods,network_dataframe,flow_column)
-                    network_dataframe.drop("added_flow",axis=1,inplace=True)
                     del cap_ods
 
-                    over_capacity_ods = over_capacity_ods[over_capacity_ods["residual_flows"]/over_capacity_ods[flow_column] > 0.01]
-                    over_capacity_ods.drop(["path_indexes","edge_path","gcost",flow_column,"min_flows"],axis=1,inplace=True)
+                    over_capacity_ods["residual_ratio"] = over_capacity_ods["residual_flows"]/over_capacity_ods[flow_column]
+                    over_capacity_ods.drop(["path_indexes",flow_column,"min_flows"],axis=1,inplace=True)
                     over_capacity_ods.rename(columns={"residual_flows":flow_column},inplace=True)
-                    flow_ods = over_capacity_ods.copy()
 
-                    # cap_ods = pd.concat(capacity_ods,axis=0,ignore_index=True)
-                    # edge_flows = get_flow_on_edges(cap_ods,"edge_id","edge_path",flow_column)
-                    # network_dataframe = pd.merge(network_df.copy(),edge_flows,how="left",on=["edge_id"]).fillna(0)
-                    # network_dataframe["over_capacity"] = network_dataframe["capacity"] - network_dataframe[flow_column]
-                    # del cap_ods
+                    network_dataframe.drop("added_flow",axis=1,inplace=True)
+                    network_dataframe = update_flow_and_overcapacity(over_capacity_ods,
+                                                        network_dataframe,flow_column,subtract=True)
+                    network_dataframe.drop("added_flow",axis=1,inplace=True)
+                    flow_ods = over_capacity_ods[over_capacity_ods["residual_ratio"] > 0.01]
+                    flow_ods.drop(["edge_path","gcost","residual_ratio"],axis=1,inplace=True)
+                    del over_capacity_ods
                 else:
                     capacity_ods.append(flow_ods)
                     network_dataframe.drop(["residual_capacity","added_flow"],axis=1,inplace=True)

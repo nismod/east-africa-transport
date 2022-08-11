@@ -56,26 +56,32 @@ def main(config):
     scenarios = [2019,2030,2050,2080]
     # scenarios = [2030,2050,2080]
     for sc in scenarios:    
+        run_results = False
         num_values = np.linspace(0,len(all_failures)-1,num_partitions)
         fp = os.path.join(failure_results,str(sc))
         if os.path.exists(fp) == False:
             os.mkdir(fp)
         with open(f"parallel_{sc}.txt","w+") as f:
-            for n in range(len(num_values)-1):  
-                f.write(f'{sc},{fp},{int(num_values[n])},{int(num_values[n+1])}\n')        
+            for n in range(len(num_values)-1): 
+                min_value = num_values[n]
+                max_value = min(num_values[n+1],len(all_failures)) 
+                if os.path.isfile(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv"):
+                    f.write(f'{sc},{fp},{int(min_value)},{int(max_value)}\n')   
+                    run_results = True     
         f.close()
-    
-        args = ["parallel",
-                "-j", str(num_blocks),
-                "--colsep", ",",
-                "-a",
-                f"parallel_{sc}.txt",
-                "python",
-                "flow_disruptions.py",
-                "{}"
-                ]
-        print (args)
-        subprocess.run(args)
+        
+        if run_results is True:
+            args = ["parallel",
+                    "-j", str(num_blocks),
+                    "--colsep", ",",
+                    "-a",
+                    f"parallel_{sc}.txt",
+                    "python",
+                    "flow_disruptions.py",
+                    "{}"
+                    ]
+            print (args)
+            subprocess.run(args)
                                 
 if __name__ == '__main__':
     CONFIG = load_config()

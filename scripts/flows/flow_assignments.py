@@ -42,10 +42,14 @@ def main(config):
     ods_values_columns = [c for c in ods_data_df.columns.values.tolist() if c not in od_columns] 
     flow_combinations = list(zip(time_epochs,road_capacity_factors,rail_capacity_factors))
     for f_idx,(t_eph,road_cf,rail_cf) in enumerate(flow_combinations):   
+        # assigned_output_path = os.path.join(results_data_path,"flow_paths",
+        #                 f"flow_paths_assigned_{t_eph}.csv")
+        # unassigned_output_path = os.path.join(results_data_path,"flow_paths",
+        #                 f"flow_paths_unassignment_{t_eph}.csv")
         assigned_output_path = os.path.join(results_data_path,"flow_paths",
-                        f"flow_paths_assigned_{t_eph}.csv")
+                        f"flow_paths_assigned_{t_eph}.parquet")
         unassigned_output_path = os.path.join(results_data_path,"flow_paths",
-                        f"flow_paths_unassignment_{t_eph}.csv")
+                        f"flow_paths_unassignment_{t_eph}.parquet")
         edge_flows_path = os.path.join(results_data_path,"flow_paths",
                         f"edge_flows_capacity_constrained_{t_eph}.csv")
         
@@ -83,16 +87,20 @@ def main(config):
                 net_df = pd.merge(net_df,edge_flows,how="left",on=["edge_id"]).fillna(0)
                 del edge_flows
 
+            net_df["over_capacity"] = net_df["capacity"] - net_df[flow_column]
             net_df.to_csv(edge_flows_path,index=False)
 
             capacity_ods["edge_path"] = capacity_ods["edge_path"].astype(str)
             vc = [c for c in capacity_ods.columns.values.tolist() if c not in ["origin_id","destination_id","edge_path"]]
             capacity_ods.groupby(["origin_id","destination_id","edge_path"])[vc].sum().reset_index()
-            capacity_ods.to_csv(assigned_output_path,index=False)
+            # capacity_ods.to_csv(assigned_output_path,index=False)
+            capacity_ods.to_parquet(assigned_output_path,index=False)
+
 
         if len(unassigned_paths) > 0:
             unassigned_paths = pd.concat(unassigned_paths,axis=0,ignore_index=True)
-            unassigned_paths.to_csv(unassigned_output_path,index=False)
+            # unassigned_paths.to_csv(unassigned_output_path,index=False)
+            unassigned_paths.to_parquet(unassigned_output_path,index=False)
             # print (unassigned_paths)
 
 if __name__ == '__main__':
