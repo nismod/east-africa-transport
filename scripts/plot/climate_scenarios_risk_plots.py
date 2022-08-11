@@ -61,14 +61,14 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         ax_crs=4326,
                         edge_classify_column=None,
                         edge_categories=["1","2","3","4","5"],
-                        edge_colors=['#fd8d3c','#fc4e2a','#e31a1c','#bd0026', '#800026'], #'#feb24c',
+                        edge_colors=['#d82e00','#b31c11','#841f0f','#5e0709','#200000'],
                         edge_labels=[None,None,None,None,None],
                         edge_zorder=[6,7,8,9,10],
                         divisor=1.0,legend_label="Legend",
                         no_value_label="No value",
                         no_value_color="#969696",
                         line_steps=6,
-                        width_step=0.01,
+                        width_step=0.02,
                         interpolation="linear",
                         legend_size=8,
                         plot_title=False,
@@ -93,7 +93,7 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                                 width_step=width_step, 
                                 n_steps=line_steps,
                                 interpolation=interpolation)
-    min_width = 0.8*width_step
+    min_width = 0.5*width_step
     min_order = min(edge_zorder)
 
     if edge_classify_column is None:
@@ -196,7 +196,7 @@ def main(config):
 
 
     admin_boundaries = os.path.join(processed_data_path,
-                                    "admin_boundaries",
+                                    "Admin_boundaries",
                                     "east_africa_admin_levels",
                                     "admin_levels.gpkg")
     lakes_path = os.path.join(processed_data_path,"naturalearth","ne_10m_lakes.shp")
@@ -298,7 +298,7 @@ def main(config):
                                 fig, ax_plots = plt.subplots(2,2,
                                     subplot_kw={'projection': ax_proj},
                                     figsize=figsize,
-                                    dpi=500)
+                                    dpi=300)
 
                                 ax_plots = ax_plots.flatten()
 
