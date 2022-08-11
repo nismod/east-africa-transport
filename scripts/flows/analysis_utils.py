@@ -478,10 +478,19 @@ def get_flow_on_edges(save_paths_df,edge_id_column,edge_path_column,
     return pd.DataFrame([(k,v) for k,v in edge_flows.items()],columns=[edge_id_column,flow_column])
 
 
+# def get_flow_paths_indexes_of_edges(flow_dataframe,path_criteria):
+#     edge_path_index = defaultdict(list)
+#     for k,v in zip(chain.from_iterable(flow_dataframe[path_criteria].ravel()), flow_dataframe.index.repeat(flow_dataframe[path_criteria].str.len()).tolist()):
+#         edge_path_index[k].append(v)
+
+#     del flow_dataframe
+#     return edge_path_index
+
 def get_flow_paths_indexes_of_edges(flow_dataframe,path_criteria):
     edge_path_index = defaultdict(list)
-    for k,v in zip(chain.from_iterable(flow_dataframe[path_criteria].ravel()), flow_dataframe.index.repeat(flow_dataframe[path_criteria].str.len()).tolist()):
-        edge_path_index[k].append(v)
+    for v in flow_dataframe.itertuples():
+        for k in getattr(v,path_criteria):
+            edge_path_index[k].append(v.Index)
 
     del flow_dataframe
     return edge_path_index
