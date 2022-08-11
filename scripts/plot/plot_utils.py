@@ -388,7 +388,9 @@ def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_t
                                 label=label)[0])
         else:
             legend_handles.append(Line2D([0], [0], 
-                            color=legend_colors[i], lw=width/legend_weight, label=label))
+                            color=legend_colors[i],
+                            lw=4,  # width/legend_weight,
+                            label=label))
 
     return legend_handles
 
