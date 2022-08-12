@@ -74,7 +74,7 @@ def main(config):
                             "hazard_damage_parameters.csv")
 
     adaptation_options = get_adaptation_options() 
-    print (adaptation_options)
+    
     for option in adaptation_options:
         folder_name = option['folder_name']
         results_folder = os.path.join(results_path,folder_name)
@@ -150,7 +150,8 @@ def main(config):
         print (args)
         subprocess.run(args)
 
-        break
+        print(f"Done with direct damage calculations for {option['option']}")
+        
 
         # with open("ead_eael_results.txt","w+") as f:
         #     with open(parameter_combinations_file,"r") as r:

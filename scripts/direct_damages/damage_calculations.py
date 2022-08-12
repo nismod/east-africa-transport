@@ -21,7 +21,7 @@ def get_damage_data(x,damage_data_path,
                     adaptation_num,
                     uplift_factor=0,
                     uncertainty_parameter=0):
-    if adaptation_num == None:
+    if adaptation_num == "None":
         data = pd.read_excel(os.path.join(damage_data_path,
                         f"damage_curves_{x.sector}_{x.hazard_type}.xlsx"),
                         sheet_name=x.asset_sheet)
@@ -111,7 +111,8 @@ def main(config,results_folder,
     results_data_path = config['paths']['results']
 
     direct_damages_results = os.path.join(results_data_path,results_folder)
-    if os.path.exists(direct_damages_results) == False:
+
+    if os.path.exists(direct_damages_results.strip()) == False:
         os.mkdir(direct_damages_results)
 
     hazard_asset_intersection_path = os.path.join(
