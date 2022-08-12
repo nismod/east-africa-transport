@@ -44,7 +44,7 @@ def main(config):
     """
     Create edge failure files with the batches for parallel processing
     """
-    damages_results_path = os.path.join(results_data_path,"risk_results","direct_damages_summary")
+    damages_results_path = os.path.join(results_data_path,"risk_results_original","direct_damages_summary")
 
     rail_failure_edges = pd.read_csv(os.path.join(damages_results_path,"rail_edges_damages.csv"))
     road_failure_edges = pd.read_csv(os.path.join(damages_results_path,"road_edges_damages.csv"))
@@ -63,10 +63,10 @@ def main(config):
             os.mkdir(fp)
         with open(f"parallel_{sc}.txt","w+") as f:
             for n in range(len(num_values)-1): 
-                min_value = num_values[n]
-                max_value = min(num_values[n+1],len(all_failures)) 
-                if os.path.isfile(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv"):
-                    f.write(f'{sc},{fp},{int(min_value)},{int(max_value)}\n')   
+                min_value = int(num_values[n])
+                max_value = int(min(num_values[n+1],len(all_failures))) 
+                if os.path.exists(os.path.join(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv")) is False:
+                    f.write(f'{sc},{fp},{min_value},{max_value}\n')   
                     run_results = True     
         f.close()
         

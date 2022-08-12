@@ -70,7 +70,7 @@ def flow_disruption_estimation(network_dataframe, edge_failure_set,
     affected_flows.rename(columns={"gcost":"old_cost"},inplace=True)
     reassinged_flows, no_flows = od_flow_allocation_capacity_constrained(affected_flows,
                                     network_df_in[~network_df_in[edge_id_column].isin(edge_failure_set)],
-                                    flow_column,cost_column)
+                                    flow_column,cost_column,store_edge_path=False)
     del network_df_in, affected_flows
     
     return reassinged_flows, no_flows
@@ -99,7 +99,7 @@ def main(config,year,failure_results,min_node_number,max_node_number):
     # Generate a failure sample. We will update this later
 
     # Get the list of nodes of the initiating sector to fail
-    damages_results_path = os.path.join(results_data_path,"risk_results","direct_damages_summary")
+    damages_results_path = os.path.join(results_data_path,"risk_results_original","direct_damages_summary")
 
     rail_failure_edges = pd.read_csv(os.path.join(damages_results_path,"rail_edges_damages.csv"))
     road_failure_edges = pd.read_csv(os.path.join(damages_results_path,"road_edges_damages.csv"))

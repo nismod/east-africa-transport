@@ -600,7 +600,7 @@ def network_od_paths_assembly(points_dataframe, graph,
     origins = list(set(points_dataframe.index.values.tolist()))
     for origin in origins:
         try:
-            destinations = points_dataframe.loc[[origin], 'destination_id'].values.tolist()
+            destinations = list(set(points_dataframe.loc[[origin], 'destination_id'].values.tolist()))
 
             get_path, get_gcost = network_od_path_estimations(
                 graph, origin, destinations, cost_criteria)
@@ -622,7 +622,10 @@ def network_od_paths_assembly(points_dataframe, graph,
         save_paths_df.drop("edge_path",axis=1,inplace=True)
 
     points_dataframe = points_dataframe.reset_index()
-    save_paths_df = pd.merge(save_paths_df, points_dataframe, how='left', on=[
+    # save_paths_df = pd.merge(save_paths_df, points_dataframe, how='left', on=[
+    #                          'origin_id', 'destination_id']).fillna(0)
+
+    save_paths_df = pd.merge(points_dataframe,save_paths_df,how='left', on=[
                              'origin_id', 'destination_id']).fillna(0)
 
     # save_paths_df = save_paths_df[(save_paths_df[tonnage_column] > 0)
@@ -690,13 +693,14 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
     capacity_ods = []
     unassigned_paths = []
     while len(flow_ods.index) > 0:
+        # print (flow_ods)
         graph = ig.Graph.TupleList(network_dataframe[network_dataframe["over_capacity"] > 1e-3].itertuples(index=False), 
                         edge_attrs=list(network_dataframe[network_dataframe["over_capacity"] > 1e-3].columns)[2:])
         graph_nodes = [x['name'] for x in graph.vs]
         unassigned_paths.append(flow_ods[~((flow_ods["origin_id"].isin(graph_nodes)) & (flow_ods["destination_id"].isin(graph_nodes)))])
         flow_ods = flow_ods[(flow_ods["origin_id"].isin(graph_nodes)) & (flow_ods["destination_id"].isin(graph_nodes))]
         if len(flow_ods.index) > 0:
-            flow_ods = network_od_paths_assembly(flow_ods,graph,cost_column,store_edge_path=store_edge_path)
+            flow_ods = network_od_paths_assembly(flow_ods,graph,cost_column)
             unassigned_paths.append(flow_ods[flow_ods["gcost"] == 0])
             flow_ods = flow_ods[flow_ods["gcost"] > 0]
             if len(flow_ods.index) > 0:
@@ -707,7 +711,13 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
                 if len(over_capacity_edges) > 0:
                     edge_id_paths = get_flow_paths_indexes_of_edges(flow_ods,"edge_path")
                     edge_paths_overcapacity = get_path_indexes_for_edges(edge_id_paths,over_capacity_edges)
-                    capacity_ods.append(flow_ods[~flow_ods.index.isin(edge_paths_overcapacity)])
+                    if store_edge_path is False:
+                        cap_ods = flow_ods[~flow_ods.index.isin(edge_paths_overcapacity)]
+                        cap_ods.drop("edge_path",axis=1,inplace=True)
+                        capacity_ods.append(cap_ods)
+                        del cap_ods
+                    else:
+                        capacity_ods.append(flow_ods[~flow_ods.index.isin(edge_paths_overcapacity)])
 
                     over_capacity_ods = flow_ods[flow_ods.index.isin(edge_paths_overcapacity)]
                     over_capacity_ods["path_indexes"] = over_capacity_ods.index.values.tolist()
@@ -716,6 +726,9 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
                     cap_ods = over_capacity_ods.copy() 
                     cap_ods.drop(["path_indexes",flow_column,"residual_flows"],axis=1,inplace=True)
                     cap_ods.rename(columns={"min_flows":flow_column},inplace=True)
+                    if store_edge_path is False:
+                        cap_ods.drop("edge_path",axis=1,inplace=True)
+                    
                     capacity_ods.append(cap_ods)
                     del cap_ods
 
@@ -731,6 +744,8 @@ def od_flow_allocation_capacity_constrained(flow_ods,network_dataframe,flow_colu
                     flow_ods.drop(["edge_path","gcost","residual_ratio"],axis=1,inplace=True)
                     del over_capacity_ods
                 else:
+                    if store_edge_path is False:
+                        flow_ods.drop("edge_path",axis=1,inplace=True)
                     capacity_ods.append(flow_ods)
                     network_dataframe.drop(["residual_capacity","added_flow"],axis=1,inplace=True)
                     flow_ods = pd.DataFrame()
