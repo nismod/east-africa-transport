@@ -123,7 +123,7 @@ def main(config,direct_damages_folder,
                                 asset_damages_results,
                                 f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_EAD_EAEL_parameter_set_{param.parameter_set}.csv"
                                 ) for param in param_values.itertuples()]
-        damage_results = [pd.read_csv(file) for file in damage_files if os.path.isfile(file) is True]
+        damage_results = [pd.read_csv(file, dtype={'rcp': 'str', 'epoch': 'str'}) for file in damage_files if os.path.isfile(file) is True]
 
         if damage_results:
             # print ([len(df.index) for df in damage_results])
