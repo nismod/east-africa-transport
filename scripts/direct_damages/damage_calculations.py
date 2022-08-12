@@ -18,10 +18,16 @@ epsg_project = 3857
 
 
 def get_damage_data(x,damage_data_path,
+                    adaptation_num,
                     uplift_factor=0,
                     uncertainty_parameter=0):
-    data = pd.read_excel(os.path.join(damage_data_path,
+    if adaptation_num == None:
+        data = pd.read_excel(os.path.join(damage_data_path,
                         f"damage_curves_{x.sector}_{x.hazard_type}.xlsx"),
+                        sheet_name=x.asset_sheet)
+    else:
+        data = pd.read_excel(os.path.join(damage_data_path,"adaptation_options",
+                        f"damage_curves_{x.sector}_{x.hazard_type}_{adaptation_num}.xlsx"),
                         sheet_name=x.asset_sheet)
     if x.hazard_type == 'flooding':
         x_data = data.flood_depth
@@ -67,11 +73,13 @@ def add_exposure_dimensions(dataframe,dataframe_type="nodes",epsg=epsg_project):
 
 def create_damage_curves(damage_data_path,
                     damage_curve_lookup_df,
+                    adaptation_num,
                     uplift_factor=0,
                     uncertainty_parameter=0):
     damage_curve_lookup_df['x_y_data'] = damage_curve_lookup_df.progress_apply(
                                                 lambda x:get_damage_data(
                                                     x,damage_data_path,
+                                                    adaptation_num,
                                                     uplift_factor,
                                                     uncertainty_parameter),
                                                 axis=1)
@@ -95,6 +103,7 @@ def estimate_direct_damage_costs_and_units(dataframe,damage_ratio_columns,
 def main(config,results_folder,
         network_csv,hazard_csv,
         damage_curves_csv,
+        adaptation_num,
         hazard_damage_parameters_csv,
         set_count,cost_uncertainty_parameter,damage_uncertainty_parameter):
     incoming_data_path = config['paths']['incoming_data']
@@ -140,6 +149,7 @@ def main(config,results_folder,
 
         damage_curve_df = create_damage_curves(damage_curve_data_path,
                                                 damage_curve_df,
+                                                adaptation_num,
                                                 uplift_factor=hazard['uplift_factor'],
                                                 uncertainty_parameter=damage_uncertainty_parameter)
         damage_curves.append(damage_curve_df)
@@ -256,10 +266,11 @@ if __name__ == "__main__":
         network_csv = str(sys.argv[2])
         hazard_csv = str(sys.argv[3])
         damage_curves_csv = str(sys.argv[4])
-        hazard_damage_parameters_csv = str(sys.argv[5])
-        set_count = str(sys.argv[6])
-        cost_uncertainty_parameter = float(sys.argv[7])
-        damage_uncertainty_parameter = float(sys.argv[8])
+        adaptation_num = str(sys.argv[5])
+        hazard_damage_parameters_csv = str(sys.argv[6])
+        set_count = str(sys.argv[7])
+        cost_uncertainty_parameter = float(sys.argv[8])
+        damage_uncertainty_parameter = float(sys.argv[9])
 
     except IndexError:
         print("Got arguments", sys.argv)
@@ -268,5 +279,6 @@ if __name__ == "__main__":
     main(CONFIG,results_folder,
         network_csv,hazard_csv,
         damage_curves_csv,
+        adaptation_num,
         hazard_damage_parameters_csv,
         set_count,cost_uncertainty_parameter,damage_uncertainty_parameter)
