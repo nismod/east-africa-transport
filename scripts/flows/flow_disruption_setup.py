@@ -56,7 +56,7 @@ def main(config):
     scenarios = [2019,2030,2050,2080]
     # scenarios = [2030,2050,2080]
     for sc in scenarios:  
-    	loss_files = []  
+        loss_files = []  
         run_results = False
         num_values = np.linspace(0,len(all_failures)-1,num_partitions)
         fp = os.path.join(failure_results,str(sc))
@@ -70,7 +70,7 @@ def main(config):
                     f.write(f'{sc},{fp},{min_value},{max_value}\n')   
                     run_results = True    
                 else:
-                	loss_files.append(os.path.join(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv"))
+                    loss_files.append(os.path.join(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv"))
 
         f.close()
         
@@ -89,6 +89,7 @@ def main(config):
 
         loss_df = pd.concat([pd.read_csv(lf) for lf in loss_files],axis=0,ignore_index=True)
         loss_df.to_csv(os.path.join(failure_results,f"economic_losses_{sc}.csv"),index=False) 
+        print ("* Done with year",sc)
 
                                 
 if __name__ == '__main__':
