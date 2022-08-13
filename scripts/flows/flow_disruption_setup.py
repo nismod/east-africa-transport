@@ -88,6 +88,7 @@ def main(config):
             subprocess.run(args)
 
         loss_df = pd.concat([pd.read_csv(lf) for lf in loss_files],axis=0,ignore_index=True)
+        loss_df["economic_loss_unit"] = "USD/day"
         loss_df.to_csv(os.path.join(failure_results,f"economic_losses_{sc}.csv"),index=False) 
         print ("* Done with year",sc)
 
