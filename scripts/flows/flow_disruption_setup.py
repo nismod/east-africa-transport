@@ -6,7 +6,7 @@
     The script first reads in the edges data for a particular network 
         And then divides the numbers of edges into paritions which will be selected as initiating failure scenarios
         
-        Example output - 2019,1,0,90
+        Example output - 2019,'/.../path_to_files/',0,90
         - Network scenarios - year
         - Number of failure scenario - 1
         - First edge to sample for initiating failure - The one at location 0 on the edge list
@@ -17,14 +17,14 @@
         All partitions are writtening into text files named as parallel_network_scenario_dependency.txt 
         Example: partitions_2019.txt
 
-        Example output in file: partitions.txt
-            2019,1,0,90
-            2019,2,90,181
-            2019,3,181,272
-            2019,4,272,363
-            2019,5,363,453
-            2019,6,453,544
-            2019,7,544,635
+        Example output in file: parallel_2019.txt
+            2019,'../../flow_disruptions/2019',0,90
+            2019,'../../flow_disruptions/2019',90,181
+            2019,'../../flow_disruptions/2019',181,272
+            2019,'../../flow_disruptions/2019',272,363
+            2019,'../../flow_disruptions/2019',363,453
+            2019,'../../flow_disruptions/2019',453,544
+            2019,'../../flow_disruptions/2019',544,635
         
         Each of these lines is a batch of scnearios that are run on different processors in parallel
 """
@@ -55,7 +55,8 @@ def main(config):
     num_blocks = 20
     scenarios = [2019,2030,2050,2080]
     # scenarios = [2030,2050,2080]
-    for sc in scenarios:    
+    for sc in scenarios:  
+    	loss_files = []  
         run_results = False
         num_values = np.linspace(0,len(all_failures)-1,num_partitions)
         fp = os.path.join(failure_results,str(sc))
@@ -67,7 +68,10 @@ def main(config):
                 max_value = int(min(num_values[n+1],len(all_failures))) 
                 if os.path.exists(os.path.join(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv")) is False:
                     f.write(f'{sc},{fp},{min_value},{max_value}\n')   
-                    run_results = True     
+                    run_results = True    
+                else:
+                	loss_files.append(os.path.join(fp,f"flow_disruption_losses_{min_value}_{max_value}.csv"))
+
         f.close()
         
         if run_results is True:
@@ -82,6 +86,10 @@ def main(config):
                     ]
             print (args)
             subprocess.run(args)
+
+        loss_df = pd.concat([pd.read_csv(lf) for lf in loss_files],axis=0,ignore_index=True)
+        loss_df.to_csv(os.path.join(failure_results,f"economic_losses_{sc}.csv"),index=False) 
+
                                 
 if __name__ == '__main__':
     CONFIG = load_config()
