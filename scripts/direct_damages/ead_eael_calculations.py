@@ -91,7 +91,7 @@ def main(config,results_folder,
                                             )),key=lambda x:x[-1],reverse=True))))
                 
                 haz_prob = [1.0/rp for rp in haz_rps]
-                damages = add_economic_loss_estimates(damages,
+                damages = add_economic_loss_estimates(df,
                                                     asset_info.asset_id_column,
                                                     epoch,
                                                     os.path.join(results_data_path,asset_info.economic_loss_scenarios))
