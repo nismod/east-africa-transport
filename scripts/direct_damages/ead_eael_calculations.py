@@ -96,10 +96,9 @@ def main(config,results_folder,
                 if 'economic_loss' in df.columns.values.tolist():
                     index_columns = [asset_id,"damage_cost_unit","economic_loss_unit"]
                     loss_column = ["economic_loss"]
-                    losses = df.copy()
+                    losses = df[index_columns + loss_column + haz_cols].copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
                     losses.drop("economic_loss",axis=1,inplace=True)
-                    print (losses[haz_cols])
                     total_losses.append(losses)
                     del losses
                 else:
@@ -117,14 +116,14 @@ def main(config,results_folder,
                 damages.columns = index_columns + loss_column + haz_prob + ["hazard","rcp","epoch","confidence","subsidence","model"] 
                 index_columns += ["hazard","rcp","epoch","confidence","subsidence","model"] 
                 damages = damages[damages[haz_prob].sum(axis=1) > 0]
-                losses = damages.copy()
-                losses.columns = losses.columns.map(str)
 
                 expected_damage_df = risks(damages,index_columns,haz_prob,
                                             "EAD",
                                             flood_protection_period=flood_protection_period,
                                             flood_protection_name=flood_protection_name)
                 if 'economic_loss' in damages.columns.values.tolist():
+                    losses = damages.copy()
+                    losses.columns = losses.columns.map(str)
                     losses[[str(h) for h in haz_prob]] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[[str(h) for h in haz_prob]]>0,1,0)
                     economic_loss_df = risks(losses,index_columns,haz_prob,
                                             "EAEL",
