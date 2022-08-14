@@ -71,7 +71,6 @@ def main(config,results_folder,
             haz_rcp_epoch_confidence_subsidence_model = list(set(hazard_data_details.set_index(["hazard","rcp","epoch","confidence","subsidence","model"]).index.values.tolist()))
             # for i,(haz,rcp,epoch,confidence) in enumerate(haz_rcp_epoch_confidence):
             for i,(haz,rcp,epoch,confidence,subsidence,model) in enumerate(haz_rcp_epoch_confidence_subsidence_model):
-                index_columns = [asset_id,"damage_cost_unit","economic_loss_unit"]
                 haz_df = hazard_data_details[
                                     (hazard_data_details.hazard == haz
                                     ) & (
@@ -91,19 +90,22 @@ def main(config,results_folder,
                                             )),key=lambda x:x[-1],reverse=True))))
                 
                 haz_prob = [1.0/rp for rp in haz_rps]
-                print (df)
-                damages = add_economic_loss_estimates(df,
+                df = add_economic_loss_estimates(df,
                                                     asset_info.asset_id_column,
                                                     epoch,
                                                     os.path.join(results_data_path,asset_info.economic_loss_scenarios))
-                print (damages)
                 if 'economic_loss' in damages.columns.values.tolist():
+                    index_columns = [asset_id,"damage_cost_unit","economic_loss_unit"]
+                    loss_column = ["economic_loss"]
                     losses = damages.copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
                     total_losses.append(losses)
                     del losses
-                    damages = df[index_columns + ["economic_loss"] + haz_cols]
+                else:
+                    index_columns = [asset_id,"damage_cost_unit"]
+                    loss_column = []
 
+                damages = df[index_columns + loss_column + haz_cols]
                 damages["hazard"] = haz
                 damages["rcp"] = rcp
                 damages["epoch"] = epoch
