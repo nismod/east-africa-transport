@@ -88,7 +88,7 @@ def main(config,results_folder,
                                             list(zip(haz_df.key.values.tolist(),
                                             haz_df.rp.values.tolist()
                                             )),key=lambda x:x[-1],reverse=True))))
-                
+                print (haz_cols)
                 haz_prob = [1.0/rp for rp in haz_rps]
                 df = add_economic_loss_estimates(df,
                                                     asset_info.asset_id_column,
