@@ -91,7 +91,6 @@ def main(config,results_folder,
                                             )),key=lambda x:x[-1],reverse=True))))
                 
                 haz_prob = [1.0/rp for rp in haz_rps]
-                damages = df[index_columns + loss_column + haz_cols]
                 damages = add_economic_loss_estimates(damages,
                                                     asset_info.asset_id_column,
                                                     epoch,
@@ -101,6 +100,7 @@ def main(config,results_folder,
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
                     total_losses.append(losses)
                     del losses
+                    damages = df[index_columns + ["economic_loss"] + haz_cols]
 
                 damages["hazard"] = haz
                 damages["rcp"] = rcp
