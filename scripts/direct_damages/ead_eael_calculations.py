@@ -106,6 +106,7 @@ def main(config,results_folder,
                     loss_column = []
 
                 damages = df[index_columns + loss_column + haz_cols]
+                df.drop("economic_loss",axis=1,inplace=True)
                 damages["hazard"] = haz
                 damages["rcp"] = rcp
                 damages["epoch"] = epoch
