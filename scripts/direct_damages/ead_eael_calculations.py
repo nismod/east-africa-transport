@@ -99,6 +99,7 @@ def main(config,results_folder,
                     loss_column = ["economic_loss"]
                     losses = df.copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
+                    losses.drop("economic_loss",axis=1,inplace=True)
                     total_losses.append(losses)
                     del losses
                 else:
