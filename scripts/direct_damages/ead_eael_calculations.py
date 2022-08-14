@@ -91,10 +91,12 @@ def main(config,results_folder,
                                             )),key=lambda x:x[-1],reverse=True))))
                 
                 haz_prob = [1.0/rp for rp in haz_rps]
+                print (df)
                 damages = add_economic_loss_estimates(df,
                                                     asset_info.asset_id_column,
                                                     epoch,
                                                     os.path.join(results_data_path,asset_info.economic_loss_scenarios))
+                print (damages)
                 if 'economic_loss' in damages.columns.values.tolist():
                     losses = damages.copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
