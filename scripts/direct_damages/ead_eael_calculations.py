@@ -94,7 +94,7 @@ def main(config,results_folder,
                                                     asset_info.asset_id_column,
                                                     epoch,
                                                     os.path.join(results_data_path,asset_info.economic_loss_scenarios))
-                if 'economic_loss' in damages.columns.values.tolist():
+                if 'economic_loss' in df.columns.values.tolist():
                     index_columns = [asset_id,"damage_cost_unit","economic_loss_unit"]
                     loss_column = ["economic_loss"]
                     losses = damages.copy()
