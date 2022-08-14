@@ -148,6 +148,7 @@ def main(config,results_folder,
                         index=False)
 
             if len(total_losses) > 0:
+                print (total_losses)
                 total_losses = pd.concat(total_losses,axis=0,ignore_index=True)
                 loss_index_columns = [asset_info.asset_id_column,"economic_loss_unit"]
                 loss_coluumns = [c for c in total_losses.columns.values.tolist() if c not in loss_index_columns]
