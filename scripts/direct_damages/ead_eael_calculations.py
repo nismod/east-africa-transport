@@ -97,7 +97,7 @@ def main(config,results_folder,
                 if 'economic_loss' in df.columns.values.tolist():
                     index_columns = [asset_id,"damage_cost_unit","economic_loss_unit"]
                     loss_column = ["economic_loss"]
-                    losses = damages.copy()
+                    losses = df.copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
                     total_losses.append(losses)
                     del losses
