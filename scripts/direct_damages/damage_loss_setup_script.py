@@ -75,7 +75,7 @@ def main(config):
 
     adaptation_options = get_adaptation_options() 
     generate_new_parameters = False
-    generate_direct_damages = True
+    generate_direct_damages = False
     generate_EAD_EAEL = True
     generate_summary_results = True
     generate_timeseries = True

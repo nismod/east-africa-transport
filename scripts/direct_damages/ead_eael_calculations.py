@@ -25,7 +25,7 @@ def add_economic_loss_estimates(dataframe,dataframe_id_column,time_epoch,economi
                 year = 2019
         else:
             year = 2019
-        loss_df = pd.read_csv(os.path.join(results_data_path,
+        loss_df = pd.read_csv(os.path.join(
                                     economic_loss_scenario,
                                     f"economic_losses_{year}.csv"))
         dataframe = pd.merge(dataframe,loss_df[[dataframe_id_column,"economic_loss"]],
@@ -94,7 +94,8 @@ def main(config,results_folder,
                 damages = df[index_columns + loss_column + haz_cols]
                 damages = add_economic_loss_estimates(damages,
                                                     asset_info.asset_id_column,
-                                                    epoch,asset_info.economic_loss_scenarios)
+                                                    epoch,
+                                                    os.path.join(results_data_path,asset_info.economic_loss_scenarios))
                 if 'economic_loss' in damages.columns.values.tolist():
                     losses = damages.copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
