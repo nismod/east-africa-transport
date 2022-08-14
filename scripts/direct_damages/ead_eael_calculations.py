@@ -88,7 +88,6 @@ def main(config,results_folder,
                                             list(zip(haz_df.key.values.tolist(),
                                             haz_df.rp.values.tolist()
                                             )),key=lambda x:x[-1],reverse=True))))
-                print (haz_cols)
                 haz_prob = [1.0/rp for rp in haz_rps]
                 df = add_economic_loss_estimates(df,
                                                     asset_info.asset_id_column,
@@ -100,6 +99,7 @@ def main(config,results_folder,
                     losses = df.copy()
                     losses[haz_cols] = losses["economic_loss"].to_numpy()[:,None]*np.where(losses[haz_cols]>0,1,0)
                     losses.drop("economic_loss",axis=1,inplace=True)
+                    print (losses)
                     total_losses.append(losses)
                     del losses
                 else:
