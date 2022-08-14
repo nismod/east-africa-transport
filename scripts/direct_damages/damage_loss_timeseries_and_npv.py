@@ -110,7 +110,7 @@ def main(config,summary_results_folder,
             summarised_damages.loc[summarised_damages["epoch"] == "hist","epoch"] = baseline_year
 
             discounted_values = []
-            for risk_type in ["EAD"]: # "EAD","EAEL"
+            for risk_type in ["EAD","EAEL"]: # "EAD","EAEL"
                 for val_type in ["amin","mean","amax"]:
                     if risk_type == "EAEL": 
                         eael_exists = [c for c in summarised_damages.columns.values.tolist() if "EAEL_" in c]
