@@ -59,10 +59,10 @@ def estimate_time_series(summarised_damages,
         series = np.array([list(timeseries)*len(df.index)]).reshape(len(df.index),len(timeseries))
         df[series[0]] = interp1d(years,df[years],fill_value="extrapolate",bounds_error=False)(series[0])
         df[series[0]] = df[series[0]].clip(lower=0.0)
-        if risk_type == "EAEL":
-            gr_rates = extract_growth_rate_info(growth_rates,"year",f"gdp_{val_type}",start_year=start_year,end_year=end_year)
-            gr_rates = calculate_growth_rate_factor(gr_rates,start_year,end_year)
-            df[series[0]] = np.multiply(df[series[0]],gr_rates)
+        # if risk_type == "EAEL":
+        #     gr_rates = extract_growth_rate_info(growth_rates,"year",f"gdp_{val_type}",start_year=start_year,end_year=end_year)
+        #     gr_rates = calculate_growth_rate_factor(gr_rates,start_year,end_year)
+        #     df[series[0]] = np.multiply(df[series[0]],gr_rates)
         damages_time_series.append(df)
         df_copy = df.copy()
         df_copy[series[0]] = np.multiply(df_copy[series[0]],dsc_rate)
@@ -166,7 +166,13 @@ if __name__ == "__main__":
         print("Got arguments", sys.argv)
         exit()
 
+    baseline_year = 2019
+    projection_end_year = 2080
+    discounting_rate = 10
     main(CONFIG,summary_results_folder,
         timeseries_results_folder,
         discounted_results_folder,
-        network_csv)
+        network_csv,
+        baseline_year=baseline_year,
+        projection_end_year=projection_end_year,
+        discounting_rate=discounting_rate)

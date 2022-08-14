@@ -47,7 +47,12 @@ def main(config,direct_damages_folder,
                                 asset_damages_results,
                                 f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_direct_damages_parameter_set_{param.parameter_set}.parquet"
                                 ) for param in param_values.itertuples()]
+        loss_files = [os.path.join(
+                                asset_damages_results,
+                                f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_economic_losses_parameter_set_{param.parameter_set}.parquet"
+                                ) for param in param_values.itertuples()]
         damage_results = [pd.read_parquet(file) for file in damage_files if os.path.isfile(file) is True]
+        loss_results = [pd.read_parquet(file) for file in loss_files if os.path.isfile(file) is True]
         # print ("* Done with creating list of all dataframes")
 
         if damage_results:
@@ -72,31 +77,12 @@ def main(config,direct_damages_folder,
             del exposures
             
             damages = []
-            losses = []
             for df in damage_results:
                 df = df.groupby([asset_id,
                                 'damage_cost_unit',
                                 ],
                                 dropna=False).agg(sum_dict).reset_index()
                 damages.append(df)
-                if asset_info.single_failure_scenarios != "none":
-                    loss_column = ["economic_loss"]
-                    if asset_info.sector != "buildings":
-                        loss_df = pd.read_csv(os.path.join(results_data_path,asset_info.single_failure_scenarios))
-                        if asset_info.asset_gpkg == "potable_facilities_NWC":
-                            loss_df[asset_id] = loss_df.progress_apply(
-                                lambda x: str(x[asset_id]).lower().replace(" ","_").replace(".0",""),
-                                axis=1)
-                    else:
-                        loss_df = gpd.read_file(os.path.join(processed_data_path,asset_info.single_failure_scenarios),layer="areas")
-                        loss_df.rename(columns={"total_GDP":"economic_loss"},inplace=True)
-                    df = pd.merge(df,loss_df[[asset_info.asset_id_column,"economic_loss"]],
-                                    how="left",on=[asset_info.asset_id_column]).fillna(0)
-                    df["economic_loss_unit"] = "J$/day"
-                    del loss_df
-                    loss = df.copy()
-                    loss[hazard_columns] = loss["economic_loss"].to_numpy()[:,None]*np.where(loss[hazard_columns]>0,1,0)
-                    losses.append(loss[[asset_id,"economic_loss_unit"] + hazard_columns])
 
             damages = pd.concat(damages,axis=0,ignore_index=True)
             print ("* Done with concatinating all dataframes")
@@ -108,8 +94,8 @@ def main(config,direct_damages_folder,
                             f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_damages.csv"),index=False)
             del damages
 
-            if len(losses) > 0:
-                losses = pd.concat(losses,axis=0,ignore_index=True)
+            if len(loss_results) > 0:
+                losses = pd.concat(loss_results,axis=0,ignore_index=True)
                 print ("* Done with concatinating all dataframes")
                 if len(losses.index) > 0:
                     losses = quantiles(losses,[asset_id,'economic_loss_unit'],hazard_columns)

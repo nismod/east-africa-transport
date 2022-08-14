@@ -74,7 +74,11 @@ def main(config):
                             "hazard_damage_parameters.csv")
 
     adaptation_options = get_adaptation_options() 
-    
+    generate_new_parameters = False
+    generate_direct_damages = True
+    generate_EAD_EAEL = True
+    generate_summary_results = True
+    generate_timeseries = True
     for option in adaptation_options:
         folder_name = option['folder_name']
         results_folder = os.path.join(results_path,folder_name)
@@ -88,7 +92,6 @@ def main(config):
         
         # Rework the networks file and write it to a new path
         networks = pd.read_csv(network_csv)
-        networks = networks[networks["sector"] != "buildings"]
         network_csv = os.path.join(results_folder,
                                 "network_layers_hazard_intersections_details.csv")
         networks.to_csv(network_csv,index=False)
@@ -104,7 +107,6 @@ def main(config):
         del hazards
 
         parameter_combinations_file = "parameter_combinations.txt"
-        generate_new_parameters = False
         if generate_new_parameters is True:
             # Set up problem for sensitivity analysis
             problem = {
@@ -123,13 +125,14 @@ def main(config):
             f.close()
         else: 
             param_values = pd.read_csv("parameter_combinations.txt", sep=",")
-            num_blocks = len(param_values)
+        
+        num_blocks = len(param_values)
 
         with open("damage_results.txt","w+") as f:
             with open(parameter_combinations_file,"r") as r:
                 for p in r:
                     pv = p.split(",")
-                    f.write(f"{damage_results_folder},{network_csv},{hazard_csv},{damage_curves_csv},{option['num']},{hazard_damage_parameters_csv},{pv[0]},{pv[1]},{pv[2]}\n")
+                    f.write(f"{damage_results_folder},{network_csv},{hazard_csv},{damage_curves_csv},{option['num']},{hazard_damage_parameters_csv},{pv[0]},{pv[1]},{pv[2]}")
         
         f.close()
 
@@ -137,72 +140,77 @@ def main(config):
 
         """Next we call the failure analysis script and loop through the failure scenarios
         """
-        args = ["parallel",
-                "-j", str(num_blocks),
-                "--colsep", ",",
-                "-a",
-                "damage_results.txt",
-                "python",
-                "damage_calculations.py",
-                "{}"
-                ]
-        print ("* Start the processing of damage calculations")
-        print (args)
-        subprocess.run(args)
+        if generate_direct_damages is True:
+            args = ["parallel",
+                    "-j", str(num_blocks),
+                    "--colsep", ",",
+                    "-a",
+                    "damage_results.txt",
+                    "python",
+                    "damage_calculations.py",
+                    "{}"
+                    ]
+            print ("* Start the processing of damage calculations")
+            print (args)
+            subprocess.run(args)
 
         print(f"Done with direct damage calculations for {option['option']}")
         
-
-        # with open("ead_eael_results.txt","w+") as f:
-        #     with open(parameter_combinations_file,"r") as r:
-        #         for p in r:
-        #             pv = p.split(",")
-        #             f.write(f"{damage_results_folder},{network_csv},{hazard_csv},{flood_protection_column},{pv[0]},{pv[1]},{pv[2]}\n")
+        flood_protection = option["flood_protection"]
+        flood_protection_column = option["option"]
+        with open("ead_eael_results.txt","w+") as f:
+            with open(parameter_combinations_file,"r") as r:
+                for p in r:
+                    pv = p.split(",")
+                    f.write(f"{damage_results_folder},{network_csv},{hazard_csv},{flood_protection},{flood_protection_column},{pv[0]},{pv[1]},{pv[2]}")
         
-        # f.close()
+        f.close()
 
-        # """Next we call the EAD and EAEL analysis script and loop through the failure results
-        # """
-        # args = ["parallel",
-        #         "-j", str(num_blocks),
-        #         "--colsep", ",",
-        #         "-a",
-        #         "ead_eael_results.txt",
-        #         "python",
-        #         "ead_eael_calculations.py",
-        #         "{}"
-        #         ]
-        # print ("* Start the processing of EAD and EAEL calculations")
-        # print (args)
-        # subprocess.run(args)
+        """Next we call the EAD and EAEL analysis script and loop through the failure results
+        """
+        if generate_EAD_EAEL is True:
+            args = ["parallel",
+                    "-j", str(num_blocks),
+                    "--colsep", ",",
+                    "-a",
+                    "ead_eael_results.txt",
+                    "python",
+                    "ead_eael_calculations.py",
+                    "{}"
+                    ]
+            print ("* Start the processing of EAD and EAEL calculations")
+            print (args)
+            subprocess.run(args)
 
-        # """Next we call the summary scripts
-        # """
-        # args = [
-        #         "python",
-        #         "damage_loss_summarised.py",
-        #         f"{damage_results_folder}",
-        #         f"{summary_folder}",
-        #         f"{network_csv}",
-        #         f"{parameter_combinations_file}"
-        #         ]
-        # print ("* Start the processing of summarising damage results")
-        # print (args)
-        # subprocess.run(args)
+        """Next we call the summary scripts
+        """
+        if generate_summary_results is True:
+            args = [
+                    "python",
+                    "damage_loss_summarised.py",
+                    f"{damage_results_folder}",
+                    f"{summary_folder}",
+                    f"{network_csv}",
+                    f"{parameter_combinations_file}"
+                    ]
+            print ("* Start the processing of summarising damage results")
+            print (args)
+            subprocess.run(args)
 
-        # """Next we call the timeseries and NPV scripts
-        # """
-        # args = [
-        #         "python",
-        #         "damage_loss_timeseries_and_npv.py",
-        #         f"{summary_folder}",
-        #         f"{timeseries_results_folder}",
-        #         f"{discounted_results_folder}",
-        #         f"{network_csv}"
-        #         ]
-        # print ("* Start the processing of timeseries and NPV calculations")
-        # print (args)
-        # subprocess.run(args)
+        """Next we call the timeseries and NPV scripts
+        """
+        if generate_timeseries is True:
+            args = [
+                    "python",
+                    "damage_loss_timeseries_and_npv.py",
+                    f"{summary_folder}",
+                    f"{timeseries_results_folder}",
+                    f"{discounted_results_folder}",
+                    f"{network_csv}"
+                    ]
+            print ("* Start the processing of timeseries and NPV calculations")
+            print (args)
+            subprocess.run(args)
 
                                 
 if __name__ == '__main__':

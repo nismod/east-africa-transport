@@ -102,7 +102,7 @@ def main(config):
     
     epsg = 3857
     baseline_year = 2019
-    projection_end_year = 2100
+    projection_end_year = 2080
     discounting_rate = 10
 
 
