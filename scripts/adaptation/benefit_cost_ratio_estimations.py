@@ -273,7 +273,7 @@ def main(config):
         asset_id = asset_info.asset_id_column
         for option in adaptation_options:
             folder_name = option['folder_name']
-            option_results_folder = os.path.join(results_path,f"{folder_name}/loss_damage_npvs")
+            option_results_folder = os.path.join(output_data_path,f"{folder_name}/loss_damage_npvs")
             cost_file = os.path.join(hazard_adapt_costs,
                                         f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_timeseries_and_npvs.csv")
             no_adapt_risk_file = os.path.join(non_adapt_risk_results,
