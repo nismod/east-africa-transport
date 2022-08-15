@@ -302,8 +302,8 @@ def main(config):
                     adapt_risk_df[EAEL_columns] = days*adapt_risk_df[EAEL_columns]
 
 
-                    adapt_risk_df[benefit_columns] = adapt_risk_df[EAD_columns].substract(no_adapt_risk_df[EAD_columns],axis='index',fill_value=0)
-                    adapt_risk_df[benefit_columns] += adapt_risk_df[EAEL_columns].substract(no_adapt_risk_df[EAEL_columns],axis='index',fill_value=0)
+                    adapt_risk_df[benefit_columns] = adapt_risk_df[EAD_columns].sub(no_adapt_risk_df[EAD_columns],axis='index',fill_value=0)
+                    adapt_risk_df[benefit_columns] += adapt_risk_df[EAEL_columns].sub(no_adapt_risk_df[EAEL_columns],axis='index',fill_value=0)
                     adapt_risk_df[benefit_columns] = -1.0*adapt_risk_df[benefit_columns]
 
                     adapt_risk_df = adapt_risk_df.reset_index()
