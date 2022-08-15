@@ -150,10 +150,10 @@ def main(config):
                                             "direct_damages_summary",
                                             f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_exposures.csv"))
         exposure_columns = [c for c in exposure_df.columns.values.tolist() if c not in [asset_id,"exposure_unit"]]
-        exposure_df["max_exposure_m"] = exposure_unit[exposure_columns].max(axis=1)
+        exposure_df["max_exposure_m"] = exposure_df[exposure_columns].max(axis=1)
         asset_df = pd.merge(exposure_df[[asset_id,"max_exposure_m"]],asset_df,how="left",on=[asset_id])
         del exposure_df 
-        
+
         adapt_costs = cost_df[cost_df['asset_name'] == asset_info.asset_gpkg]
 
         df = []
