@@ -264,7 +264,7 @@ def main(config):
     non_adapt_risk_results = os.path.join(output_data_path,"risk_results","loss_damage_npvs")
     hazard_adapt_costs = os.path.join(output_data_path,"adaptation_costs")
     asset_data_details = pd.read_csv(os.path.join(processed_data_path,
-                        "networks",
+                        "damage_curves",
                         "network_layers_hazard_intersections_details.csv"))
     for asset_info in asset_data_details.itertuples():
         asset_adaptation_df = []
