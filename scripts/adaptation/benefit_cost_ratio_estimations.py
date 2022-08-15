@@ -89,68 +89,70 @@ def main(config):
                         "network_layers_hazard_intersections_details.csv"))
 
     adaptation_options = get_adaptation_options()
-    for asset_info in asset_data_details.itertuples():
-        asset_adaptation_df = []
-        asset_id = asset_info.asset_id_column
-        for option in adaptation_options:
-            folder_name = option['folder_name']
-            option_results_folder = os.path.join(results_data_path,f"{folder_name}/loss_damage_npvs")
-            cost_file = os.path.join(hazard_adapt_costs,
-                                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_timeseries_and_npvs.csv")
-            no_adapt_risk_file = os.path.join(non_adapt_risk_results,
-                                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_EAD_EAEL_npvs.csv")
-            if (os.path.isfile(cost_file) is True) and (os.path.isfile(no_adapt_risk_file) is True):
-                print (f"* Starting with {option['option']} {asset_info.asset_gpkg} {asset_info.asset_layer}")
-                cost_df = pd.read_csv(cost_file)
-                adapt_costs_df = cost_df[cost_df["adaptation_option"] == option["option_name"]]
-                if len(adapt_costs_df.index) > 0:
-                    adapt_costs_df = adapt_costs_df[[asset_id, "adaptation_option","adapt_cost_npv"]]
-                    no_adapt_risk_df = pd.read_csv(no_adapt_risk_file)
-                    adapt_risk_df = pd.read_csv(os.path.join(
-                                                option_results_folder,
-                                                f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_EAD_EAEL_npvs.csv"))
-                    
-                    EAD_columns, EAEL_columns, benefit_columns, bcr_columns = get_risk_and_adaption_columns(adapt_risk_df.columns.values.tolist())
-                    
-                    adapt_ids = adapt_risk_df[asset_id].values.tolist()
+    for days in [15,30,60,90,180]:
+	    for asset_info in asset_data_details.itertuples():
+	        asset_adaptation_df = []
+	        asset_id = asset_info.asset_id_column
+	        for option in adaptation_options:
+	            folder_name = option['folder_name']
+	            option_results_folder = os.path.join(results_data_path,f"{folder_name}/loss_damage_npvs")
+	            cost_file = os.path.join(hazard_adapt_costs,
+	                                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_timeseries_and_npvs.csv")
+	            no_adapt_risk_file = os.path.join(non_adapt_risk_results,
+	                                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_EAD_EAEL_npvs.csv")
+	            if (os.path.isfile(cost_file) is True) and (os.path.isfile(no_adapt_risk_file) is True):
+	                print (f"* Starting with {option['option']} {asset_info.asset_gpkg} {asset_info.asset_layer}")
+	                cost_df = pd.read_csv(cost_file)
+	                adapt_costs_df = cost_df[cost_df["adaptation_option"] == option["option_name"]]
+	                if len(adapt_costs_df.index) > 0:
+	                    adapt_costs_df = adapt_costs_df[[asset_id, "adaptation_option","adapt_cost_npv"]]
+	                    no_adapt_risk_df = pd.read_csv(no_adapt_risk_file)
+	                    adapt_risk_df = pd.read_csv(os.path.join(
+	                                                option_results_folder,
+	                                                f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_EAD_EAEL_npvs.csv"))
+	                    
+	                    EAD_columns, EAEL_columns, benefit_columns, bcr_columns = get_risk_and_adaption_columns(adapt_risk_df.columns.values.tolist())
+	                    
+	                    adapt_ids = adapt_risk_df[asset_id].values.tolist()
 
-                    no_adapt_risk_df = no_adapt_risk_df[no_adapt_risk_df[asset_id].isin(adapt_ids)]
-                    adapt_costs_df = adapt_costs_df[adapt_costs_df[asset_id].isin(adapt_ids)]
+	                    no_adapt_risk_df = no_adapt_risk_df[no_adapt_risk_df[asset_id].isin(adapt_ids)]
+	                    adapt_costs_df = adapt_costs_df[adapt_costs_df[asset_id].isin(adapt_ids)]
 
-                    no_adapt_risk_df = no_adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns].set_index(asset_id)
-                    adapt_risk_df = adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns].set_index(asset_id)
+	                    no_adapt_risk_df = no_adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns].set_index(asset_id)
+	                    adapt_risk_df = adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns].set_index(asset_id)
 
-                    no_adapt_risk_df[EAEL_columns] = days*no_adapt_risk_df[EAEL_columns]
-                    adapt_risk_df[EAEL_columns] = days*adapt_risk_df[EAEL_columns]
+	                    no_adapt_risk_df[EAEL_columns] = days*no_adapt_risk_df[EAEL_columns]
+	                    adapt_risk_df[EAEL_columns] = days*adapt_risk_df[EAEL_columns]
 
-                    adapt_risk_df[EAD_columns] = adapt_risk_df[EAD_columns].sub(
-                                                        no_adapt_risk_df[EAD_columns],
-                                                        axis='index',
-                                                        fill_value=0)
-                    adapt_risk_df[EAEL_columns] = adapt_risk_df[EAEL_columns].sub(
-                                                            no_adapt_risk_df[EAEL_columns],
-                                                            axis='index',fill_value=0
-                                                            )
-                    for idx,(b,d,i) in enumerate(list(zip(benefit_columns,EAD_columns,EAEL_columns))):
-                        adapt_risk_df[b] = -1.0*(adapt_risk_df[d] + adapt_risk_df[i])
+	                    adapt_risk_df[EAD_columns] = adapt_risk_df[EAD_columns].sub(
+	                                                        no_adapt_risk_df[EAD_columns],
+	                                                        axis='index',
+	                                                        fill_value=0)
+	                    adapt_risk_df[EAEL_columns] = adapt_risk_df[EAEL_columns].sub(
+	                                                            no_adapt_risk_df[EAEL_columns],
+	                                                            axis='index',fill_value=0
+	                                                            )
+	                    for idx,(b,d,i) in enumerate(list(zip(benefit_columns,EAD_columns,EAEL_columns))):
+	                        adapt_risk_df[b] = -1.0*(adapt_risk_df[d] + adapt_risk_df[i])
 
-                    adapt_risk_df = adapt_risk_df.reset_index()
-                    adapt_costs_df = pd.merge(adapt_costs_df,adapt_risk_df[[asset_id] + benefit_columns],how="left",on=[asset_id])
-                    num = adapt_costs_df._get_numeric_data()
-                    num[num < 0] = 0
-                    adapt_costs_df[bcr_columns] = adapt_costs_df[benefit_columns].div(adapt_costs_df["adapt_cost_npv"],axis=0)
+	                    adapt_risk_df = adapt_risk_df.reset_index()
+	                    adapt_costs_df = pd.merge(adapt_costs_df,adapt_risk_df[[asset_id] + benefit_columns],how="left",on=[asset_id])
+	                    num = adapt_costs_df._get_numeric_data()
+	                    num[num < 0] = 0
+	                    adapt_costs_df[bcr_columns] = adapt_costs_df[benefit_columns].div(adapt_costs_df["adapt_cost_npv"],axis=0)
 
-                    asset_adaptation_df.append(adapt_costs_df)
-                else:
-                    print (f"* {option['option_name']} does not apply to {asset_info.asset_gpkg} {asset_info.asset_layer}")
+	                    asset_adaptation_df.append(adapt_costs_df)
+	                else:
+	                    print (f"* {option['option_name']} does not apply to {asset_info.asset_gpkg} {asset_info.asset_layer}")
 
-        if len(asset_adaptation_df) > 0:
-            asset_adaptation_df = pd.concat(asset_adaptation_df,axis=0,ignore_index=False)
+	        if len(asset_adaptation_df) > 0:
+	            asset_adaptation_df = pd.concat(asset_adaptation_df,axis=0,ignore_index=False)
 
-            asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
-                f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr.csv"),index=False)
+	            asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
+	                f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.csv"),
+	            	index=False)
 
-            print (f"* Done with {asset_info.asset_gpkg} {asset_info.asset_layer} BCRs")
+	            print (f"* Done with {asset_info.asset_gpkg} {asset_info.asset_layer} BCRs for {days} days disruption")
 
 if __name__ == '__main__':
     CONFIG = load_config()
