@@ -284,7 +284,6 @@ def main(config):
                 adapt_costs_df = cost_df[cost_df["adaptation_option"] == option["option_name"]]
                 if len(adapt_costs_df.index) > 0:
                     adapt_costs_df = adapt_costs_df[[asset_id, "adaptation_option","adapt_cost_npv"]]
-                    adapt_ids = adapt_costs_df[asset_id].values.tolist()
                     no_adapt_risk_df = pd.read_csv(no_adapt_risk_file)
                     adapt_risk_df = pd.read_csv(os.path.join(
                                                 option_results_folder,
@@ -292,8 +291,10 @@ def main(config):
                     
                     EAD_columns, EAEL_columns, benefit_columns, bcr_columns = get_risk_and_adaption_columns(adapt_risk_df.columns.values.tolist())
                     
+                    adapt_ids = adapt_risk_df[asset_id].values.tolist()
+
                     no_adapt_risk_df = no_adapt_risk_df[no_adapt_risk_df[asset_id].isin(adapt_ids)]
-                    adapt_risk_df = adapt_risk_df[adapt_risk_df[asset_id].isin(adapt_ids)]
+                    adapt_costs_df = adapt_costs_df[adapt_costs_df[asset_id].isin(adapt_ids)]
 
                     no_adapt_risk_df = no_adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns].set_index(asset_id)
                     adapt_risk_df = adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns].set_index(asset_id)
@@ -301,13 +302,21 @@ def main(config):
                     no_adapt_risk_df[EAEL_columns] = days*no_adapt_risk_df[EAEL_columns]
                     adapt_risk_df[EAEL_columns] = days*adapt_risk_df[EAEL_columns]
 
-
-                    adapt_risk_df[benefit_columns] = adapt_risk_df[EAD_columns].sub(no_adapt_risk_df[EAD_columns],axis='index',fill_value=0)
-                    adapt_risk_df[benefit_columns] += adapt_risk_df[EAEL_columns].sub(no_adapt_risk_df[EAEL_columns],axis='index',fill_value=0)
-                    adapt_risk_df[benefit_columns] = -1.0*adapt_risk_df[benefit_columns]
+                    adapt_risk_df[EAD_columns] = adapt_risk_df[EAD_columns].sub(
+                                                        no_adapt_risk_df[EAD_columns],
+                                                        axis='index',
+                                                        fill_value=0)
+                    adapt_risk_df[EAEL_columns] = adapt_risk_df[EAEL_columns].sub(
+                                                            no_adapt_risk_df[EAEL_columns],
+                                                            axis='index',fill_value=0
+                                                            )
+                    for idx,(b,d,i) in enumerate(list(zip(benefit_columns,EAD_columns,EAEL_columns))):
+                        adapt_risk_df[b] = -1.0*(adapt_risk_df[d] + adapt_risk_df[i])
 
                     adapt_risk_df = adapt_risk_df.reset_index()
                     adapt_costs_df = pd.merge(adapt_costs_df,adapt_risk_df[[asset_id] + benefit_columns],how="left",on=[asset_id])
+                    num = adapt_costs_df._get_numeric_data()
+                    num[num < 0] = 0
                     adapt_costs_df[bcr_columns] = adapt_costs_df[benefit_columns].div(adapt_costs_df["adapt_cost_npv"],axis=0)
 
                     asset_adaptation_df.append(adapt_costs_df)
