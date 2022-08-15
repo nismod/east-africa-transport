@@ -20,7 +20,7 @@ def get_adaptation_options():
             "num":0,
             "option":"swales",
             "folder_name":"adaptation_option_0",
-            "flood_protection":1.0/0.05
+            "flood_protection":1.0/0.1
         },
         {
             "num":1,
@@ -38,7 +38,7 @@ def get_adaptation_options():
             "num":3,
             "option":"floodwall",
             "folder_name":"adaptation_option_3",
-            "flood_protection":1.0/0.05
+            "flood_protection":1.0/0.02
         },
         {
             "num":4,

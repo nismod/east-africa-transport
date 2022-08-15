@@ -22,14 +22,14 @@ def get_adaptation_options():
             "option":"swales",
             "option_name":"Swales",
             "folder_name":"adaptation_option_0",
-            "flood_protection":0.05
+            "flood_protection":1.0/0.1
         },
         {
             "num":1,
             "option":"spillways",
             "option_name":"Spillways",
             "folder_name":"adaptation_option_1",
-            "flood_protection":0.1
+            "flood_protection":1.0/0.1
         },
         {
             "num":2,
@@ -43,14 +43,14 @@ def get_adaptation_options():
             "option":"floodwall",
             "option_name":"Flood Wall",
             "folder_name":"adaptation_option_3",
-            "flood_protection":0.05
+            "flood_protection":1.0/0.02
         },
         {
             "num":4,
             "option":"drainage",
             "option_name":"Drainage (rehabilitation)",
             "folder_name":"adaptation_option_4",
-            "flood_protection":0.02
+            "flood_protection":1.0/0.02
         },
         {
             "num":5,
