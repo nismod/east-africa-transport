@@ -253,16 +253,16 @@ def get_ead_eael_costs(results_path,asset_id,ead_eael_results,asset_info,
 def main(config):
     incoming_data_path = config['paths']['incoming_data']
     processed_data_path = config['paths']['data']
-    output_data_path = config['paths']['output']
+    results_data_path = config['paths']['results']
      
     days = 15
-    adaptation_results = os.path.join(output_data_path,"adaptation_costs")
-    adaptation_bcr_results = os.path.join(output_data_path,"adaptation_benefits_costs_bcr")
+    adaptation_results = os.path.join(results_data_path,"adaptation_costs")
+    adaptation_bcr_results = os.path.join(results_data_path,"adaptation_benefits_costs_bcr")
     if os.path.exists(adaptation_bcr_results) == False:
         os.mkdir(adaptation_bcr_results)
 
-    non_adapt_risk_results = os.path.join(output_data_path,"risk_results","loss_damage_npvs")
-    hazard_adapt_costs = os.path.join(output_data_path,"adaptation_costs")
+    non_adapt_risk_results = os.path.join(results_data_path,"risk_results","loss_damage_npvs")
+    hazard_adapt_costs = os.path.join(results_data_path,"adaptation_costs")
     asset_data_details = pd.read_csv(os.path.join(processed_data_path,
                         "damage_curves",
                         "network_layers_hazard_intersections_details.csv"))
@@ -273,7 +273,7 @@ def main(config):
         asset_id = asset_info.asset_id_column
         for option in adaptation_options:
             folder_name = option['folder_name']
-            option_results_folder = os.path.join(output_data_path,f"{folder_name}/loss_damage_npvs")
+            option_results_folder = os.path.join(results_data_path,f"{folder_name}/loss_damage_npvs")
             cost_file = os.path.join(hazard_adapt_costs,
                                         f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_timeseries_and_npvs.csv")
             no_adapt_risk_file = os.path.join(non_adapt_risk_results,
