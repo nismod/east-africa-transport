@@ -266,6 +266,8 @@ def main(config):
     asset_data_details = pd.read_csv(os.path.join(processed_data_path,
                         "damage_curves",
                         "network_layers_hazard_intersections_details.csv"))
+
+    adaptation_options = get_adaptation_options()
     for asset_info in asset_data_details.itertuples():
         asset_adaptation_df = []
         asset_id = asset_info.asset_id_column
