@@ -20,13 +20,13 @@ def get_adaptation_options():
             "num":0,
             "option":"swales",
             "folder_name":"adaptation_option_0",
-            "flood_protection":0.05
+            "flood_protection":1.0/0.05
         },
         {
             "num":1,
             "option":"spillways",
             "folder_name":"adaptation_option_1",
-            "flood_protection":0.1
+            "flood_protection":1.0/0.1
         },
         {
             "num":2,
@@ -38,13 +38,13 @@ def get_adaptation_options():
             "num":3,
             "option":"floodwall",
             "folder_name":"adaptation_option_3",
-            "flood_protection":0.05
+            "flood_protection":1.0/0.05
         },
         {
             "num":4,
             "option":"drainage",
             "folder_name":"adaptation_option_4",
-            "flood_protection":0.02
+            "flood_protection":1.0/0.02
         },
         {
             "num":5,
