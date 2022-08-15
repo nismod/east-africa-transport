@@ -38,12 +38,28 @@ def get_adaptation_options_costs(asset_df,asset_id):
                     "periodic_maintenance_cost",
                     "routine_maintenance_cost"]]
 
+# def get_dimension_factor(x):
+#     dimension_type = x["asset_dimensions"]
+#     if dimension_type in ["length","perimeter"]:
+#         dimension = x.geometry.length
+#     elif dimension_type == "area":
+#         dimension = x.geometry.length * x["lanes"]
+#     else:
+#         dimension = 1
+
+#     change_type = x["change_parameter"]
+#     if change_type == "flood depth":
+#         cost_unit = "USD/m"
+#     else:
+#         cost_unit = "USD"
+#     return dimension, cost_unit
+
 def get_dimension_factor(x):
     dimension_type = x["asset_dimensions"]
     if dimension_type in ["length","perimeter"]:
-        dimension = x.geometry.length
+        dimension = x["max_exposure_m"]
     elif dimension_type == "area":
-        dimension = x.geometry.length * x["lanes"]
+        dimension = x["max_exposure_m"] * x["lanes"]
     else:
         dimension = 1
 
@@ -128,7 +144,16 @@ def main(config):
         asset_hazard = getattr(asset_info,f"river_asset_damage_lookup_column")
         asset_df = gpd.read_file(os.path.join(processed_data_path,asset_info.path),layer=asset_info.asset_layer)
         asset_df = asset_df.to_crs(epsg=epsg)
-       
+        
+        exposure_df = pd.read_csv(os.path.join(results_data_path,
+                                            "risk_results",
+                                            "direct_damages_summary",
+                                            f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_exposures.csv"))
+        exposure_columns = [c for c in exposure_df.columns.values.tolist() if c not in [asset_id,"exposure_unit"]]
+        exposure_df["max_exposure_m"] = exposure_unit[exposure_columns].max(axis=1)
+        asset_df = pd.merge(exposure_df[[asset_id,"max_exposure_m"]],asset_df,how="left",on=[asset_id])
+        del exposure_df 
+        
         adapt_costs = cost_df[cost_df['asset_name'] == asset_info.asset_gpkg]
 
         df = []
