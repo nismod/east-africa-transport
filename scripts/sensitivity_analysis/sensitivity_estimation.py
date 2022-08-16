@@ -4,8 +4,8 @@ import os
 import sys
 import json
 import warnings
-import geopandas
-import pandas
+import geopandas as gpd
+import pandas as pd
 import numpy
 
 def load_config():
