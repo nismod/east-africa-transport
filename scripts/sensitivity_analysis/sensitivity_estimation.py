@@ -1,11 +1,19 @@
-"""Functions for plotting
+"""Combine all esitimates into one table
 """
 import os
 import sys
+import json
 import warnings
 import geopandas
 import pandas
 import numpy
+
+def load_config():
+    """Read config.json"""
+    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.json")
+    with open(config_path, "r") as config_fh:
+        config = json.load(config_fh)
+    return config
 
 def get_adaptation_options():
     adaptation_options = [
