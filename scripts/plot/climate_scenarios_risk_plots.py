@@ -71,10 +71,10 @@ def get_asset_total_damage_values(sector,damages,
     damages = damages.set_index(damages_filter_columns)
     damages = damages[damages.index.isin(damages_filter_values)].reset_index()
     if asset_filter_column is not None:
-    	if asset_filter_column == "status" and climate_scenario == "baseline":
-    		asset_ids = asset_dataframe[asset_dataframe[asset_filter_column].isin(["open"])][asset_id_column].values.tolist()
-    	else:
-        	asset_ids = asset_dataframe[asset_dataframe[asset_filter_column].isin(asset_filter_list)][asset_id_column].values.tolist()
+        if asset_filter_column == "status" and climate_scenario == "baseline":
+            asset_ids = asset_dataframe[asset_dataframe[asset_filter_column].isin(["open"])][asset_id_column].values.tolist()
+        else:
+            asset_ids = asset_dataframe[asset_dataframe[asset_filter_column].isin(asset_filter_list)][asset_id_column].values.tolist()
         damages = damages[damages[asset_id_column].isin(asset_ids)]
     
 
@@ -278,11 +278,11 @@ def main(config):
                         #                                     tot_damages_filter_values,
                         #                                     damage_groupby,damage_columns,"edge")
                         tot_edges = pd.read_parquet(
-                    					os.path.join(
-                        				risk_results_path,
-                        				f"{sector['sector']}_{sector['edge_layer']}_{damage_string}.parquet"
-                        				)
-                    				)
+                                        os.path.join(
+                                        risk_results_path,
+                                        f"{sector['sector']}_{sector['edge_layer']}_{damage_string}.parquet"
+                                        )
+                                    )
                         
                         
                         weights = [
@@ -339,12 +339,12 @@ def main(config):
                                     #                             [damages_filter_values[j]],
                                     #                             damage_groupby,damage_columns,"edge")
                                     edges_damages = get_asset_total_damage_values(sector,
-                                    								tot_edges.copy(),
-                           											edges,
-                            										damages_filter_columns,
-                            										[damages_filter_values[j]],
-                            										"edge",
-                            										climate_scenario=damages_filter_values[j][1])
+                                                                    tot_edges.copy(),
+                                                                    edges,
+                                                                    damages_filter_columns,
+                                                                    [damages_filter_values[j]],
+                                                                    "edge",
+                                                                    climate_scenario=damages_filter_values[j][1])
                                     ax = get_axes(ax_plots[j],extent=bounds)
 
                                     plot_basemap(ax, countries,lakes,
