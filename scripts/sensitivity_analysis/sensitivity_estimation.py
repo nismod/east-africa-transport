@@ -86,7 +86,7 @@ def main(config):
         for option in adaptation_options:
             folder_name = option['folder_name']        
             damage_results_folder = f"{folder_name}/direct_damages/{sector}"
-            with open(parameter_combinations_file,"r") as r:
+            with open("parameter_combinations.txt","r") as r:
                 for p in r:
                     pv = p.strip(" ").split(",")
                     df = pd.read_parquet(os.path.join(results_data_path,
