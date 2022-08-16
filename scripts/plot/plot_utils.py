@@ -394,11 +394,11 @@ def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_t
 
     return legend_handles
 
-def line_map_plotting_colors_width(ax,df,column,
+def line_map_plotting_colors_width(ax,df,weights,column,
                         ax_crs=4326,
                         edge_classify_column=None,
                         edge_categories=["1","2","3","4","5"],
-                        edge_colors=['#7fcdbb','#41b6c4','#1d91c0','#225ea8','#0c2c84'],
+                        edge_colors=['#d82e00','#b31c11','#841f0f','#5e0709','#200000'],
                         edge_labels=[None,None,None,None,None],
                         edge_zorder=[6,7,8,9,10],
                         divisor=1.0,legend_label="Legend",
@@ -407,7 +407,7 @@ def line_map_plotting_colors_width(ax,df,column,
                         line_steps=6,
                         width_step=0.02,
                         interpolation="linear",
-                        legend_size=7,
+                        legend_size=8,
                         plot_title=False,
                         significance=0,
                         legend_location='upper right'):
@@ -425,16 +425,12 @@ def line_map_plotting_colors_width(ax,df,column,
                             edge_zorder
                             )
                         )
-    weights = [
-        getattr(record,column)
-        for record in df.itertuples() if getattr(record,column) > 0
-    ]
     max_weight = max(weights)
     width_by_range = generate_weight_bins(weights, 
                                 width_step=width_step, 
                                 n_steps=line_steps,
                                 interpolation=interpolation)
-    min_width = 0.8*width_step
+    min_width = 0.5*width_step
     min_order = min(edge_zorder)
 
     if edge_classify_column is None:
@@ -516,7 +512,12 @@ def line_map_plotting_colors_width(ax,df,column,
     if plot_title:
         ax.set_title(plot_title, fontsize=9)
     print ('* Plotting ',plot_title)
-    first_legend = ax.legend(handles=legend_handles,fontsize=legend_size,title=legend_label,loc=legend_location)
+    # first_legend = ax.legend(handles=legend_handles,fontsize=legend_size,title=legend_label,loc=legend_location)
+    first_legend = ax.legend(handles=legend_handles,
+                            fontsize=legend_size,
+                            title=legend_label,
+                            loc=legend_location,
+                            prop={'size':8,'weight':'bold'})
     ax.add_artist(first_legend).set_zorder(20)
     legend_from_style_spec(ax, styles,fontsize=legend_size,loc='lower left',zorder=20)
     return ax
