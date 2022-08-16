@@ -79,34 +79,49 @@ def main(config):
     hazard_data_details = pd.read_csv(hazard_csv,encoding='latin1')
     hazard_keys = hazard_data_details["key"].values.tolist()
     
+    hazard_indexes_ead_eael = ["hazard","rcp","epoch","confidence","subsidence","model"]
+    hazard_indexes_damage_losses = ["hazard","rcp","epoch","rp","confidence","subsidence","model"]
     adaptation_options = get_adaptation_options()
     sector_details = ["rail_edges","road_edges"]
-    for sector in sector_details:
-        sector_df = []
-        for option in adaptation_options:
-            folder_name = option['folder_name']        
-            damage_results_folder = f"{folder_name}/direct_damages/{sector}"
-            with open("parameter_combinations.txt","r") as r:
-                for p in r:
-                    pv = p.strip(" ").split(",")
-                    df = pd.read_parquet(os.path.join(results_data_path,
-                                            damage_results_folder,
-                                            f"{sector}_direct_damages_parameter_set_{pv[0]}.parquet"))
-                    df["cost_uncertainty_parameter"] = pv[1]
-                    df["damage_uncertainty_parameter"] = pv[2]
-                    df_keys = [c for c in df.columns.values.tolist() if c in hazard_keys]
-                    df = df.groupby(["cost_uncertainty_parameter",
-                                    "damage_uncertainty_parameter"])[df_keys].sum().reset_index()
-                    df = df.melt(id_vars=["cost_uncertainty_parameter",
-                                    "damage_uncertainty_parameter"], 
-                                    var_name="key", 
-                                    value_name="value")
-                    df["option"] = option["option"]
-                    df = pd.merge(df,hazard_keys,how="left",on=["key"])
-                    sector_df.append(df)
+    damages_types = ["direct_damages","economic_losses","EAD_EAEL"]
+    damages_types = ["EAD_EAEL"]
+    for damage in damages_types:
+        for sector in sector_details:
+            sector_df = []
+            for option in adaptation_options:
+                folder_name = option['folder_name']        
+                damage_results_folder = f"{folder_name}/direct_damages/{sector}"
+                with open("parameter_combinations.txt","r") as r:
+                    for p in r:
+                        pv = p.strip("\n").split(",")
+                        df = pd.read_csv(os.path.join(results_data_path,
+                                                damage_results_folder,
+                                                f"{sector}_{damage}_parameter_set_{pv[0]}.csv"))
+                        df["cost_uncertainty_parameter"] = pv[1]
+                        df["damage_uncertainty_parameter"] = pv[2]
+                        if damage in ["direct_damages","economic_losses"]:
+                            df_keys = [c for c in df.columns.values.tolist() if c in hazard_keys]
+                            df = df.groupby(["cost_uncertainty_parameter",
+                                        "damage_uncertainty_parameter"])[df_keys].sum().reset_index()
+                            df = df.melt(id_vars=["cost_uncertainty_parameter",
+                                        "damage_uncertainty_parameter"], 
+                                            var_name="key", 
+                                            value_name=damage)
+                            df = pd.merge(df,hazard_data_details,how="left",on=["key"]).fillna(0)
+                            df = df[hazard_indexes_damage_losses + ["cost_uncertainty_parameter",
+                                        "damage_uncertainty_parameter",damage]]
+                        else:
+                            df_keys = [c for c in df.columns.values.tolist() if "EAD" in c or "EAEL" in c]
+                            df = df.groupby(hazard_indexes_ead_eael + ["cost_uncertainty_parameter",
+                                        "damage_uncertainty_parameter"])[df_keys].sum().reset_index()
+                            cols = dict([(c,c.split("_")[0]) for c in df_keys])
+                            df.rename(columns=cols,inplace=True)
 
-        sector_df = pd.concat(sector_df,axis=0,ignore_index=True)
-        sector_df.to_csv(os.path.join(folder_path,f"{sector}_direct_damages_all_parameters.csv"),index=False)
+                        df["option"] = option["option"]
+                        sector_df.append(df)
+
+            sector_df = pd.concat(sector_df,axis=0,ignore_index=True)
+            sector_df.to_csv(os.path.join(folder_path,f"{sector}_{damage}_all_parameters.csv"),index=False)
 
 if __name__ == '__main__':
     # Ignore reading-geopackage warnings
