@@ -88,7 +88,7 @@ def main(config):
             damage_results_folder = f"{folder_name}/direct_damages/{sector}"
             with open(parameter_combinations_file,"r") as r:
                 for p in r:
-                    pv = p..strip(" ").split(",")
+                    pv = p.strip(" ").split(",")
                     df = pd.read_parquet(os.path.join(results_data_path,
                                             damage_results_folder,
                                             f"{sector}_direct_damages_parameter_set_{pv[0]}.parquet"))
