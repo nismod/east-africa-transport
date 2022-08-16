@@ -96,7 +96,7 @@ def main(config):
                     df["damage_uncertainty_parameter"] = pv[2]
                     df_keys = [c for c in df.columns.values.tolist() if c in hazard_keys]
                     df = df.groupby(["cost_uncertainty_parameter",
-                                    "damage_uncertainty_parameter"])[df_keys].sum(axis=0).reset_index()
+                                    "damage_uncertainty_parameter"])[df_keys].sum().reset_index()
                     df = df.melt(id_vars=["cost_uncertainty_parameter",
                                     "damage_uncertainty_parameter"], 
                                     var_name="key", 
