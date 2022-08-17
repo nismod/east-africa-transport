@@ -154,6 +154,30 @@ def main(config):
 
 	            print (f"* Done with {asset_info.asset_gpkg} {asset_info.asset_layer} BCRs for {days} days disruption")
 
+                """Find optimal asset values by BCR
+                """
+                asset_adaptation_df["max_BCR"] = asset_adaptation_df[bcr_columns].max(axis=1)
+                asset_adaptation_df["max_benefit"] = asset_adaptation_df[benefit_columns].max(axis=1)
+                preferred_options = asset_adaptation_df[asset_adaptation_df["max_BCR"] >= 1]
+                non_preferred_options = asset_adaptation_df[
+                                            ~asset_adaptation_df[asset_id].isin(
+                                                list(
+                                                    set(
+                                                        preferred_options.asset_id.values.tolist()
+                                                        )
+                                                    )
+                                                )
+                                            ]
+                non_preferred_options = non_preferred_options.sort_values(by="max_BCR",ascending=False)
+                non_preferred_options.drop_duplicates(subset=["max_BCR"],keep="first")
+                preferred_options = preferred_options.sort_values(by="max_benefit",ascending=False)
+                preferred_options.drop_duplicates(subset=["max_benefit"],keep="first")
+                pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_csv(
+                        os.path.join(adaptation_bcr_results,
+                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.csv"),
+                        index=False)
+
+
 if __name__ == '__main__':
     CONFIG = load_config()
     main(CONFIG)
