@@ -163,7 +163,7 @@ def main(config):
                                             ~asset_adaptation_df[asset_id].isin(
                                                 list(
                                                     set(
-                                                        preferred_options.asset_id.values.tolist()
+                                                        preferred_options[asset_id].values.tolist()
                                                         )
                                                     )
                                                 )
