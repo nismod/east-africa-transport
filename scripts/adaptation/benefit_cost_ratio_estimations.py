@@ -169,9 +169,9 @@ def main(config):
                                                 )
                                             ]
                 non_preferred_options = non_preferred_options.sort_values(by="max_BCR",ascending=False)
-                non_preferred_options.drop_duplicates(subset=["max_BCR"],keep="first")
+                non_preferred_options.drop_duplicates(subset=[asset_id],keep="first")
                 preferred_options = preferred_options.sort_values(by="max_benefit",ascending=False)
-                preferred_options.drop_duplicates(subset=["max_benefit"],keep="first")
+                preferred_options.drop_duplicates(subset=[asset_id],keep="first")
                 pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_csv(
                         os.path.join(adaptation_bcr_results,
                         f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.csv"),
