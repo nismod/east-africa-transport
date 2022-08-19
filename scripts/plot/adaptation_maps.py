@@ -46,112 +46,161 @@ def main(config):
                 "plot_column":"adapt_cost_npv",
                 "legend_title":"Max Investment (USD) over time",
                 "no_value_string":"No risk/exposure/operation"
+                },
+                {
+                "plot_column":"max_BCR",
+                "legend_title":"Max BCR over time",
+                "no_value_string":"No risk/exposure/operation"
                 }
                 ]
 
     for plot in plots:
-        plot_column = plot["plot_column"]
-        legend_title = plot["legend_title"]
-        no_value_string = plot["no_value_string"]
+        if plot["plot_column"] in ["max_benefit","adapt_cost_npv","max_BCR"]:
+            plot_column = plot["plot_column"]
+            legend_title = plot["legend_title"]
+            no_value_string = plot["no_value_string"]
 
-        sector_details = sector_attributes()
-        for sector in sector_details:
-            if sector["sector"] in ["rail","road"]: 
-                edges = gpd.read_file(os.path.join(
-                                        processed_data_path,
-                                        "networks",
-                                        sector["sector"],
-                                        sector["sector_gpkg"]),
-                                        layer=sector["edge_layer"])
+            width_step=0.01
+            line_step=6
 
-                if len(edges) > 0:
-                    if edges.crs is None:
-                        edges = edges.set_crs(epsg=AFRICA_GRID_EPSG)
-                    else:
-                        edges = edges.to_crs(epsg=AFRICA_GRID_EPSG)
+            sector_details = sector_attributes()
+            for sector in sector_details:
+                if sector["sector"] in ["rail","road"]: 
+                    edges = gpd.read_file(os.path.join(
+                                            processed_data_path,
+                                            "networks",
+                                            sector["sector"],
+                                            sector["sector_gpkg"]),
+                                            layer=sector["edge_layer"])
 
-                edges["mode"] = sector["sector"]
+                    if len(edges) > 0:
+                        if edges.crs is None:
+                            edges = edges.set_crs(epsg=AFRICA_GRID_EPSG)
+                        else:
+                            edges = edges.to_crs(epsg=AFRICA_GRID_EPSG)
 
-                edges = edges[["edge_id","mode","geometry"]]
+                    edges["mode"] = sector["sector"]
 
-                filename = sector["sector"] + "_edges_optimal_benefits_costs_bcr_" + day + "_days_disruption.csv"
+                    edges = edges[["edge_id","mode","geometry"]]
+
+                    filename = sector["sector"] + "_edges_optimal_benefits_costs_bcr_" + day + "_days_disruption.csv"
+                            
+                    data = pd.read_csv(os.path.join(output_data_path,
+                                                      "adaptation_benefits_costs_bcr",
+                                                      filename))
+                    
+                    data_gpd = data.merge(edges, on='edge_id').fillna(0)
+                    data_gpd = gpd.GeoDataFrame(data_gpd, geometry="geometry")
+
+                    if plot_column == "max_BCR":
+                        # change the weights to have 0-1 first
+                        bcr_high = data_gpd[data_gpd["max_BCR"]>=1]
+                        weights = [
+                                    getattr(record,plot_column)
+                                    for record in bcr_high.itertuples() if getattr(record,plot_column) > 0
+                                ]
                         
-                data = pd.read_csv(os.path.join(output_data_path,
-                                                  "adaptation_benefits_costs_bcr",
-                                                  filename))
-                
-                data_gpd = data.merge(edges, on='edge_id').fillna(0)
-                data_gpd = gpd.GeoDataFrame(data_gpd, geometry="geometry")
+                        width_ranges_old = generate_weight_bins(weights, n_steps=line_step, width_step=width_step, interpolation='fisher-jenks')
+                        width_ranges_new = generate_weight_bins(weights, n_steps=(line_step-1), width_step=width_step, interpolation='fisher-jenks')
+                        width_ranges_new.update({(0.0, 0.999999999999999): width_step})
+                        width_ranges_new.move_to_end((0.0, 0.999999999999999), last=False)
+                        
+                        i = 0
+                        for key, value in width_ranges_new.items():
+                            width_ranges_new.update({key: list(width_ranges_old.values())[i]})
+                            i += 1
 
-                weights = [
-                    getattr(record,plot_column)
-                    for record in data_gpd.itertuples() if getattr(record,plot_column) > 0
-                ]
-                
-                if weights != []:
-                    countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
-                    countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
+                        # replace label
+                        data_gpd.loc[data_gpd.max_BCR < 1, 'adaptation_option'] = "BCR < 1"
+                    else:
+                        weights = [
+                                    getattr(record,plot_column)
+                                    for record in data_gpd.itertuples() if getattr(record,plot_column) > 0
+                                ]
+                    
+                    if weights != []:
+                        countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
+                        countries = countries[countries["GID_0"].isin(map_plot["boundary_countries"])]
 
-                    lakes = geopandas.read_file(lakes_path).to_crs(AFRICA_GRID_EPSG)
-                    regions = geopandas.read_file(admin_boundaries,layer="level1").to_crs(AFRICA_GRID_EPSG)
-                    regions = regions[regions["GID_0"].isin(map_plot["center_countries"])]
-                    coastal_prov = regions[regions["GID_1"].isin(map_plot["coastal_provinces"])]
+                        lakes = geopandas.read_file(lakes_path).to_crs(AFRICA_GRID_EPSG)
+                        regions = geopandas.read_file(admin_boundaries,layer="level1").to_crs(AFRICA_GRID_EPSG)
+                        regions = regions[regions["GID_0"].isin(map_plot["center_countries"])]
+                        coastal_prov = regions[regions["GID_1"].isin(map_plot["coastal_provinces"])]
 
-                    bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
-                    offset = map_plot["offset_river"]
-                    figsize = (14,16)
-                    arrow_location=(0.88,0.08)
-                    scalebar_location=(0.92,0.05)
+                        bounds = countries[countries["GID_0"].isin(map_plot["center_countries"])].geometry.total_bounds # this gives your boundaries of the map as (xmin,ymin,xmax,ymax)
+                        offset = map_plot["offset_river"]
+                        figsize = (14,16)
+                        arrow_location=(0.88,0.08)
+                        scalebar_location=(0.92,0.05)
 
-                    bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
-                    ax_proj = get_projection(extent=bounds) 
+                        bounds = (bounds[0]-offset[0],bounds[2]+offset[1],bounds[1]-offset[2],bounds[3]+offset[3])
+                        ax_proj = get_projection(extent=bounds) 
 
-                    figsize = (12,12)
+                        figsize = (12,12)
 
-                    fig, ax = plt.subplots(1,1,
-                        subplot_kw={'projection': ax_proj},
-                        figsize=figsize,
-                        dpi=300)
+                        fig, ax = plt.subplots(1,1,
+                            subplot_kw={'projection': ax_proj},
+                            figsize=figsize,
+                            dpi=300)
 
-                    ax = get_axes(ax,extent=bounds)
+                        ax = get_axes(ax,extent=bounds)
 
-                    plot_basemap(ax, countries,lakes,
-                                regions=regions
+                        plot_basemap(ax, countries,lakes,
+                                    regions=regions
+                                    )
+                        scale_bar_and_direction(ax,arrow_location,scalebar_location,scalebar_distance=50)
+                        
+                        ax = plot_line_assets(ax,edges.crs,edges,
+                                              colors="#969696",
+                                              size=0.2,
+                                              linestyle="solid",
+                                              zorder=5)
+
+                        if plot_column == "max_BCR":
+                            ax = line_map_plotting_colors_width(
+                                ax,data_gpd,weights,plot_column,
+                                legend_label=legend_title,
+                                no_value_label=no_value_string,
+                                width_step=width_step,
+                                line_steps=line_step,
+                                edge_classify_column = "adaptation_option",
+                                edge_categories=["BCR < 1","Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
+                                edge_colors=["#000000","#70a845","#8d70c9","#b68f40","#c8588c","#49adad","#cc5a43"],
+                                edge_labels=["BCR < 1","Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
+                                edge_zorder=[6,7,8,9,10,11,12],
+                                interpolation="fisher-jenks",
+                                plot_title=f"{legend_title}",
+                                legend_location=map_plot["legend_location"],
+                                bbox_to_anchor=(0,0.7),
+                                width_ranges = width_ranges_new
                                 )
-                    scale_bar_and_direction(ax,arrow_location,scalebar_location,scalebar_distance=50)
-                    
-                    ax = plot_line_assets(ax,edges.crs,edges,
-                                          colors="#969696",
-                                          size=0.2,
-                                          linestyle="solid",
-                                          zorder=5)
-                    
-                    ax = line_map_plotting_colors_width(
-                        ax,data_gpd,weights,plot_column,
-                        legend_label=legend_title,
-                        no_value_label=no_value_string,
-                        width_step=0.01,
-                        line_steps = 8,
-                        edge_classify_column = "adaptation_option",
-                        edge_categories=["Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
-                        edge_colors=["#70a845","#8d70c9","#b68f40","#c8588c","#49adad","#cc5a43"],
-                        edge_labels=["Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
-                        edge_zorder=[6,7,8,9,10,11],
-                        interpolation="fisher-jenks",
-                        plot_title=f"{legend_title}",
-                        legend_location=map_plot["legend_location"],
-                        bbox_to_anchor=(0,0.7)
-                        )
+                        else:
+                            ax = line_map_plotting_colors_width(
+                                ax,data_gpd,weights,plot_column,
+                                legend_label=legend_title,
+                                no_value_label=no_value_string,
+                                width_step=width_step,
+                                line_steps =line_step,
+                                edge_classify_column = "adaptation_option",
+                                edge_categories=["Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
+                                edge_colors=["#70a845","#8d70c9","#b68f40","#c8588c","#49adad","#cc5a43"],
+                                edge_labels=["Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
+                                edge_zorder=[6,7,8,9,10,11],
+                                interpolation="fisher-jenks",
+                                plot_title=f"{legend_title}",
+                                legend_location=map_plot["legend_location"],
+                                bbox_to_anchor=(0,0.7)
+                                )
 
-                    save_fig(
-                        os.path.join(
-                            folder_path, 
-                            f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{plot_column}.png"
+                        save_fig(
+                            os.path.join(
+                                folder_path, 
+                                f"{sector['sector_label'].lower().replace(' ','_')}_{sector['edge_layer']}_{plot_column}.png"
+                                )
                             )
-                        )
 
 
-                    print("Done with " + plot_column + " of " + sector['sector_label'])
+                        print("Done with " + plot_column + " of " + sector['sector_label'])
             
 
 

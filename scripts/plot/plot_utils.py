@@ -412,7 +412,8 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         plot_title=False,
                         significance=0,
                         legend_location='upper right',
-                        bbox_to_anchor=None):
+                        bbox_to_anchor=None,
+                        width_ranges=None):
     
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
@@ -428,10 +429,14 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                             )
                         )
     max_weight = max(weights)
-    width_by_range = generate_weight_bins(weights, 
+    if width_ranges == None:
+        width_by_range = generate_weight_bins(weights, 
                                 width_step=width_step, 
                                 n_steps=line_steps,
                                 interpolation=interpolation)
+    else: 
+        width_by_range = width_ranges
+
     min_width = 0.5*width_step
     min_order = min(edge_zorder)
 
