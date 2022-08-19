@@ -284,7 +284,7 @@ def plot_lines_and_points(ax,legend_handles,sector,sector_dataframe=None,layer_k
         
     return ax, legend_handles
 
-def legend_from_style_spec(ax, styles, fontsize = 11, loc='lower left',zorder=20):
+def legend_from_style_spec(ax, styles, fontsize = 11, loc='lower left',bbox_to_anchor=None,zorder=20):
     """Plot legend
     """
     handles = [
@@ -294,7 +294,8 @@ def legend_from_style_spec(ax, styles, fontsize = 11, loc='lower left',zorder=20
     ax.legend(
         handles=handles,
         fontsize = fontsize,
-        loc=loc
+        loc=loc,
+        bbox_to_anchor=bbox_to_anchor
     ).set_zorder(zorder)
 
 def generate_weight_bins(weights, n_steps=9, width_step=0.01, interpolation='linear'):
@@ -389,7 +390,7 @@ def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_t
         else:
             legend_handles.append(Line2D([0], [0], 
                             color=legend_colors[i],
-                            lw=4,  # width/legend_weight,
+                            lw=width/legend_weight,  # 4 or width/legend_weight,
                             label=label))
 
     return legend_handles
@@ -410,7 +411,8 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         legend_size=8,
                         plot_title=False,
                         significance=0,
-                        legend_location='upper right'):
+                        legend_location='upper right',
+                        bbox_to_anchor=None):
     
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
@@ -490,7 +492,7 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         significance,
                         width_by_range,
                         max_weight,
-                        'line',["#023858"]*line_steps,width_step)
+                        'line',["#000000"]*line_steps,width_step)
 
         styles = OrderedDict([
             (label,  
@@ -519,7 +521,7 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                             loc=legend_location,
                             prop={'size':8,'weight':'bold'})
     ax.add_artist(first_legend).set_zorder(20)
-    legend_from_style_spec(ax, styles,fontsize=legend_size,loc='lower left',zorder=20)
+    legend_from_style_spec(ax, styles,fontsize=legend_size,loc='lower left',bbox_to_anchor=bbox_to_anchor,zorder=20)
     return ax
 
 def point_map_plotting_colors_width(ax,df,column,
