@@ -99,6 +99,7 @@ def create_matrix_dataframe(S1,S2):
                                     )["value"].rename_axis(None, axis=1)).fillna(0)
     S_matrix["SUM"] = S_matrix[params].sum(axis=1)
     S_matrix = S_matrix.sort_values(by="SUM",ascending=False)
+    params = S_matrix.index.values.tolist()
 
     S_matrix = S_matrix[params]
     # S_matrix.index = params
@@ -200,6 +201,27 @@ def main(config):
                                 "parameter_labels":["RCP","EPOCH",
                                                     "DCOST","FRAG","CONF","SUBS","DUR"]
                             },
+                            {
+                                "damage_type":"total_risk",
+                                "damage_file_string":"EAD_EAEL",
+                                "hazard":"river",
+                                "parameter_names": ["rcp","epoch","model",
+                                                    "cost_uncertainty_parameter",
+                                                    "damage_uncertainty_parameter","duration"],
+                                "parameter_labels":["RCP","EPOCH","MODEL",
+                                                    "DCOST","FRAG","DUR"]
+                            },
+                            {
+                                "damage_type":"total_risk",
+                                "damage_file_string":"EAD_EAEL",
+                                "hazard":"coastal",
+                                "parameter_names": ["rcp","epoch",
+                                                    "cost_uncertainty_parameter",
+                                                    "damage_uncertainty_parameter",
+                                                    "confidence","subsidence","duration"],
+                                "parameter_labels":["RCP","EPOCH",
+                                                    "DCOST","FRAG","CONF","SUBS","DUR"]
+                            },
 
                             ]
     adaptation_option = "no_adaptation"
@@ -216,6 +238,15 @@ def main(config):
                         dur_df = df.copy()
                         dur_df["duration"] = dur
                         dur_df[sensitivity["damage_type"]] = dur*dur_df[sensitivity["damage_type"]]
+                        duration_effect.append(dur_df)
+                    df = pd.concat(duration_effect,axis=0,ignore_index=True)
+                if sensitivity["damage_type"] == "total_risk":
+                    duration_effect= []
+                    for dur in [10,20,30,40,50]:
+                        dur_df = df.copy()
+                        dur_df["duration"] = dur
+                        dur_df["EAEL"] = dur*dur_df["EAEL"]
+                        dur_df["total_risk"] = dur_df["EAD"] + dur_df["EAEL"]
                         duration_effect.append(dur_df)
                     df = pd.concat(duration_effect,axis=0,ignore_index=True)
 
@@ -262,7 +293,7 @@ def main(config):
                 ax.set_rgrids([10,20,30,40,50,60,70,80,90,100])
                 # ax.tick_params(pad=-3)
 
-                if sensitivity['damage_type'] in ["direct_damages","economic_losses"]:
+                if sensitivity['damage_type'] in ["direct_damages","economic_losses","total_risk"]:
                     st = sensitivity['damage_type'].replace('_',' ').title()
                 else:
                     st = sensitivity['damage_type']

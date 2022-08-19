@@ -7,6 +7,7 @@ import warnings
 import geopandas as gpd
 import pandas as pd
 import numpy
+import warnings
 
 def load_config():
     """Read config.json"""
@@ -84,7 +85,6 @@ def main(config):
     adaptation_options = get_adaptation_options()
     sector_details = ["rail_edges","road_edges"]
     damages_types = ["direct_damages","economic_losses","EAD_EAEL"]
-    damages_types = ["EAD_EAEL"]
     for damage in damages_types:
         for sector in sector_details:
             sector_df = []
