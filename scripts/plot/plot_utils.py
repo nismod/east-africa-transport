@@ -370,14 +370,20 @@ def find_significant_digits(divisor,significance,width_by_range):
     return significance_ndigits
 
 
-def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_type,legend_colors,legend_weight,marker='o'):
+def create_figure_legend(divisor,significance,width_by_range,max_weight,legend_type,legend_colors,legend_weight,marker='o',max_plus=False):
     legend_handles = []
     significance_ndigits = find_significant_digits(divisor,significance,width_by_range)
     for (i, ((nmin, nmax), width)) in enumerate(width_by_range.items()):
-        value_template = '{:,.' + str(significance_ndigits) + \
-            'f} - {:,.' + str(significance_ndigits) + 'f}'
-        label = value_template.format(
-            round(nmin/divisor, significance_ndigits), round(nmax/divisor, significance_ndigits))
+        if i ==(len(width_by_range.items())-1) and max_plus == True:
+            value_template = '{:,.' + str(significance_ndigits) + \
+                'f} + '
+            label = value_template.format(
+                round(nmin/divisor, significance_ndigits))
+        else: 
+            value_template = '{:,.' + str(significance_ndigits) + \
+                'f} - {:,.' + str(significance_ndigits) + 'f}'
+            label = value_template.format(
+                round(nmin/divisor, significance_ndigits), round(nmax/divisor, significance_ndigits))
 
         if legend_type == 'marker':
             legend_handles.append(plt.plot([],[],
@@ -413,7 +419,8 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         significance=0,
                         legend_location='upper right',
                         bbox_to_anchor=None,
-                        width_ranges=None):
+                        width_ranges=None,
+                        max_plus=False):
     
     if ax_crs is None or ax_crs == 4326:
         proj = ccrs.PlateCarree()
@@ -465,7 +472,8 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         significance,
                         width_by_range,
                         max_weight,
-                        'line',edge_colors,width_step)
+                        'line',edge_colors,width_step,
+                        max_plus=max_plus)
         styles = OrderedDict([
             (cat,  
                 Style(color=color, zindex=zorder,label=label)) for j,(cat,color,label,zorder) in enumerate(layer_details)
@@ -497,7 +505,8 @@ def line_map_plotting_colors_width(ax,df,weights,column,
                         significance,
                         width_by_range,
                         max_weight,
-                        'line',["#000000"]*line_steps,width_step)
+                        'line',["#000000"]*line_steps,width_step,
+                        max_plus=max_plus)
 
         styles = OrderedDict([
             (label,  

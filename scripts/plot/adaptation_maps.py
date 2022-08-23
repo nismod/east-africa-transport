@@ -60,7 +60,7 @@ def main(config):
             legend_title = plot["legend_title"]
             no_value_string = plot["no_value_string"]
 
-            width_step=0.01
+            width_step=0.02
             line_step=6
 
             sector_details = sector_attributes()
@@ -92,31 +92,27 @@ def main(config):
                     data_gpd = data.merge(edges, on='edge_id').fillna(0)
                     data_gpd = gpd.GeoDataFrame(data_gpd, geometry="geometry")
 
-                    if plot_column == "max_BCR":
-                        # change the weights to have 0-1 first
-                        bcr_high = data_gpd[data_gpd["max_BCR"]>=1]
-                        weights = [
+                    weights = [
                                     getattr(record,plot_column)
-                                    for record in bcr_high.itertuples() if getattr(record,plot_column) > 0
+                                    for record in data_gpd.itertuples() if getattr(record,plot_column) > 0
                                 ]
-                        
-                        width_ranges_old = generate_weight_bins(weights, n_steps=line_step, width_step=width_step, interpolation='fisher-jenks')
-                        width_ranges_new = generate_weight_bins(weights, n_steps=(line_step-1), width_step=width_step, interpolation='fisher-jenks')
-                        width_ranges_new.update({(0.0, 0.999999999999999): width_step})
-                        width_ranges_new.move_to_end((0.0, 0.999999999999999), last=False)
-                        
-                        i = 0
-                        for key, value in width_ranges_new.items():
-                            width_ranges_new.update({key: list(width_ranges_old.values())[i]})
+
+                    if plot_column == "max_BCR":
+                        # change the weight bins 
+
+                        width_ranges = generate_weight_bins(weights, n_steps=line_step, width_step=width_step, interpolation='fisher-jenks')
+                        bcr_bins = [(0.0,1.0),(1.0,4.0),(4.0,8.0),(8.0,16.0),(16.0,max(weights))]
+
+                        width_by_range = OrderedDict()
+
+                        i = 0 
+                        for key,value in width_ranges.items():
+                            width_by_range[bcr_bins[i]] = value
                             i += 1
 
                         # replace label
                         data_gpd.loc[data_gpd.max_BCR < 1, 'adaptation_option'] = "BCR < 1"
-                    else:
-                        weights = [
-                                    getattr(record,plot_column)
-                                    for record in data_gpd.itertuples() if getattr(record,plot_column) > 0
-                                ]
+                        
                     
                     if weights != []:
                         countries = geopandas.read_file(admin_boundaries,layer="level0").to_crs(AFRICA_GRID_EPSG)
@@ -165,14 +161,15 @@ def main(config):
                                 line_steps=line_step,
                                 edge_classify_column = "adaptation_option",
                                 edge_categories=["BCR < 1","Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
-                                edge_colors=["#000000","#70a845","#8d70c9","#b68f40","#c8588c","#49adad","#cc5a43"],
+                                edge_colors=["#ffff33","#4daf4a","#984ea3","#ff7f00","#e41a1c","#377eb8","#a65628"],
                                 edge_labels=["BCR < 1","Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
                                 edge_zorder=[6,7,8,9,10,11,12],
                                 interpolation="fisher-jenks",
                                 plot_title=f"{legend_title}",
                                 legend_location=map_plot["legend_location"],
                                 bbox_to_anchor=(0,0.7),
-                                width_ranges = width_ranges_new
+                                width_ranges = width_by_range,
+                                max_plus=True
                                 )
                         else:
                             ax = line_map_plotting_colors_width(
@@ -183,7 +180,7 @@ def main(config):
                                 line_steps =line_step,
                                 edge_classify_column = "adaptation_option",
                                 edge_categories=["Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
-                                edge_colors=["#70a845","#8d70c9","#b68f40","#c8588c","#49adad","#cc5a43"],
+                                edge_colors=["#4daf4a","#984ea3","#ff7f00","#e41a1c","#377eb8","#a65628"],
                                 edge_labels=["Swales","Spillways","Mobile flood embankments","Flood Wall","Drainage (rehabilitation)","Upgrading to paved"],
                                 edge_zorder=[6,7,8,9,10,11],
                                 interpolation="fisher-jenks",
