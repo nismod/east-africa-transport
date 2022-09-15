@@ -134,7 +134,7 @@ def main(config):
                                                                 )
                         for idx,(b,d,i) in enumerate(list(zip(benefit_columns,EAD_columns,EAEL_columns))):
                             adapt_risk_df[d] = -1.0*adapt_risk_df[d]
-                            adapt_risk_df[i] = -1.0*(adapt_risk_df[i]
+                            adapt_risk_df[i] = -1.0*adapt_risk_df[i]
                             adapt_risk_df[b] = adapt_risk_df[d] + adapt_risk_df[i]
 
 
