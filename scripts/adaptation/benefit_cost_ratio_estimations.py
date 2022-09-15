@@ -151,6 +151,7 @@ def main(config):
             if len(asset_adaptation_df) > 0:
                 asset_adaptation_df = pd.concat(asset_adaptation_df,axis=0,ignore_index=False)
 
+                print (asset_adaptation_df)
                 asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
                     f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.csv"),
                     index=False)
