@@ -151,8 +151,12 @@ def main(config):
             if len(asset_adaptation_df) > 0:
                 asset_adaptation_df = pd.concat(asset_adaptation_df,axis=0,ignore_index=False)
 
-                asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
-                    f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.csv"),
+                # asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
+                #     f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.csv"),
+                #     index=False)
+
+                asset_adaptation_df.to_parquet(os.path.join(adaptation_bcr_results,
+                    f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.parquet"),
                     index=False)
 
                 print (f"* Done with {asset_info.asset_gpkg} {asset_info.asset_layer} BCRs for {days} days disruption")
@@ -175,9 +179,14 @@ def main(config):
                 non_preferred_options = non_preferred_options.drop_duplicates(subset=[asset_id],keep="first")
                 preferred_options = preferred_options.sort_values(by="max_benefit",ascending=False)
                 preferred_options = preferred_options.drop_duplicates(subset=[asset_id],keep="first")
-                pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_csv(
+                # pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_csv(
+                #         os.path.join(adaptation_bcr_results,
+                #         f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.csv"),
+                #         index=False)
+
+                pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_parquet(
                         os.path.join(adaptation_bcr_results,
-                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.csv"),
+                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.parquet"),
                         index=False)
 
 
