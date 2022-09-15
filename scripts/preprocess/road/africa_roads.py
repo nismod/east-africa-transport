@@ -237,7 +237,7 @@ def main(config):
     # edges_simple['width_m'] = edges_simple.progress_apply(lambda x:float(x.lanes)*width + 2.0*shoulder,axis=1)
 
     # # Assign min and max road speeds
-    # road_speeds = pd.read_excel(os.path.join(data_path,"road","global_road_speeds.xlsx"),sheet_name="global speeds")
+    # road_speeds = pd.read_excel(os.path.join(data_path,"costs","global_road_speeds.xlsx"),sheet_name="global speeds")
     # edges_simple = pd.merge(edges_simple,road_speeds,how="left",left_on=["from_iso"],right_on=["ISO_A3"])
     # edges_simple["min_max_speed"] = edges_simple.progress_apply(lambda x:assign_road_speeds(x),axis=1)
     # edges_simple[["min_speed","max_speed"]] = edges_simple["min_max_speed"].progress_apply(pd.Series)

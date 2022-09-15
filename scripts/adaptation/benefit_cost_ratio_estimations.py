@@ -89,7 +89,7 @@ def main(config):
                         "network_layers_hazard_intersections_details.csv"))
 
     adaptation_options = get_adaptation_options()
-    for days in [15,30,60,90,180]:
+    for days in [1, 15,30,60,90,180]:
         for asset_info in asset_data_details.itertuples():
             asset_adaptation_df = []
             asset_id = asset_info.asset_id_column
@@ -133,10 +133,13 @@ def main(config):
                                                                 axis='index',fill_value=0
                                                                 )
                         for idx,(b,d,i) in enumerate(list(zip(benefit_columns,EAD_columns,EAEL_columns))):
-                            adapt_risk_df[b] = -1.0*(adapt_risk_df[d] + adapt_risk_df[i])
+                            adapt_risk_df[d] = -1.0*adapt_risk_df[d]
+                            adapt_risk_df[i] = -1.0*(adapt_risk_df[i]
+                            adapt_risk_df[b] = adapt_risk_df[d] + adapt_risk_df[i]
+
 
                         adapt_risk_df = adapt_risk_df.reset_index()
-                        adapt_costs_df = pd.merge(adapt_costs_df,adapt_risk_df[[asset_id] + benefit_columns],how="left",on=[asset_id])
+                        adapt_costs_df = pd.merge(adapt_costs_df,adapt_risk_df[[asset_id] + EAD_columns + EAEL_columns + benefit_columns],how="left",on=[asset_id])
                         num = adapt_costs_df._get_numeric_data()
                         num[num < 0] = 0
                         adapt_costs_df[bcr_columns] = adapt_costs_df[benefit_columns].div(adapt_costs_df["adapt_cost_npv"],axis=0)

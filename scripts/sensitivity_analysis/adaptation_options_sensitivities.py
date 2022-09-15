@@ -214,6 +214,8 @@ def main(config):
                 parameter_labels = [c for c in df.columns.values.tolist() if c in parameter_labels]
                 adaptation_options = list(set(df["option"].values.tolist()))
                 adaptation_options = [a for a in adaptation_options if a != "no_adaptation"]
+                if sector == "rail_edges":
+                    adaptation_options = [a for a in adaptation_options if a != "drainage"]
                 no_adaptation = df[(df["option"] == "no_adaptation") & (df["hazard"] == sensitivity["hazard"])]
                 # no_adaptation = no_adaptation[parameter_labels + [sensitivity["damage_type"]]].set_index(parameter_labels)
                 for adaptation_option in adaptation_options:
