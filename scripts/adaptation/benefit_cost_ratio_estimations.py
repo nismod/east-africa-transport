@@ -87,9 +87,9 @@ def main(config):
     asset_data_details = pd.read_csv(os.path.join(processed_data_path,
                         "damage_curves",
                         "network_layers_hazard_intersections_details.csv"))
-
+    dlist = [1,15,30,60,90,180]
     adaptation_options = get_adaptation_options()
-    for days in [1, 15,30,60,90,180]:
+    for days in [1]:
         for asset_info in asset_data_details.itertuples():
             asset_adaptation_df = []
             asset_id = asset_info.asset_id_column
@@ -151,9 +151,9 @@ def main(config):
             if len(asset_adaptation_df) > 0:
                 asset_adaptation_df = pd.concat(asset_adaptation_df,axis=0,ignore_index=False)
 
-                # asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
-                #     f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.csv"),
-                #     index=False)
+                asset_adaptation_df.to_csv(os.path.join(adaptation_bcr_results,
+                    f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.csv"),
+                    index=False)
 
                 asset_adaptation_df.to_parquet(os.path.join(adaptation_bcr_results,
                     f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_adaptation_benefits_costs_bcr_{days}_days_disruption.parquet"),
@@ -179,10 +179,10 @@ def main(config):
                 non_preferred_options = non_preferred_options.drop_duplicates(subset=[asset_id],keep="first")
                 preferred_options = preferred_options.sort_values(by="max_benefit",ascending=False)
                 preferred_options = preferred_options.drop_duplicates(subset=[asset_id],keep="first")
-                # pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_csv(
-                #         os.path.join(adaptation_bcr_results,
-                #         f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.csv"),
-                #         index=False)
+                pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_csv(
+                        os.path.join(adaptation_bcr_results,
+                        f"{asset_info.asset_gpkg}_{asset_info.asset_layer}_optimal_benefits_costs_bcr_{days}_days_disruption.csv"),
+                        index=False)
 
                 pd.concat([preferred_options,non_preferred_options],axis=0,ignore_index=True).to_parquet(
                         os.path.join(adaptation_bcr_results,
