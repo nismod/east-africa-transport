@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Setup file for atra.
+"""Setup file for eatra.
 """
 import sys
 from setuptools import setup
