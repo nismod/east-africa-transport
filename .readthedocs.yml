@@ -12,3 +12,6 @@ requirements_file: requirements-docs.txt
 # build html and pdf
 formats:
   - pdf
+
+build:
+  image: testing
