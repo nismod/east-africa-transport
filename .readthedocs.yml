@@ -4,7 +4,7 @@
 # python version
 python:
   version: 3.9
-  setup_py_install: false
+  setup_py_install: true
   use_system_site_packages: true
 
 requirements_file: requirements-docs.txt
