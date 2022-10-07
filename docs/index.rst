@@ -1,20 +1,45 @@
-.. east-africa-transport documentation master file, created by
-   sphinx-quickstart on Wed Mar  2 14:40:24 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+===================================
+East Africa Transport Risk Analysis
+===================================
 
-Welcome to east-africa-transport's documentation!
-=================================================
+.. figure:: https://img.shields.io/badge/github-east--africa--transport-brightgreen.png
+    :target: https://github.com/nismod/east-africa-transport
+
+
+This documentation describes the datasets assembled and created, with the Python scripts that require implementation for the analysis of the East Africa Transport Risk Analysis (EATRA).
+
+The modelling and analysis aims to support decision-making by identifying the performance of
+adaptation options under current and future scenarios. It comprises a network flow model,
+generation of failure scenarios, economic impact assessment, and cost-benefit analysis of
+adaptation options.
+
+Contents
+========
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 3
+
+    Installation <requirements>
+    Organization of Data <organisation>
+    Required data inputs and paramters <parameters>
+    Pre-processing data for the model <predata>
+    Analysis and Results <results>
+    API Reference <api/atra>
+    License <license>
+    Authors <authors>
 
 
-
-Indices and tables
+Indexes and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+Acknowledgements
+================
+
+This project has been developed by the Oxford Programme for Sustainable Infrastructure Systems (OPSIS) as part of a research project funded by UKAID through the UK Foreign, Commonwealth & Development Office under the High Volume Transport Applied Research Programme, managed by IMC Worldwide.
+
+The views expressed in this project or accompanying documentation do not necessarily reflect the UK government’s official policies.
