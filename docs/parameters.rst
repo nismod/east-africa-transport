@@ -16,7 +16,7 @@ Spatial data requirements
     - The assumed projection system used in the model is EPSG:4326
     - If the users change any spatial data they have to create new data with a valid projection system 
 
-Topological network requirements
+Topological network requirements 
 --------------------------------
 1. A topological network is defined as a graph composed of nodes and edges  
 
@@ -34,7 +34,7 @@ Topological network requirements
 
 3. All nodes have the following attributes:
     - ``node_id`` - String Node ID
-    - ``iso_code`` - A3 ISO code of respective country 
+    - ``iso_code`` - String A3 ISO code of respective country 
     - ``continent`` - Continent of respective country 
     - ``geometry`` - Point geometry of node with projection ESPG:4326
     - Several other atttributes depending upon the specific transport sector
@@ -43,37 +43,36 @@ Topological network requirements
     - ``edge_id`` - String edge ID
     - ``from_node`` - String node ID that should be present in node_id column
     - ``to_node`` - String node ID that should be present in node_id column
-    - ``from_iso`` - 
-    - ``to_iso`` - 
-    - ``from_continent`` - 
-    - ``to_continent`` - 
+    - ``from_iso`` - String A3 ISO code of respective country of origin 
+    - ``to_iso`` - String A3 ISO code of respective country of destination
+    - ``from_continent`` - Continent of respective country of origin 
+    - ``to_continent`` - Continent of respective country of destination
     - ``geometry`` - LineString geometry of edge with projection ESPG:4326
     - ``length_m`` - Float estimated length in meters of edge
     - ``min_speed`` - Float estimated minimum speed in km/hr on edge
     - ``max_speed`` - Float estimated maximum speed in km/hr on edge
-    - ``min_cost`` - 
-    - ``max_cost`` - 
-    - ``unit_cost`` -
-    - ``min_tariff`` - 
-    - ``max_tariff`` - 
-    - ``unit_tariff`` -
-    - ``min_flow_cost`` - 
-    - ``max_flow_cost`` -
-    - ``unit_flow_cost`` - 
+    - ``min_cost`` - Float estimated minimum rehabilitation cost on edge
+    - ``max_cost`` - Float estimated maximum rehabilitation cost on edge
+    - ``unit_cost`` - String unit of rehabilitation cost (ie USD/km/lane)
+    - ``min_tariff`` - Float estimated minimum tariff cost on edge
+    - ``max_tariff`` - Float estimated maximum tariff cost on edge 
+    - ``unit_tariff`` - String unit of tariff cost (ie USD/ton-km)
+    - ``min_flow_cost`` - Float estimated minimum flow cost on edge
+    - ``max_flow_cost`` - Float estimated maximum flow cost on edge
+    - ``unit_flow_cost`` - String unit of flow cost (ie USD/ton)
     - Several other atttributes depending upon the specific transport sector
 
 5. Attributes only present in roads edges:
-    - ``highway`` - 
-    - ``surface`` - String value for surface material of the road
-    - ``road_cond`` -
-    - ``material`` -  
-    - ``bridge`` -  
-    - ``lanes`` -  
+    - ``highway`` - String value for road category (motorway, trunk, primary, secondary, or tertiary)
+    - ``surface`` - String value for surface material of the road 
+    - ``road_cond`` - String value for whether a road is paved or unpaved
+    - ``bridge`` - String value for whether a road is a bridge or not
+    - ``lanes`` - Float value for number of lanes of 
     - ``width_m`` - Float width of edge in meters
 
 6. Attributes only present in rail edges: 
-    - ``status`` -
-    - ``is_current`` -   
+    - ``status`` - String value for status of the railway (open, proposed, construction, rehabilitation, disused, abandoned)
+    - ``is_current`` - True/False value for whether the railway is active in the present 
 
 .. Note::
     We assume that networks are provided as topologically correct connected graphs: each edge
@@ -86,150 +85,78 @@ Topological network requirements
     Due to gaps in geometries and connectivity in the raw datasets several dummy nodes and edges have been created in the node and edges join points and lines. For example there are more nodes in the rail network than stations.
 
 
-OD matrices requirements
+OD matrices requirements 
 ------------------------
-1. All finalised OD matrices are stored:
-    - In the path - ``/data/OD_data/``
-    - As csv file with names ``{mode}_nodes_daily_ods.csv`` where ``mode = {road, rail, port}``
-    - As csv file with names ``{mode}_province_annual_ods.csv``
-    - As Excel sheets with combined Province level annual OD matrices
 
-2. All node-level daily OD matrices contain mode-wise and total OD flows and should have attributes:
-    - ``origin_id`` - String node IDs of origin nodes. Value should be present in the ``node_id`` column of the sectors network file
-    - ``destination_id`` - String node IDs of destination nodes. Value should be present in the ``node_id`` column of the sectors network file
-    - ``origin_province`` - String names of origin Provinces
-    - ``destination_province`` - String names of destination Provinces
-    - ``min_total_tons`` - Float values of minimum daily tonnages between OD nodes
-    - ``max_total_tons`` - Float values of maximum daily tonnages between OD nodes
-    - Float values of daily min-max tonnages of commodities/industries between OD nodes: here based on OD data provided for each sector
-    - If min-max values cannot be estimated then there is a ``total_tons`` column - for roads only
+**[COMING SOON...]**
 
-3. All aggregated province-level OD matrices contain mode-wise and total OD flows and should have attributes:
-    - ``origin_province`` - String names of origin Provinces
-    - ``destination_province`` - String names of destination Provinces
-    - ``min_total_tons`` - Float values of minimum daily tonnages between OD Provinces
-    - ``max_total_tons`` - Float values of maximum daily tonnages between OD Provinces
-    - Float values of daily min-max tonnages of commodities/industries between OD Provinces: here based on OD data provided for each sector
-    - If min-max values cannot be estimated then there is a ``total_tons`` column - for roads only
-
-.. Note::
-    The OD columns names and their attributes listed aobve are essential for the flow and failure model analysis. While the names of commodities/industries might vary it is important that the OD data has the columns specifically mentioned as ``origin_id, destination_id, origin_province, destination_province, min_total_tons (or total_tons), max_total_tons (or total_tons)``.
-
-    The model can track individual commodity/industry flows and failure results, but in the overrall calculations it estimates the  flows and disruptions corresponding to the total tonnage (min or max). The commodity/industry names are important for doing macroeconomic loss analysis explained below. 
-
-    Hence, if an new user input contains only the total tonnage values and no commodity/industry specific OD values, then the model codes will still run with no errors, except the macroeconomic analysis code will not be able to run.
-
-    If the users wish to replace or change these datasets then they must retain the same names of columns with same types of values as given in the original data.
-    
 
 Hazards data requirements
 -------------------------
 1. All hazard datasets are stored:
-    - In sub-folders in the path - ``/data/flood_data/FATHOM``
+    - In sub-folders in the path - ``/data/hazards/floodmaps``
     - As GeoTiff files
-    - See ``/data/flood_data/hazard_data_folder_data_info.xlsx`` for details of all hazard files
+    - See ``/data/hazards/hazard_layers.csv`` for details of all hazard files
 
 2. Single-band GeoTiff hazard raster files should have attributes:
-    - values - between 0 and 1000 for flood depth in meters
+    - values - inundation depth in meters
     - raster grid geometry
     - projection systems: Default assumed = EPSG:4326
 
 .. Note::
-    The hazard datasets were obtained from a third-party consultant https://www.fathom.global who generated flood maps specific to this project
+    The hazard datasets were obtained from WRI Aqueduct flood product datasets, available openly and freely at https://www.wri.org/data/aqueduct-floods-hazard-maps
+    
+    Flood depths are given in metres over grid squares (~900 m2 at the Equator). 
 
-    It is assumed that all hazard data is provided in GeoTiff format with a projection system. If the users want to introduce new hazard data then it should be in GeoTiff format only.
-
-    When new hazard files are given the ``hazard_data_folder_data_info.xlsx`` should be updated accordingly
-
+If changes are made in the ``/data/hazards/floodmaps`` folder, execute the ``scripts/exposure/hazard_layers.sh`` script to update the ``hazard_layers_basic.csv``, ``hazard_layers.csv``, ``hazard_layers_chunks.csv``, and ``layers`` sub-folder.  
 
 Administrative areas with statistics data requirements
 ------------------------------------------------------
-1. Argentina boundary datasets are stored:
-    - In the path - ``/incoming_data/admin_boundaries_and_census/departamento/``
-    - In the path - ``/incoming_data/admin_boundaries_and_census/provincia/``
-    - As Shapefiles
-
-2. Global boundary dataset for map plotting are stored:
-    - In the path - ``/data/boundaries/``
-    - As Shapefiles
-
-3. Census boundary data are stored:
-    - In the path - ``/incoming_data/admin_boundaries_and_census/radios censales/``
-    - As a Shapefile
+1. Boundary datasets are stored:
+    - In the path - ``/data/admin_boundaries/``
+    - As Geopackages
+    - With polygon geometries of boundary with projection ESPG:4326
 
 .. Note::
-    The admin and boundary datasets were obtained from different sources in Argentina
+    The boundary datasets were obtained from GADM, available openly and freely at https://gadm.org/data.html
 
-    .. csv-table:: List of admin and boundary datasets obtained different resources in Argentina
-       :header: "Admin boundary", "Source"
-
-       "Department", "Provided through World Bank"
-       "Province", "Provided through World Bank"
-       "All admin levels", "https://www.naturalearthdata.com/downloads/10m-physical-vectors/"
-       "Census - 2010","https://www.indec.gov.ar/"
-    
-
-    Admin boundary layers are generally available online. For example at https://data.humdata.org/dataset/argentina-administrative-level-0-boundaries. 
-
-    The department, province and census datasets are used in the model, while the global boundaries are mainly used for generaing map backgrounds
-
-    The names and properties of the attributes listed below are the essential boundary parameters for the whole model analysis. If the users wish to replace or change these datasets then they must retain the same names of columns with same types of values as given in the original data.
-
-    For example if a new census dataset is introduced then it should contain the column ``poblacion`` with new population numbers. The census data used here is at Department level, but it could be replaced with other boundary level census estimates as well. 
-
-4. All Argentina Department boundary datasets should have the attributes:
-    - ``name`` - String names Spanish - attribute name changed to ``department_name``
-    - ``OBJECTID`` - Integer IDs - attribute name changed to ``department_id``
-    - ``geometry`` - Polygon geometries of boundary with projection ESPG:4326
-
-5. All Argentina Province boundary datasets should have attributes:
-    - ``nombre`` - String names Spanish - attribute name changed to ``province_name``
-    - ``OBJECTID`` - Integer IDs - attribute name changed to ``province_id``
-    - ``geometry`` - Polygon geometries of boundary with projection ESPG:4326
-
-6. All global boundary datasets should have attributes:
-    - ``name`` - String names of boundaries in English
-    - ``geometry`` - Polygon geometry of boundary with projection ESPG:4326
-
-7. The census datasets should have attributes:
-    - ``poblacion`` - Float value of population
-    - ``geometry`` - Polygon geometry of boundary with projection ESPG:4326
+    Information on the continent assigned to each country was matched using Natural Earth dataset, available openly and freely at: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/
 
 
-Macroeconomic data requirements
+2. Global lakes and reservoir dataset for map plotting are stored:
+    - In the path - ``/data/naturalearth/``
+    - As Shapefiles
+
+.. Note::
+    The lake and reservoir dataset was obtained from Natural Earth, available openly and freely at https://www.naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/
+
+3. Population raster file is stored:
+    - In the path - "/incoming_data/population/Africa_1km_Population/AFR_PPP_2020_adj_v2.tif"
+    - As GeoTiff 
+
+4. Single-band GeoTiff population raster files should have attributes:
+    - values - estimates of total number of people per grid square
+    - raster grid geometry
+    - projection systems: Geographic, WGS84
+
+.. Note::
+    The population raster was obtained from Worldpop, available openly and freely at https://hub.worldpop.org/doi/10.5258/SOTON/WP00004 
+
+    The population dataset presents people per pixel (PPP) for 2020 at a spatial resolution of 0.00833333 decimal degrees (approx 1km at the equator) for the continent of Africa. National totals have been adjusted to match UN Population Division estimates
+
+
+Macroeconomic data requirements 
 -------------------------------
-1. For the macroeconomic analysis first a multi-regional IO matrix for 24 provinces in Argentina is created from a national-level IO matrix and province level Gross Production Values (GPV) of IO Industries
 
-2. The multi-regional macroeconoic IO data is created from data downloaded 
-from the Instituto Nacional de Estadística y Censos  (INDEC) website. The data is stored as: 
-    - Industry and Commodity level IO accounts in the file path ``data/economic_IO_tables/input/sh_cou_06_16.xls`` 
-    - Industry level GPV in the file path ``data/economic_IO_tables/input/PIB_provincial_06_17.xls``
-    - Names of aggregated industries classification for Argentina in the file path ``data/economic_IO_tables/input/industry_high_level_classification.xlsx``, which should be present in the IO and GPV data files   
-
-3. A set of look-up tables are created to match commodities in the OD matrices to IO industries
-    - In the file in path - ``data/economic_IO_tables/input/commodity_classifications-hp.xlsx``
-    - The sheetnames in the excel file are ``road, rail, port`` corresponding to the sector for which OD matrices are created
-    - ``commodity_group`` - String name of commodity group identified in the OD matrices data
-    - ``commodity_subgroup`` - String name of commodity subgroup identified in the OD matrices data
-    - ``high_level_industry`` - String name of aggregated industry present in the ``industry_high_level_classification.xlsx`` file 
-
-4. The multi-regional macroeconomic IO data creation, explained later, produces results:
-    - In the file in path - ``data/economic_IO_tables/output/IO_ARGENTINA.xlsx``
-    - In the file in path - ``data/economic_IO_tables/output/MRIO_ARGENTINA_FULL.xlsx``
-    - This data is used in the macroeconomic loss analysis 
-
-.. Note::
-    The macroeconomic data are obtained from INDEC at https://www.indec.gob.ar/nivel3_default.asp?id_tema_1=3&id_tema_2=9&fbclid=IwAR02qnMIJeu86xUM5TFK5hrABN3FcJLGx6k5BYNhxLe4o0FhqJxuV2wxb5E. The PIB and COU datasets are used in the model
-
-    If the users want to update the IO tables for Argentina then it is recommended that they replace the above files ``sh_cou_06_16.xls`` and ``PIB_provincial_06_17.xls`` with exactly the same sheetnames and data structures as given in the original data used by the IO model scripts.
-
-    If the industry classifications are modified in the IO data then the changeas should also be made in ``industry_high_level_classification.xlsx`` and ``commodity_classifications-hp.xlsx`` files.  
+**[COMING SOON...]**
+ 
 
 Adaptation options and costs requirements
 -----------------------------------------
 1. All adaptation options input datasets are stored:
-    - In the file - ``/data/adaptation_options/ROCKS - Database - ARNG (Version 2.3) Feb2018.xlsx``
-    - We use the sheet ``Resultados Consolidados`` for our analysis
+    - In the file - ``/data/adaptation/adaptation_options_and_costs.xlsx``
 
 .. Note::
     The adaptation data is very specific and if new options are created then the users will need to change the scripts as well
+
+    If new adaptation options are created then the users will also need to provide updated damage curves in the path ``data/damage_curves/adaptation_options/damage_curves_transport_flooding_{id}``

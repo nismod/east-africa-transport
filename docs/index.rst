@@ -24,7 +24,7 @@ Contents
     Required data inputs and paramters <parameters>
     Pre-processing data for the model <predata>
     Analysis and Results <results>
-    API Reference <api/atra>
+    API Reference <api/eatra>
     License <license>
     Authors <authors>
 
