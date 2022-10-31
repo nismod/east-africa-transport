@@ -131,7 +131,7 @@ Administrative areas with statistics data requirements
     The lake and reservoir dataset was obtained from Natural Earth, available openly and freely at https://www.naturalearthdata.com/downloads/110m-physical-vectors/110mlakes-reservoirs/
 
 3. Population raster file is stored:
-    - In the path - "/incoming_data/population/Africa_1km_Population/AFR_PPP_2020_adj_v2.tif"
+    - In the path - ``/incoming_data/population/Africa_1km_Population/AFR_PPP_2020_adj_v2.tif``
     - As GeoTiff 
 
 4. Single-band GeoTiff population raster files should have attributes:
@@ -149,7 +149,25 @@ Macroeconomic data requirements
 -------------------------------
 
 **[COMING SOON...]**
- 
+
+Damage data and costs requirements 
+----------------------------------
+For assessing direct damages to assets due to flooding we need two sets of information. 
+
+1. Fragility: Failure or damage information that tells us about the percentage of damage an asset would sustain due to hazard exposures.
+
+2. Cost: Rehabilitation or construction costs that can be assigned to each asset, based on some general principles.
+
+Generalised direct damage (fragility) curves vs flood depths are taken from Koks et al., (2019) based on Espinet et al., (2018) for different types of infrastructure assets, specifically: paved roads, unpaved roads, and railway lines. 
+
+All damage curves are stored:
+    - In the file - ``/data/damage_curves/damage_curves_transport_flooding.xlsx``
+    - And mapped accordingly in - ``/data/damage_curves/asset_damage_curve_mapping.csv``
+
+For rehabilitation or reconstruction cost data the analysis referred to information from a range of cost estimates for different road projects financed by the World Bank and African Development Bank (AfDB). 
+
+Rehabilitation costs are stored: 
+    - In the file - ``/data/costs/rehabilitation_costs.xlsx``
 
 Adaptation options and costs requirements
 -----------------------------------------
