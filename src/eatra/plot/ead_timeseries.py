@@ -8,8 +8,8 @@ import pandas as pd
 import numpy as np
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from plot_utils import *
-from east_africa_plotting_attributes import *
+from .plot_utils import *
+from .east_africa_plotting_attributes import *
 
 def read_timeseries(timeseries_path,filename,hazard,rcp):
     timeseries = pd.read_csv(

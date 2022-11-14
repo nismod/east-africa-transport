@@ -5,8 +5,8 @@ import sys
 import warnings
 import geopandas as gpd
 import pandas as pd 
-from plot_utils import *
-from east_africa_plotting_attributes import *
+from .plot_utils import *
+from .east_africa_plotting_attributes import *
 
 def main(config):
     incoming_data_path = config['paths']['incoming_data']

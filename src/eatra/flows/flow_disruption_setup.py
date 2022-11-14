@@ -31,7 +31,7 @@
 import os
 import sys
 import pandas as pd
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 import subprocess 
 

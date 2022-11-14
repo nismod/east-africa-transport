@@ -12,7 +12,7 @@ import ast
 from collections import defaultdict
 from shapely.geometry import Point,LineString
 from itertools import chain
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

@@ -8,8 +8,8 @@ import pandas
 import numpy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from plot_utils import *
-from east_africa_plotting_attributes import *
+from .plot_utils import *
+from .east_africa_plotting_attributes import *
 
 def main(config):
     incoming_data_path = config['paths']['incoming_data']

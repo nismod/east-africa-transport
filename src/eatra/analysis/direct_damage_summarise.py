@@ -8,7 +8,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely import wkb
 import numpy as np
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

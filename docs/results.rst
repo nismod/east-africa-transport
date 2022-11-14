@@ -15,7 +15,7 @@ Purpose:
 
 Execution:
     - Load data as described in `Topological network requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#topological-network-requirements>`_ and `Spatial data requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#spatial-data-requirements>`_, and `Administrative areas with statistics data requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#administrative-areas-with-statistics-data-requirements>`_
-    - Run :py:mod:`eatra.exposures.split_networks.py`
+    - Run :py:mod:`eatra.exposure.split_networks`
 
 Result:
     - Hazard levels and spatial extents affecting each infrastructure asset across all return periods, climate scenarios, and time epoch of every hazard type.
@@ -26,7 +26,7 @@ Direct damage estimation
 Purpose: 
     
 Execution:
-    - Run :py:mod:`eatra.direct_damages.damage_loss_setup_script.py`
+    - Run :py:mod:`eatra.direct_damages.damage_loss_setup_script`
 
 Indirect economic loss estimation
 ---------------------------------

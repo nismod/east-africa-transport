@@ -13,7 +13,7 @@ warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 import geopandas as gpd
 import numpy as np
 
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

@@ -15,7 +15,7 @@ from shapely.geometry import Point,LineString
 from boltons.iterutils import pairwise
 from tqdm import tqdm
 tqdm.pandas()
-from utils import *
+from .utils import *
 
 def network_od_path_estimations(graph,
     source, target, cost_criteria):

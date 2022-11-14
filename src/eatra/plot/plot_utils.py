@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from shapely.geometry import LineString
 from matplotlib.lines import Line2D
-from scalebar import scale_bar
+from .scalebar import scale_bar
 import jenkspy
 
 def _get_palette():

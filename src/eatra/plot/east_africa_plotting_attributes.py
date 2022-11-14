@@ -2,7 +2,7 @@ import os
 import sys
 import geopandas as gpd
 import pandas as pd
-from plot_utils import *
+from .plot_utils import *
     
 def sector_attributes():    
     sector_attributes = [

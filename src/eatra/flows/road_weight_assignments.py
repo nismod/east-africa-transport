@@ -14,7 +14,7 @@ from shapely.geometry import Point,LineString,Polygon
 from shapely.ops import nearest_points
 from scipy.spatial import Voronoi, cKDTree
 import subprocess
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

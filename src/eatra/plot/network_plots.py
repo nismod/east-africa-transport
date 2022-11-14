@@ -8,9 +8,9 @@ import pandas
 import numpy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from plot_utils import *
-from east_africa_plotting_attributes import *
-from east_africa_basemaps import *
+from .plot_utils import *
+from .east_africa_plotting_attributes import *
+from .east_africa_basemaps import *
 
 AFRICA_GRID_EPSG = 4326
 

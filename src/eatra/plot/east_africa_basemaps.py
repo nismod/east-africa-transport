@@ -8,7 +8,7 @@ import pandas
 import numpy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from plot_utils import *
+from .plot_utils import *
 
 AFRICA_GRID_EPSG = 4326
 

@@ -6,7 +6,7 @@ import warnings
 import fiona
 import pandas as pd
 import geopandas as gpd
-from plot_utils import *
+from .plot_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

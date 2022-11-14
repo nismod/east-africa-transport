@@ -13,7 +13,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 # import warnings
 # warnings.simplefilter(action='ignore', category=SettingWithCopyWarning)
 import numpy as np
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

@@ -19,7 +19,7 @@ from shapely.geometry import Polygon, shape, LineString
 from pyproj import Geod
 from tqdm import tqdm
 tqdm.pandas()
-from utils import *
+from .utils import *
 
 from pyproj import Geod
 

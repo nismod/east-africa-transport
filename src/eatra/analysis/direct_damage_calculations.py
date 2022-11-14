@@ -11,7 +11,7 @@ import numpy as np
 from SALib.sample import morris
 import SALib.analyze.morris 
 
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

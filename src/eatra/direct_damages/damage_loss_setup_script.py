@@ -5,7 +5,7 @@ import sys
 import ujson
 from SALib.sample import morris
 import SALib.analyze.morris 
-from analysis_utils import *
+from .analysis_utils import *
 import subprocess 
 
 def get_adaptation_options():

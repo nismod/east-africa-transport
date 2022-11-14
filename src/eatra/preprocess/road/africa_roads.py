@@ -17,7 +17,7 @@ import igraph as ig
 import networkx
 from tqdm import tqdm
 tqdm.pandas()
-from utils import *
+from .utils import *
 
 from pyproj import Geod
 

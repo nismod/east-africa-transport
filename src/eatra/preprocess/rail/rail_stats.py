@@ -10,7 +10,7 @@ import geopandas as gpd
 import pandas as pd
 from tqdm import tqdm
 tqdm.pandas()
-from utils import *
+from .utils import *
 
 def main(config):
     incoming_data_path = config['paths']['incoming_data']

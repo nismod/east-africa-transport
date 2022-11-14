@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import copy
 from matplotlib import cm
-from plot_utils import *
+from .plot_utils import *
 
 mpl.style.use('ggplot')
 mpl.rcParams['font.size'] = 10.

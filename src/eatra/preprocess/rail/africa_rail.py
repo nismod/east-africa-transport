@@ -16,7 +16,7 @@ from shapely.geometry import Point, shape, mapping
 from boltons.iterutils import pairwise
 from tqdm import tqdm
 tqdm.pandas()
-from utils import *
+from .utils import *
 from pyproj import Geod
 
 def components(edges,nodes,node_id_col):

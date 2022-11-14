@@ -15,7 +15,7 @@ from shapely.geometry import Point,LineString
 from boltons.iterutils import pairwise
 from tqdm import tqdm
 tqdm.pandas()
-from utils import *
+from .utils import *
 
 def get_wait_times(x):
     if x.from_mode == "port" or x.to_mode == "port":

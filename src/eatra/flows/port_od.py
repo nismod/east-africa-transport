@@ -9,7 +9,7 @@ import geopandas as gpd
 import fiona
 from shapely.geometry import shape, mapping
 import numpy as np
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

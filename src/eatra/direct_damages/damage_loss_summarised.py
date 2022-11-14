@@ -7,7 +7,7 @@ import os
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from analysis_utils import *
+from .analysis_utils import *
 from tqdm import tqdm
 tqdm.pandas()
 

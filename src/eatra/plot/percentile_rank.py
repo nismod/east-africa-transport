@@ -8,8 +8,8 @@ import pandas
 import numpy as np
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from plot_utils import *
-from east_africa_plotting_attributes import *
+from .plot_utils import *
+from .east_africa_plotting_attributes import *
 
 
 def plot_many_ranges(input_dfs, division_factor,x_label, y_label,plot_title,plot_color,plot_labels,plot_file_path):
