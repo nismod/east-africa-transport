@@ -14,7 +14,6 @@ Subpackages
 
    eatra.adaptation
    eatra.analysis
-   eatra.direct_damages
    eatra.exposure
    eatra.flows
    eatra.plot

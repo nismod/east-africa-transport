@@ -21,27 +21,42 @@ Result:
     - Hazard levels and spatial extents affecting each infrastructure asset across all return periods, climate scenarios, and time epoch of every hazard type.
     - Geoparquet output files in the directory ``/results/hazard_asset_intersection``
 
-Direct damage estimation 
+
+Flow disruption analysis 
 ------------------------
-Purpose: 
-    
+**[COMING SOON...]**
+
+
+Risk estimation and adaptation assessment 
+-----------------------------------------
+Purpose:
+    - Calculate the direct damages and indirect losses from network failures with and without adaptation options
+    - Develop expected annual damages (EAD) and expected annual economic losses (EAEL) estimates
+    - Create timeseries and NPV calculations for the scenarios
+    - Estimate adaptation options costs and benefits, and benefit-cost ratios
+
 Execution:
-    - Run :py:mod:`eatra.direct_damages.damage_loss_setup_script`
+    - Run :py:mod:`eatra.analysis.damage_loss_setup_script`
+    - Run :py:mod:`eatra.adaptation.benefit_cost_ratio_estimations`
 
-Indirect economic loss estimation
----------------------------------
-
-
-
-Adaptation assessment
----------------------
-adaptaion_options_costs.py 
-benefit_cost_ratio_estimations.py
+Result: 
+    - Direct damages and indirect losses parquet and csv result files as well as summary, timeseries, and npv files in the directory ``/results/risk_results``
+    - Above results for each adaptation options in the directory ``/results/adaptation_option_{id}``
+    - Adaptation option benefit-cost ratios in the directory ``/results/adaptation_benefits_costs_bcr``
 
 
 Sensitivity analysis
 --------------------
+Purpose:
+    - Conduct a global sensitivity analysis to capture the influence of a given model parameter on the final risk outcomes 
+    - Simulate several realisations of the input parameters and run the analysis for each realisation
 
+Execution: 
+    - Run :py:mod:`eatra.sensitivity_analysis.sensitivity_estimation`
+
+Result: 
+    - Sensitivity analysis result csv files in the directory ``/results/global_sensitivity``
+    
 
 Processing outputs and plots
 ----------------------------

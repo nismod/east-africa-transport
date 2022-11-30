@@ -9,10 +9,10 @@ eatra.analysis package
 Submodules
 ----------
 
-eatra.analysis.africa\_routes\_all module
------------------------------------------
+eatra.analysis module
+---------------------
 
-.. automodule:: eatra.analysis.africa_routes_all
+.. automodule:: eatra.analysis
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,34 +25,42 @@ eatra.analysis.analysis\_utils module
    :undoc-members:
    :show-inheritance:
 
-eatra.analysis.direct\_damage\_calculations module
---------------------------------------------------
+eatra.analysis.damage\_calculations module
+------------------------------------------
 
-.. automodule:: eatra.analysis.direct_damage_calculations
+.. automodule:: eatra.analysis.damage_calculations
    :members:
    :undoc-members:
    :show-inheritance:
 
-eatra.analysis.direct\_damage\_summarise module
------------------------------------------------
-
-.. automodule:: eatra.analysis.direct_damage_summarise
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-eatra.analysis.expected\_damages\_calculations module
------------------------------------------------------
-
-.. automodule:: eatra.analysis.expected_damages_calculations
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-eatra.analysis.port\_airport\_node\_splits module
+eatra.analysis.damage\_loss\_setup\_script module
 -------------------------------------------------
 
-.. automodule:: eatra.analysis.port_airport_node_splits
+.. automodule:: eatra.analysis.damage_loss_setup_script
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eatra.analysis.damage\_loss\_summarised module
+----------------------------------------------
+
+.. automodule:: eatra.analysis.damage_loss_summarised
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eatra.analysis.damage\_loss\_timeseries\_and\_npv module
+--------------------------------------------------------
+
+.. automodule:: eatra.analysis.damage_loss_timeseries_and_npv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eatra.analysis.ead\_eael\_calculations module
+---------------------------------------------
+
+.. automodule:: eatra.analysis.ead_eael_calculations
    :members:
    :undoc-members:
    :show-inheritance:

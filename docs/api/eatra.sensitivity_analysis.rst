@@ -9,6 +9,22 @@ eatra.sensitivity\_analysis package
 Submodules
 ----------
 
+eatra.sensitivity\_analysis module
+----------------------------------
+
+.. automodule:: eatra.sensitivity_analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eatra.sensitivity\_analysis module
+----------------------------------
+
+.. automodule:: eatra.sensitivity_analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 eatra.sensitivity\_analysis.adaptation\_options\_sensitivities module
 ---------------------------------------------------------------------
 

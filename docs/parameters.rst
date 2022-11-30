@@ -145,11 +145,6 @@ Administrative areas with statistics data requirements
     The population dataset presents people per pixel (PPP) for 2020 at a spatial resolution of 0.00833333 decimal degrees (approx 1km at the equator) for the continent of Africa. National totals have been adjusted to match UN Population Division estimates
 
 
-Macroeconomic data requirements 
--------------------------------
-
-**[COMING SOON...]**
-
 Damage data and costs requirements 
 ----------------------------------
 For assessing direct damages to assets due to flooding we need two sets of information. 

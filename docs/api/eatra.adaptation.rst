@@ -25,6 +25,14 @@ eatra.adaptation module
    :undoc-members:
    :show-inheritance:
 
+eatra.adaptation module
+-----------------------
+
+.. automodule:: eatra.adaptation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 eatra.adaptation.adaptation\_options\_costs module
 --------------------------------------------------
 
