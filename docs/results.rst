@@ -24,7 +24,18 @@ Result:
 
 Flow disruption analysis 
 ------------------------
-**[COMING SOON...]**
+Purpose:
+    - Calculate the indirect economic indirect losses from disruptions of network links
+    - Perform a economic criticality assessment of every network link that is potentially damaged by flooding
+    - Estimate economic losses in US$/day due to flow rerouting and flow isolations 
+
+Execution:
+    - Run the flow assignment results are described in `Assigning flows onto networks <https://east-africa-transport.readthedocs.io/en/latest/predata.html#assigning-flows-onto-networks>`_
+    - Run the exposure analysis as described in `Exposure analysis <https://east-africa-transport.readthedocs.io/en/latest/results.html#exposure-analysis>`_
+    - Run :py:mod:`eatra.flows.flow_disruption_setup`
+
+Result: 
+    - Indirect economic losses csv result files ain the directory ``/results/risk_results/flow_disruptions``
 
 
 Risk estimation and adaptation assessment 

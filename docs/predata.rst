@@ -17,12 +17,12 @@ Data for the road networks were extracted from OpenStreetMap (OSM) and then furt
 
 1. Extract data from OSM 
     - Verify the date and geographical extent noted in ``incoming_data/osm/extracts.txt`` 
-    - Execute the following script: ``scripts/preprocess/osm/get_osm_data.sh``
+    - Execute the following script: ``eatra.preprocess.osm/get_osm_data.sh``
     - This creates a .osm.pbf file in ``incoming_data/osm``
     - The file can also be manually downloaded from Geofabrik's free download server here https://download.geofabrik.de/
 
 2. Create road topology
-    - Execute the following script: ``scripts/preprocess/road/road.sh``
+    - Execute the following script: ``eatra.preprocess.road.road.sh``
     - Temporary files are saved in ``scratch/road``   
     - This script creates the ``road`` geopackage file with an ``edges`` layer and a ``nodes`` layer in the folder path ``data/network/``
 
@@ -77,9 +77,19 @@ This final network is the ``air`` geopackage file with a ``nodes`` layer in the 
 
 Creating the multi-modal network edges
 --------------------------------------
-The multi-modal edges can only be created once all the other networks are created. The code inputs the finalized ``road``, ``rail``, ``port`` and ``airport`` files in the ``data/network/`` folder path. The multi-modal network edges are all created by executing 1 Python script:``scripts/preprocess/other_networks/multi_modal.py``
+The multi-modal edges can only be created once all the other networks are created. The code inputs the finalized ``road``, ``rail``, ``port`` and ``airport`` files in the ``data/network/`` folder path. The multi-modal network edges are all created by executing 1 Python script:``eatra.preprocess.other_networks.multi_modal.py``
 
 
 Assigning flows onto networks
 -----------------------------
-**[COMING SOON...]**
+Flow assignments involve estimating volume (in tons/day) and values (in US$/day) of commodities being moved along transport networks. The specific focus in this project has been on import and export cargo freight only. The detailed methodology of flow assignments is explained in the report `Project Final Report <https://transport-links.com/download/final-report-decision-support-systems-for-resilient-strategic-transport-networks-in-low-income-countries/>`_. In brief the data preparation for flow assignment involves:
+1. Creating a country-country Origin-Destination (OD) matrix of imports and exports.
+2. Identifying airports, port, road and rail border crossings in each country where imports and export enter and leave.
+3. Allocating country-country OD-matrix estimates to border crossings based on known estimates of volumnes of cargo handled at different border crossings.
+4. Collecting spatially socio-economic data within a country to infer where economic supply and demand for commodities are concentrated.
+5. Disaggregating imports and export volumes to road and rail network nodels in proximity of locations of economic supply and demand to create a node-node OD matrix.
+6. Using the multi-modal transport network to assign trade volumes based on a least cost routing algorithm under capacity constraints.
+
+The flow allocation is done by executing 2 Python scripts:
+    - ``eatra.flows.od_matrix_creation.py``, which generates an OD matrix as described in `OD matrices requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#OD-matrices-requirements>`_
+    - ``eatra.flows.flow_assignments.py``, which generates flow assignment results in the file ``results/flow_paths/``  
