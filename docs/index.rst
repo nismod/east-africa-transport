@@ -13,6 +13,11 @@ adaptation options under current and future scenarios. It comprises a network fl
 generation of failure scenarios, economic impact assessment, and cost-benefit analysis of
 adaptation options.
 
+
+The methodology of the model developed here is described in `Project Final Report <https://transport-links.com/download/final-report-decision-support-systems-for-resilient-strategic-transport-networks-in-low-income-countries/>`_.
+
+The results of the model are visualised here `East Africa Transport Risk Analysis Tool <https://east-africa-infrastructureresilience.org)>`_.
+
 Contents
 ========
 
@@ -40,6 +45,6 @@ Indexes and tables
 Acknowledgements
 ================
 
-This project has been developed by the Oxford Programme for Sustainable Infrastructure Systems (OPSIS) as part of a research project funded by UKAID through the UK Foreign, Commonwealth & Development Office under the High Volume Transport Applied Research Programme, managed by IMC Worldwide.
+This project has been developed by the Oxford Programme for Sustainable Infrastructure Systems (OPSIS) as part of a research project funded by UKAID through the UK Foreign, Commonwealth & Development Office under the High Volume Transport Applied Research Programme, managed by DT Global.
 
 The views expressed in this project or accompanying documentation do not necessarily reflect the UK government’s official policies.

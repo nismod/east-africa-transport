@@ -9,6 +9,14 @@ eatra.preprocess.other\_networks package
 Submodules
 ----------
 
+eatra.preprocess.other\_networks module
+---------------------------------------
+
+.. automodule:: eatra.preprocess.other_networks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 eatra.preprocess.other\_networks.africa\_airports module
 --------------------------------------------------------
 

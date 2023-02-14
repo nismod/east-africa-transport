@@ -152,6 +152,9 @@ add_module_names = False
 # A list of ignored prefixes for module index sorting.
 modindex_common_prefix = ['eatra.']
 
+# Make sure the target is unique
+autosectionlabel_prefix_document = True
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

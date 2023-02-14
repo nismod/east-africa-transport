@@ -9,6 +9,30 @@ eatra.plot package
 Submodules
 ----------
 
+eatra.plot module
+-----------------
+
+.. automodule:: eatra.plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eatra.plot module
+-----------------
+
+.. automodule:: eatra.plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eatra.plot module
+-----------------
+
+.. automodule:: eatra.plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 eatra.plot.adaptation\_maps module
 ----------------------------------
 

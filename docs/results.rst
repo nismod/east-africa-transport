@@ -2,7 +2,7 @@
 Analysis and Results
 ====================
 .. Important::
-    - This section describes the steps Analysis and Results steps of the East Africa Transport Risk Analysis (EATRA)
+    - This section describes the Analysis and Results steps of the East Africa Transport Risk Analysis (EATRA)
     - To implement the EATRA without any changes in existing codes, all data described here should be created and stored exactly as indicated below
 
 Exposure analysis
@@ -14,7 +14,7 @@ Purpose:
     - Write final results to geoparquet files
 
 Execution:
-    - Load data as described in `Topological network requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#topological-network-requirements>`_ and `Spatial data requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#spatial-data-requirements>`_, and `Administrative areas with statistics data requirements <https://east-africa-transport.readthedocs.io/en/latest/parameters.html#administrative-areas-with-statistics-data-requirements>`_
+    - Load data as described in :ref:`Topological network requirements <parameters:Topological network requirements>` and :ref:`Spatial data requirements <parameters:Spatial data requirements>` and :ref:`Administrative areas with statistics data requirements <parameters:Administrative areas with statistics data requirements>`
     - Run :py:mod:`eatra.exposure.split_networks`
 
 Result:
@@ -30,8 +30,8 @@ Purpose:
     - Estimate economic losses in US$/day due to flow rerouting and flow isolations 
 
 Execution:
-    - Run the flow assignment results are described in `Assigning flows onto networks <https://east-africa-transport.readthedocs.io/en/latest/predata.html#assigning-flows-onto-networks>`_
-    - Run the exposure analysis as described in `Exposure analysis <https://east-africa-transport.readthedocs.io/en/latest/results.html#exposure-analysis>`_
+    - Run the flow assignment results are described in :ref:`Assigning flows onto networks <predata:Assigning flows onto networks>`
+    - Run the exposure analysis as described in :ref:`Exposure analysis <results:Exposure analysis>`
     - Run :py:mod:`eatra.flows.flow_disruption_setup`
 
 Result: 
