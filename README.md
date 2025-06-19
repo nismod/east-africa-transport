@@ -5,7 +5,7 @@ focussing on Kenya, Tanzania, Uganda and Zambia.
 
 The methodology of the model developed here is described in [Project Final Report](https://transport-links.com/download/final-report-decision-support-systems-for-resilient-strategic-transport-networks-in-low-income-countries)
 
-The results of the model are visualised here [East Africa Transport Risk Analysis Tool](https://east-africa-infrastructureresilience.org)
+The results of the model are visualised here [East Africa Transport Risk Analysis Tool](https://east-africa.infrastructureresilience.org)
 
 ## Development
 
